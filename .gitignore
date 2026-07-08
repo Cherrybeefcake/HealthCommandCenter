@@ -1,0 +1,49 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Xcode build output
+DerivedData/
+build/
+Build/
+*.xcresult
+*.moved-aside
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Xcode user-specific state
+*.xcuserstate
+*.xcscmblueprint
+xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Swift Package Manager build artifacts
+.build/
+.swiftpm/
+Packages/
+
+# Simulator, device, and local runtime scratch
+*.simruntime
+*.crash
+*.ips
+*.log
+*.trace
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Local debug/export artifacts
+debug/
+Debug/
+logs/
+Logs/
+*.debug.json
+*.local.json
+*.generated.json
+
+# Keep source, Xcode project metadata, entitlements, README, and app resources tracked.

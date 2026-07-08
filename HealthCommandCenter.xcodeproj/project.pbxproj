@@ -1,0 +1,485 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		01A000000000000000000101 /* HealthCommandCenterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000001 /* HealthCommandCenterApp.swift */; };
+		01A000000000000000000102 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000002 /* RootView.swift */; };
+		01A000000000000000000103 /* CheckIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000003 /* CheckIn.swift */; };
+		01A000000000000000000104 /* HealthSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000004 /* HealthSnapshot.swift */; };
+		01A000000000000000000105 /* ReadinessCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000005 /* ReadinessCategory.swift */; };
+		01A000000000000000000106 /* HealthDataProviding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000006 /* HealthDataProviding.swift */; };
+		01A000000000000000000107 /* HealthKitHealthDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000007 /* HealthKitHealthDataService.swift */; };
+		01A000000000000000000108 /* LocalStorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000008 /* LocalStorageService.swift */; };
+		01A000000000000000000109 /* OuraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000009 /* OuraService.swift */; };
+		01A00000000000000000010A /* ReadinessClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000000A /* ReadinessClassifier.swift */; };
+		01A00000000000000000010B /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000000B /* AppViewModel.swift */; };
+		01A00000000000000000010C /* CheckInViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000000C /* CheckInViewModel.swift */; };
+		01A00000000000000000010D /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000000D /* Components.swift */; };
+		01A00000000000000000010E /* GreetingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000000E /* GreetingView.swift */; };
+		01A00000000000000000010F /* CheckInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000000F /* CheckInView.swift */; };
+		01A000000000000000000110 /* ReadinessResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000010 /* ReadinessResultView.swift */; };
+		01A000000000000000000111 /* HomeDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000011 /* HomeDashboardView.swift */; };
+		01A000000000000000000112 /* PlaceholderViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000012 /* PlaceholderViews.swift */; };
+		01A000000000000000000113 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000013 /* ProfileView.swift */; };
+		01A000000000000000000114 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000014 /* HealthKit.framework */; };
+		01A000000000000000000115 /* WorkoutPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000017 /* WorkoutPlan.swift */; };
+		01A000000000000000000116 /* PlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000018 /* PlanView.swift */; };
+		01A000000000000000000117 /* RitualPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000019 /* RitualPlan.swift */; };
+		01A000000000000000000118 /* RitualView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000001A /* RitualView.swift */; };
+		01A000000000000000000119 /* ProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000001B /* ProgressView.swift */; };
+		01A00000000000000000011A /* ProfileSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000001C /* ProfileSettings.swift */; };
+		01A00000000000000000011B /* DailyPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000001D /* DailyPlan.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		01A000000000000000000001 /* HealthCommandCenterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCommandCenterApp.swift; sourceTree = "<group>"; };
+		01A000000000000000000002 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		01A000000000000000000003 /* CheckIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckIn.swift; sourceTree = "<group>"; };
+		01A000000000000000000004 /* HealthSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSnapshot.swift; sourceTree = "<group>"; };
+		01A000000000000000000005 /* ReadinessCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadinessCategory.swift; sourceTree = "<group>"; };
+		01A000000000000000000006 /* HealthDataProviding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataProviding.swift; sourceTree = "<group>"; };
+		01A000000000000000000007 /* HealthKitHealthDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitHealthDataService.swift; sourceTree = "<group>"; };
+		01A000000000000000000008 /* LocalStorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStorageService.swift; sourceTree = "<group>"; };
+		01A000000000000000000009 /* OuraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OuraService.swift; sourceTree = "<group>"; };
+		01A00000000000000000000A /* ReadinessClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadinessClassifier.swift; sourceTree = "<group>"; };
+		01A00000000000000000000B /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
+		01A00000000000000000000C /* CheckInViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInViewModel.swift; sourceTree = "<group>"; };
+		01A00000000000000000000D /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		01A00000000000000000000E /* GreetingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GreetingView.swift; sourceTree = "<group>"; };
+		01A00000000000000000000F /* CheckInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInView.swift; sourceTree = "<group>"; };
+		01A000000000000000000010 /* ReadinessResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadinessResultView.swift; sourceTree = "<group>"; };
+		01A000000000000000000011 /* HomeDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeDashboardView.swift; sourceTree = "<group>"; };
+		01A000000000000000000012 /* PlaceholderViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceholderViews.swift; sourceTree = "<group>"; };
+		01A000000000000000000013 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		01A000000000000000000014 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
+		01A000000000000000000015 /* HealthCommandCenter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HealthCommandCenter.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		01A000000000000000000016 /* HealthCommandCenter.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HealthCommandCenter.entitlements; sourceTree = "<group>"; };
+		01A000000000000000000017 /* WorkoutPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutPlan.swift; sourceTree = "<group>"; };
+		01A000000000000000000018 /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
+		01A000000000000000000019 /* RitualPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RitualPlan.swift; sourceTree = "<group>"; };
+		01A00000000000000000001A /* RitualView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RitualView.swift; sourceTree = "<group>"; };
+		01A00000000000000000001B /* ProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressView.swift; sourceTree = "<group>"; };
+		01A00000000000000000001C /* ProfileSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSettings.swift; sourceTree = "<group>"; };
+		01A00000000000000000001D /* DailyPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyPlan.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		01A000000000000000000020 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				01A000000000000000000114 /* HealthKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		01A000000000000000000030 = {
+			isa = PBXGroup;
+			children = (
+				01A000000000000000000040 /* HealthCommandCenter */,
+				01A000000000000000000050 /* Frameworks */,
+				01A000000000000000000060 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		01A000000000000000000040 /* HealthCommandCenter */ = {
+			isa = PBXGroup;
+			children = (
+				01A000000000000000000016 /* HealthCommandCenter.entitlements */,
+				01A000000000000000000041 /* App */,
+				01A000000000000000000042 /* Models */,
+				01A000000000000000000043 /* Services */,
+				01A000000000000000000044 /* ViewModels */,
+				01A000000000000000000045 /* Components */,
+				01A000000000000000000046 /* Views */,
+			);
+			path = HealthCommandCenter;
+			sourceTree = "<group>";
+		};
+		01A000000000000000000041 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				01A000000000000000000001 /* HealthCommandCenterApp.swift */,
+				01A000000000000000000002 /* RootView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		01A000000000000000000042 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				01A000000000000000000003 /* CheckIn.swift */,
+				01A000000000000000000004 /* HealthSnapshot.swift */,
+				01A000000000000000000005 /* ReadinessCategory.swift */,
+				01A000000000000000000017 /* WorkoutPlan.swift */,
+				01A000000000000000000019 /* RitualPlan.swift */,
+				01A00000000000000000001C /* ProfileSettings.swift */,
+				01A00000000000000000001D /* DailyPlan.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		01A000000000000000000043 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				01A000000000000000000006 /* HealthDataProviding.swift */,
+				01A000000000000000000007 /* HealthKitHealthDataService.swift */,
+				01A000000000000000000008 /* LocalStorageService.swift */,
+				01A000000000000000000009 /* OuraService.swift */,
+				01A00000000000000000000A /* ReadinessClassifier.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		01A000000000000000000044 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				01A00000000000000000000B /* AppViewModel.swift */,
+				01A00000000000000000000C /* CheckInViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		01A000000000000000000045 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				01A00000000000000000000D /* Components.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		01A000000000000000000046 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				01A00000000000000000000E /* GreetingView.swift */,
+				01A00000000000000000000F /* CheckInView.swift */,
+				01A000000000000000000010 /* ReadinessResultView.swift */,
+				01A000000000000000000011 /* HomeDashboardView.swift */,
+				01A000000000000000000012 /* PlaceholderViews.swift */,
+				01A000000000000000000013 /* ProfileView.swift */,
+				01A000000000000000000018 /* PlanView.swift */,
+				01A00000000000000000001A /* RitualView.swift */,
+				01A00000000000000000001B /* ProgressView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		01A000000000000000000050 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				01A000000000000000000014 /* HealthKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		01A000000000000000000060 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				01A000000000000000000015 /* HealthCommandCenter.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		01A000000000000000000070 /* HealthCommandCenter */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 01A000000000000000000090 /* Build configuration list for PBXNativeTarget "HealthCommandCenter" */;
+			buildPhases = (
+				01A000000000000000000080 /* Sources */,
+				01A000000000000000000020 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HealthCommandCenter;
+			productName = HealthCommandCenter;
+			productReference = 01A000000000000000000015 /* HealthCommandCenter.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		01A000000000000000000071 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					01A000000000000000000070 = {
+						CreatedOnToolsVersion = 16.0;
+						SystemCapabilities = {
+							com.apple.HealthKit = {
+								enabled = 1;
+							};
+						};
+					};
+				};
+			};
+			buildConfigurationList = 01A000000000000000000091 /* Build configuration list for PBXProject "HealthCommandCenter" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 01A000000000000000000030;
+			productRefGroup = 01A000000000000000000060 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				01A000000000000000000070 /* HealthCommandCenter */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		01A000000000000000000080 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				01A000000000000000000101 /* HealthCommandCenterApp.swift in Sources */,
+				01A000000000000000000102 /* RootView.swift in Sources */,
+				01A000000000000000000103 /* CheckIn.swift in Sources */,
+				01A000000000000000000104 /* HealthSnapshot.swift in Sources */,
+				01A000000000000000000105 /* ReadinessCategory.swift in Sources */,
+				01A000000000000000000106 /* HealthDataProviding.swift in Sources */,
+				01A000000000000000000107 /* HealthKitHealthDataService.swift in Sources */,
+				01A000000000000000000108 /* LocalStorageService.swift in Sources */,
+				01A000000000000000000109 /* OuraService.swift in Sources */,
+				01A00000000000000000010A /* ReadinessClassifier.swift in Sources */,
+				01A00000000000000000010B /* AppViewModel.swift in Sources */,
+				01A00000000000000000010C /* CheckInViewModel.swift in Sources */,
+				01A00000000000000000010D /* Components.swift in Sources */,
+				01A00000000000000000010E /* GreetingView.swift in Sources */,
+				01A00000000000000000010F /* CheckInView.swift in Sources */,
+				01A000000000000000000110 /* ReadinessResultView.swift in Sources */,
+				01A000000000000000000111 /* HomeDashboardView.swift in Sources */,
+				01A000000000000000000112 /* PlaceholderViews.swift in Sources */,
+				01A000000000000000000113 /* ProfileView.swift in Sources */,
+				01A000000000000000000115 /* WorkoutPlan.swift in Sources */,
+				01A000000000000000000116 /* PlanView.swift in Sources */,
+				01A000000000000000000117 /* RitualPlan.swift in Sources */,
+				01A000000000000000000118 /* RitualView.swift in Sources */,
+				01A000000000000000000119 /* ProgressView.swift in Sources */,
+				01A00000000000000000011A /* ProfileSettings.swift in Sources */,
+				01A00000000000000000011B /* DailyPlan.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		01A000000000000000000092 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		01A000000000000000000093 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		01A000000000000000000094 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = HealthCommandCenter/HealthCommandCenter.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 43V4UB543R;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Health Command Center";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Command Center uses sleep, activity, heart, and body metrics to personalize Brian's daily readiness mission.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.brian.healthcommandcenter;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		01A000000000000000000095 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = HealthCommandCenter/HealthCommandCenter.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 43V4UB543R;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Health Command Center";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Command Center uses sleep, activity, heart, and body metrics to personalize Brian's daily readiness mission.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.brian.healthcommandcenter;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		01A000000000000000000090 /* Build configuration list for PBXNativeTarget "HealthCommandCenter" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				01A000000000000000000094 /* Debug */,
+				01A000000000000000000095 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		01A000000000000000000091 /* Build configuration list for PBXProject "HealthCommandCenter" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				01A000000000000000000092 /* Debug */,
+				01A000000000000000000093 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 01A000000000000000000071 /* Project object */;
+}

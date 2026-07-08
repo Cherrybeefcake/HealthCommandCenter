@@ -1,0 +1,455 @@
+import SwiftUI
+
+struct RitualView: View {
+    @EnvironmentObject private var appModel: AppViewModel
+
+    private var category: ReadinessCategory {
+        appModel.activeCategory
+    }
+
+    private var items: [RitualItem] {
+        RitualLibrary.items(for: category)
+    }
+
+    private var completedCount: Int {
+        items.filter { appModel.isRitualItemComplete($0.id) }.count
+    }
+
+    private var dailyPlan: DailyPlan {
+        appModel.todayDailyPlan
+    }
+
+    var body: some View {
+        ZStack {
+            CommandBackground(category: category)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: CommandDesign.stackSpacing) {
+                    ScreenHeader(
+                        eyebrow: "Ritual",
+                        title: "Today's Ritual",
+                        subtitle: "Brian, this is the daily floor. Make it fit the readiness you actually have."
+                    )
+
+                    ritualSummary
+                    dailyPlanPanel
+                    SleepPrepSection(status: appModel.todayRecoveryStatus(), phase: appModel.programPhase, accent: category.accent)
+                    NutritionLogSection(accent: category.accent)
+
+                    if completedCount == 0 {
+                        EmptyStateCard(
+                            title: "Start with the smallest useful win",
+                            message: "Pick one ritual item that lowers friction for the rest of the day. Brian does not need a perfect streak to keep the system alive.",
+                            icon: "sparkle",
+                            accent: category.accent
+                        )
+                    }
+
+                    ForEach(items) { item in
+                        RitualItemCard(item: item, accent: category.accent)
+                    }
+                }
+                .padding(CommandDesign.pagePadding)
+            }
+        }
+        .onAppear {
+            DispatchQueue.main.async {
+                appModel.prepareTodayStateIfNeeded()
+            }
+        }
+    }
+
+    private var ritualSummary: some View {
+        GlassPanel {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(category.rawValue)
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(category.accent)
+                        Text(RitualLibrary.coachingLine(for: category))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineSpacing(3)
+                    }
+                    Spacer()
+                    Text("\(completedCount)/\(items.count)")
+                        .font(.title3.weight(.bold))
+                        .monospacedDigit()
+                        .foregroundStyle(category.accent)
+                }
+
+                ProgressView(value: Double(completedCount), total: Double(max(items.count, 1)))
+                    .tint(category.accent)
+
+                Text(summaryLine)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var dailyPlanPanel: some View {
+        CommandCard {
+            VStack(alignment: .leading, spacing: 14) {
+                SectionHeader(
+                    title: "Today's Ritual Plan",
+                    subtitle: dailyPlan.ritualRecommendation,
+                    icon: "moon.stars",
+                    accent: category.accent
+                )
+
+                HStack(spacing: 10) {
+                    ritualPlanMetric("Recovery", dailyPlan.recoveryFocus, "bed.double")
+                    ritualPlanMetric("Caffeine", dailyPlan.caffeineCutoffGuidance, "cup.and.saucer")
+                }
+
+                Text(dailyPlan.sleepPriority)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func ritualPlanMetric(_ title: String, _ value: String, _ icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Image(systemName: icon)
+                .foregroundStyle(category.accent)
+            Text(title)
+                .font(.caption.weight(.semibold))
+            Text(value)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(4)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+    }
+
+    private var summaryLine: String {
+        if completedCount == 0 {
+            return "Start with the easiest useful item."
+        }
+        if completedCount == items.count {
+            return "Ritual complete. Let that be enough."
+        }
+        return "\(items.count - completedCount) items left. Keep it calm and direct."
+    }
+}
+
+private struct RitualItemCard: View {
+    @EnvironmentObject private var appModel: AppViewModel
+    let item: RitualItem
+    let accent: Color
+    @State private var isExpanded = false
+
+    private var isComplete: Bool {
+        appModel.isRitualItemComplete(item.id)
+    }
+
+    var body: some View {
+        GlassPanel {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 12) {
+                    Button {
+                        appModel.setRitualItem(item.id, completed: !isComplete)
+                    } label: {
+                        Image(systemName: isComplete ? "checkmark.circle.fill" : "circle")
+                            .font(.title2)
+                            .foregroundStyle(isComplete ? accent : .secondary)
+                            .frame(width: 32, height: 32)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(isComplete ? "Mark incomplete" : "Mark complete")
+
+                    VStack(alignment: .leading, spacing: 7) {
+                        HStack(spacing: 8) {
+                            Text(item.title)
+                                .font(.headline)
+                            if !item.isRequired {
+                                StatusPill(title: "Optional", accent: Color.gray)
+                            }
+                        }
+
+                        Text(item.description)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineSpacing(3)
+                    }
+
+                    Spacer(minLength: 6)
+
+                    Button {
+                        isExpanded.toggle()
+                    } label: {
+                        Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle")
+                            .font(.title3)
+                            .foregroundStyle(accent)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Text(item.recommendation)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(accent)
+                    .lineSpacing(3)
+
+                if isExpanded {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(item.detailTitle)
+                            .font(.caption.weight(.semibold))
+                            .textCase(.uppercase)
+                            .foregroundStyle(.secondary)
+
+                        ForEach(item.details, id: \.self) { detail in
+                            HStack(alignment: .top, spacing: 8) {
+                                Circle()
+                                    .fill(accent)
+                                    .frame(width: 5, height: 5)
+                                    .padding(.top, 7)
+                                Text(detail)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                    .padding(12)
+                    .background(.black.opacity(0.22), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                }
+            }
+        }
+    }
+}
+
+private struct SleepPrepSection: View {
+    let status: RecoveryStatus
+    let phase: ProgramPhase
+    let accent: Color
+
+    var body: some View {
+        CommandCard {
+            VStack(alignment: .leading, spacing: 14) {
+                SectionHeader(
+                    title: "Sleep Prep",
+                    subtitle: status.coachingLine,
+                    icon: "moon.zzz",
+                    accent: accent
+                )
+
+                sleepPrepRow("Caffeine cutoff", status.caffeineGuidance, "cup.and.saucer")
+                sleepPrepRow("Wind-down", status.windDownGuidance, "lightswitch.off")
+                sleepPrepRow("Screen and light", "Dim screens, lower light, and make the room boring before sleep.", "sunset")
+                sleepPrepRow("2-minute reset", "Breathe in for 4, out for 6. Keep shoulders easy and jaw unclenched.", "lungs")
+                sleepPrepRow("Nap strategy", status.napGuidance, "bed.double")
+
+                if phase == .nightShift {
+                    phaseNote("Night shift", "Protect the sleep window after shift. Use dark, cool, quiet, and treat caffeine timing as part of recovery.")
+                } else if phase == .newBaby {
+                    phaseNote("New-baby season", "Lower the floor. Naps, patience, and avoiding overreach count as productive work.")
+                }
+            }
+        }
+    }
+
+    private func sleepPrepRow(_ title: String, _ text: String, _ icon: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon)
+                .foregroundStyle(accent)
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .textCase(.uppercase)
+                    .foregroundStyle(.secondary)
+                Text(text)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func phaseNote(_ title: String, _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            StatusPill(title: title, accent: accent)
+            Text(text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(10)
+        .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+    }
+}
+
+private struct NutritionLogSection: View {
+    @EnvironmentObject private var appModel: AppViewModel
+    let accent: Color
+
+    @State private var caloriesText = ""
+    @State private var proteinText = ""
+    @State private var waterText = ""
+    @State private var fiberText = ""
+    @State private var cronometerCompleted = false
+    @State private var notes = ""
+
+    var body: some View {
+        CommandCard {
+            VStack(alignment: .leading, spacing: 14) {
+                SectionHeader(
+                    title: "Nutrition Anchors",
+                    subtitle: "Cronometer stays the detailed food log. This is Brian's daily summary.",
+                    icon: "fork.knife",
+                    accent: accent
+                )
+
+                Toggle(isOn: $cronometerCompleted) {
+                    Label("Cronometer completed", systemImage: cronometerCompleted ? "checkmark.circle.fill" : "circle")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .tint(accent)
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    nutritionField("Calories", text: $caloriesText, placeholder: "Optional")
+                    nutritionField("Protein", text: $proteinText, placeholder: "160g target")
+                    nutritionField("Water", text: $waterText, placeholder: "100 oz target")
+                    nutritionField("Fiber", text: $fiberText, placeholder: "25-35g guide")
+                }
+
+                TextField("Notes: meal quality, appetite, simple wins", text: $notes, axis: .vertical)
+                    .lineLimit(2...4)
+                    .padding(12)
+                    .background(.black.opacity(0.28), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "target")
+                        .foregroundStyle(accent)
+                    Text("Body recomposition anchors: protein floor, hydration, fiber, and enough Cronometer visibility to stay honest.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineSpacing(3)
+                }
+
+                SecondaryActionButton(title: "Save Nutrition Summary", icon: "checkmark", accent: accent) {
+                    save()
+                }
+
+                nutritionGuidance
+            }
+        }
+        .onAppear {
+            loadFromToday()
+        }
+    }
+
+    private func nutritionField(_ title: String, text: Binding<String>, placeholder: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .textCase(.uppercase)
+                .foregroundStyle(.secondary)
+            TextField(placeholder, text: text)
+                .padding(12)
+                .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+        }
+    }
+
+    private var nutritionGuidance: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Divider()
+                .overlay(.white.opacity(0.16))
+
+            SectionHeader(
+                title: "Nutrition Guidance",
+                subtitle: "Flexible templates, not a rigid meal plan.",
+                icon: "list.bullet.rectangle",
+                accent: accent
+            )
+
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "plus.circle")
+                    .foregroundStyle(accent)
+                Text("Simple formula: protein + carb + fruit or vegetable + healthy fat.")
+                    .font(.subheadline.weight(.medium))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Text("Work-shift note: use the griddle for protein, the fridge for rice/produce, and the blender for a quick shake when time is thin.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            ForEach(MealTemplateLibrary.todaySuggestions) { template in
+                MealTemplateCompactRow(template: template, accent: accent)
+            }
+        }
+    }
+
+    private func loadFromToday() {
+        let log = appModel.todayNutritionLog()
+        caloriesText = log.caloriesLogged.map(String.init) ?? ""
+        proteinText = log.proteinGrams.map(String.init) ?? ""
+        waterText = log.waterOunces.map(String.init) ?? ""
+        fiberText = log.fiberGrams.map(String.init) ?? ""
+        cronometerCompleted = log.cronometerCompleted
+        notes = log.notes
+    }
+
+    private func save() {
+        let protein = intValue(proteinText)
+        let water = intValue(waterText)
+        let targets = NutritionTargets.brianDefault
+        appModel.saveNutritionLog(
+            DailyNutritionLog(
+                dateKey: RitualLibrary.dateKey(),
+                caloriesLogged: intValue(caloriesText),
+                proteinGrams: protein,
+                waterOunces: water,
+                fiberGrams: intValue(fiberText),
+                cronometerCompleted: cronometerCompleted,
+                proteinTargetHit: protein.map { $0 >= targets.proteinGrams } ?? false,
+                waterTargetHit: water.map { $0 >= targets.waterOunces } ?? false,
+                notes: notes.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
+        )
+    }
+
+    private func intValue(_ text: String) -> Int? {
+        Int(text.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+}
+
+private struct MealTemplateCompactRow: View {
+    let template: MealTemplate
+    let accent: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text(template.title)
+                    .font(.subheadline.weight(.semibold))
+                Spacer(minLength: 8)
+                StatusPill(title: template.mealType.rawValue, accent: accent)
+            }
+
+            Text("\(template.proteinIdea) + \(template.carbIdea)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(template.prepNotes)
+                .font(.caption2)
+                .foregroundStyle(.secondary.opacity(0.9))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(10)
+        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+    }
+}
