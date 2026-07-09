@@ -75,6 +75,7 @@ final class AppViewModel: ObservableObject {
     @Published var programPhase: ProgramPhase
     @Published var trainingLocation: TrainingLocation
     @Published var workoutTimePreference: WorkoutTimePreference
+    @Published var personalizationSettings: PersonalizationSettings
     @Published var reminderSettings: ReminderSettings
     @Published var ouraConnectionSettings: OuraConnectionSettings
     @Published var notificationPermissionStatus: String = "Not requested"
@@ -108,6 +109,7 @@ final class AppViewModel: ObservableObject {
         self.programPhase = storage.programPhase
         self.trainingLocation = storage.trainingLocation
         self.workoutTimePreference = storage.workoutTimePreference
+        self.personalizationSettings = storage.personalizationSettings
         self.reminderSettings = storage.reminderSettings
         self.ouraConnectionSettings = storage.ouraConnectionSettings
     }
@@ -148,9 +150,13 @@ final class AppViewModel: ObservableObject {
             ritualCompletedCount: todayRitualCompletedCount(),
             ritualTotalCount: ritualItems.count,
             nutritionLog: todayNutritionLog(),
-            nutritionTargets: NutritionTargets.brianDefault,
+            nutritionTargets: nutritionTargets,
             recoveryStatus: todayRecoveryStatus()
         )
+    }
+
+    var nutritionTargets: NutritionTargets {
+        NutritionTargets.from(personalizationSettings)
     }
 
     var healthAvailabilityText: String {
@@ -182,6 +188,29 @@ final class AppViewModel: ObservableObject {
         storage.userName = userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Brian" : userName
         storage.hasSeenGreeting = true
         route = .home
+    }
+
+    func completeOnboarding(
+        name: String,
+        personalization: PersonalizationSettings,
+        programPhase: ProgramPhase,
+        trainingLocation: TrainingLocation,
+        workoutTimePreference: WorkoutTimePreference,
+        recoverySource: RecoveryDataSource
+    ) {
+        userName = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Brian" : name
+        storage.userName = userName
+        savePersonalizationSettings(personalization)
+        setProgramPhase(programPhase)
+        setTrainingLocation(trainingLocation)
+        setWorkoutTimePreference(workoutTimePreference)
+        var ouraSettings = ouraConnectionSettings
+        ouraSettings.preferredRecoverySource = recoverySource
+        saveOuraConnectionSettings(ouraSettings)
+        storage.hasSeenGreeting = true
+        selectedTab = .today
+        route = .home
+        appendDebug("Onboarding completed")
     }
 
     func refreshHealthData() async {
@@ -382,10 +411,10 @@ final class AppViewModel: ObservableObject {
         if !log.cronometerCompleted {
             return "Log Cronometer"
         }
-        if log.proteinGrams == nil || !(log.proteinTargetHit || (log.proteinGrams ?? 0) >= NutritionTargets.brianDefault.proteinGrams) {
+        if log.proteinGrams == nil || !(log.proteinTargetHit || (log.proteinGrams ?? 0) >= nutritionTargets.proteinGrams) {
             return "Protein next"
         }
-        if log.waterOunces == nil || !(log.waterTargetHit || (log.waterOunces ?? 0) >= NutritionTargets.brianDefault.waterOunces) {
+        if log.waterOunces == nil || !(log.waterTargetHit || (log.waterOunces ?? 0) >= nutritionTargets.waterOunces) {
             return "Hydrate"
         }
         return "Anchors logged"
@@ -658,6 +687,12 @@ final class AppViewModel: ObservableObject {
         appendDebug("Workout time set: \(preference.rawValue)")
     }
 
+    func savePersonalizationSettings(_ settings: PersonalizationSettings) {
+        personalizationSettings = settings
+        storage.personalizationSettings = settings
+        appendDebug("Personalization saved")
+    }
+
     func saveOuraConnectionSettings(_ settings: OuraConnectionSettings) {
         ouraConnectionSettings = settings
         storage.ouraConnectionSettings = settings
@@ -747,6 +782,7 @@ final class AppViewModel: ObservableObject {
         programPhase = storage.programPhase
         trainingLocation = storage.trainingLocation
         workoutTimePreference = storage.workoutTimePreference
+        personalizationSettings = storage.personalizationSettings
         reminderSettings = storage.reminderSettings
         ouraConnectionSettings = storage.ouraConnectionSettings
         notificationPermissionStatus = "Not requested"

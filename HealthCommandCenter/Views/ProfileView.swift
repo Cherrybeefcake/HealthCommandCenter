@@ -79,7 +79,7 @@ struct ProfileView: View {
                         .foregroundStyle(appModel.activeCategory.accent)
                 }
 
-                Text("5'6\" | around 174 lb | restarting training | body composition as trend data")
+                Text("\(appModel.personalizationSettings.baselineText) | body composition as trend data")
                     .font(.headline)
 
                 Text("Private, local-first command center for rebuilding consistency around real life constraints.")
@@ -268,6 +268,10 @@ struct ProfileView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineSpacing(3)
+                StatusPill(
+                    title: appModel.personalizationSettings.equipmentConfirmed ? "Confirmed in onboarding" : "Needs confirmation",
+                    accent: appModel.activeCategory.accent
+                )
             }
         }
     }
@@ -362,7 +366,7 @@ struct ProfileView: View {
 
     private var nutritionPreferencesSection: some View {
         settingsSection("Nutrition Preferences", icon: "fork.knife") {
-            let targets = NutritionTargets.brianDefault
+            let targets = appModel.nutritionTargets
             preferenceRow("Goal", targets.goal)
             preferenceRow("Protein target", "\(targets.proteinGrams)g/day")
             preferenceRow("Water target", "\(targets.waterOunces) oz/day")
@@ -457,6 +461,7 @@ struct ProfileView: View {
                     fileRow("daily_nutrition_logs.json", "Manual nutrition summaries by calendar day")
                     fileRow("oura_manual_snapshots.json", "Manual/mock Oura recovery test snapshots")
                     fileRow("body_metrics_entries.json", "Manual body metrics and smart-scale trend entries")
+                    fileRow("UserDefaults personalizationSettings", "Onboarding baseline, goal, equipment, and nutrition anchors")
                     fileRow("UserDefaults reminderSettings", "Reminder toggles, times, and local settings")
                     fileRow("UserDefaults ouraConnectionSettings", "Oura foundation mode and preferred recovery source")
 

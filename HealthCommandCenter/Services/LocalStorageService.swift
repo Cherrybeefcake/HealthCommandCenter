@@ -61,6 +61,20 @@ final class LocalStorageService {
         }
     }
 
+    var personalizationSettings: PersonalizationSettings {
+        get {
+            guard let data = userDefaults.data(forKey: "personalizationSettings"),
+                  let settings = try? JSONDecoder.healthCommand.decode(PersonalizationSettings.self, from: data) else {
+                return .brianDefault
+            }
+            return settings
+        }
+        set {
+            guard let data = try? JSONEncoder.healthCommand.encode(newValue) else { return }
+            userDefaults.set(data, forKey: "personalizationSettings")
+        }
+    }
+
     var reminderSettings: ReminderSettings {
         get {
             guard let data = userDefaults.data(forKey: "reminderSettings"),
@@ -169,7 +183,7 @@ final class LocalStorageService {
         try? FileManager.default.removeItem(at: nutritionLogsURL)
         try? FileManager.default.removeItem(at: ouraManualSnapshotsURL)
         try? FileManager.default.removeItem(at: bodyMetricsEntriesURL)
-        ["userName", "hasSeenGreeting", "programPhase", "trainingLocation", "workoutTimePreference", "reminderSettings", "ouraConnectionSettings"].forEach {
+        ["userName", "hasSeenGreeting", "programPhase", "trainingLocation", "workoutTimePreference", "personalizationSettings", "reminderSettings", "ouraConnectionSettings"].forEach {
             userDefaults.removeObject(forKey: $0)
         }
     }

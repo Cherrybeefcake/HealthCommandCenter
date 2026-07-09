@@ -123,14 +123,16 @@ HealthKit readings are best tested on a real iPhone with Health data available. 
 ## MVP QA Checklist
 
 - First launch:
-  - App opens into the greeting on a fresh install or after deleting all local app data.
-  - Greeting language feels personal to Brian and routes cleanly into Home.
+  - App opens into the greeting/setup flow on a fresh install or after deleting all local app data.
+  - Brian can confirm defaults quickly: name, goal, height, starting weight, program phase, training location, workout time, equipment, nutrition anchors, and recovery source.
+  - Setup routes cleanly into Home.
   - Home shows `Start Check In` when no check-in exists today.
   - Check In starts from the Home mission button.
 - Normal relaunch:
   - App opens to Home after the greeting has been completed.
   - Home owns the no-check-in state and does not force Check In on launch.
-  - Use Profile -> Reset Controls -> `Reset opening screen only` to test the greeting again without deleting check-ins, workout logs, ritual logs, or settings.
+  - Use Profile -> Reset Controls -> `Reset opening screen only` to test greeting/setup again without deleting check-ins, workout logs, ritual logs, or settings.
+  - Reset opening screen only should show current saved settings as setup defaults.
 - Check In:
   - `Connect Apple Health` is user-initiated.
   - Check In can be completed with no HealthKit data.
@@ -158,7 +160,7 @@ HealthKit readings are best tested on a real iPhone with Health data available. 
   - Weekly overview reflects check-ins, workout logs, ritual completions, and consistency.
   - Recent workout, ritual, and readiness rows populate after using those flows.
 - Profile:
-  - Program Phase, Training Location, and Workout Time persist after relaunch.
+  - Program Phase, Training Location, Workout Time, nutrition anchors, and baseline personalization persist after relaunch.
   - Storage/debug disclosures open cleanly.
   - `Reset opening screen only` requires confirmation and resets only the greeting/onboarding flag.
   - Destructive reset controls require confirmation before deleting data.
@@ -285,9 +287,10 @@ Repo-local git identity is configured for Brian Cady.
   - `programPhase`: selected Program Phase.
   - `trainingLocation`: selected Training Location.
   - `workoutTimePreference`: selected Workout Time.
+  - `personalizationSettings`: onboarding baseline, goal, equipment confirmation, avoidances, and nutrition anchors.
   - `reminderSettings`: optional local reminder toggles and daily reminder times.
   - `ouraConnectionSettings`: Oura foundation mode and preferred recovery source.
-- Profile -> Reset Controls -> `Reset opening screen only` clears only `hasSeenGreeting`.
+- Profile -> Reset Controls -> `Reset opening screen only` clears only `hasSeenGreeting`; saved personalization and logs remain available as setup defaults.
 
 ## Validation
 

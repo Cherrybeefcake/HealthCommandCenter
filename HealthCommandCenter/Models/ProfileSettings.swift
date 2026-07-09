@@ -48,6 +48,52 @@ struct NutritionTargets: Hashable {
         proteinPowder: "Yes",
         creatine: "Interested / open"
     )
+
+    static func from(_ profile: PersonalizationSettings) -> NutritionTargets {
+        NutritionTargets(
+            goal: profile.goal,
+            proteinGrams: profile.proteinTargetGrams,
+            waterOunces: profile.waterTargetOunces,
+            fiberGuidance: "25-35g/day as tolerated",
+            avoids: profile.avoidanceText,
+            proteinPowder: "Yes",
+            creatine: "Interested / open"
+        )
+    }
+}
+
+struct PersonalizationSettings: Codable, Hashable {
+    var goal: String
+    var heightText: String
+    var startingWeightPounds: Double?
+    var equipmentConfirmed: Bool
+    var avoidsSeafood: Bool
+    var avoidsMushrooms: Bool
+    var proteinTargetGrams: Int
+    var waterTargetOunces: Int
+
+    static let brianDefault = PersonalizationSettings(
+        goal: "Body recomposition / look better / feel better / get stronger",
+        heightText: "5'6\"",
+        startingWeightPounds: 174,
+        equipmentConfirmed: true,
+        avoidsSeafood: true,
+        avoidsMushrooms: true,
+        proteinTargetGrams: 160,
+        waterTargetOunces: 100
+    )
+
+    var baselineText: String {
+        let weight = startingWeightPounds.map { String(format: "around %.0f lb", $0) } ?? "starting weight open"
+        return "\(heightText) | \(weight) | restarting training"
+    }
+
+    var avoidanceText: String {
+        var avoids: [String] = []
+        if avoidsSeafood { avoids.append("seafood") }
+        if avoidsMushrooms { avoids.append("mushrooms") }
+        return avoids.isEmpty ? "No avoidances set" : avoids.joined(separator: " and ")
+    }
 }
 
 enum MealType: String, Codable, CaseIterable, Identifiable {

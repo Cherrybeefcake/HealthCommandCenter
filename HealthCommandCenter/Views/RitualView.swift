@@ -405,7 +405,7 @@ private struct NutritionLogSection: View {
     private func save() {
         let protein = intValue(proteinText)
         let water = intValue(waterText)
-        let targets = NutritionTargets.brianDefault
+        let targets = appModel.nutritionTargets
         appModel.saveNutritionLog(
             DailyNutritionLog(
                 dateKey: RitualLibrary.dateKey(),
