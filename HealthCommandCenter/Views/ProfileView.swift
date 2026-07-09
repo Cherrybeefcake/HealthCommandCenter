@@ -19,6 +19,7 @@ struct ProfileView: View {
                     profileSummary
                     programPhaseSection
                     trainingPreferencesSection
+                    remindersSection
                     nutritionPreferencesSection
                     dataStorageSection
                     resetControlsSection
@@ -37,6 +38,9 @@ struct ProfileView: View {
                 primaryButton: confirmButton,
                 secondaryButton: .cancel()
             )
+        }
+        .task {
+            await appModel.refreshNotificationStatus()
         }
     }
 
@@ -123,6 +127,66 @@ struct ProfileView: View {
                     .foregroundStyle(.secondary)
                 Text("Adjustable dumbbells 5-55 lb, resistance bands, incline bench, mat, and work gym access.")
                     .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(3)
+            }
+        }
+    }
+
+    private var remindersSection: some View {
+        settingsSection("Reminders", icon: "bell.badge") {
+            Text("Optional local reminders. Turn them on only if they help Brian start the next right action without noise.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineSpacing(3)
+
+            Toggle("Enable reminders", isOn: reminderToggleBinding(\.remindersEnabled))
+                .font(.headline)
+                .tint(appModel.activeCategory.accent)
+
+            Divider()
+                .overlay(.white.opacity(0.16))
+
+            reminderRow(
+                title: "Daily Check In",
+                subtitle: "Start with the data. Classify today.",
+                icon: "checkmark.seal",
+                enabledKeyPath: \.checkInReminderEnabled,
+                timeKeyPath: \.checkInReminderTime
+            )
+
+            reminderRow(
+                title: "Ritual",
+                subtitle: "Keep the floor low. Finish today's ritual.",
+                icon: "sparkles",
+                enabledKeyPath: \.ritualReminderEnabled,
+                timeKeyPath: \.ritualReminderTime
+            )
+
+            reminderRow(
+                title: "Sleep Wind-Down",
+                subtitle: "Start the wind-down. Protect tomorrow.",
+                icon: "bed.double",
+                enabledKeyPath: \.sleepReminderEnabled,
+                timeKeyPath: \.sleepReminderTime
+            )
+
+            reminderRow(
+                title: "Nutrition / Cronometer",
+                subtitle: "Log Cronometer and hit the anchors.",
+                icon: "fork.knife",
+                enabledKeyPath: \.nutritionReminderEnabled,
+                timeKeyPath: \.nutritionReminderTime
+            )
+
+            HStack(spacing: 10) {
+                StatusPill(title: "Permission: \(appModel.notificationPermissionStatus)", accent: appModel.activeCategory.accent)
+                StatusPill(title: "\(appModel.scheduledReminderCount) scheduled", accent: appModel.activeCategory.accent)
+            }
+
+            if appModel.notificationPermissionStatus == "Denied" {
+                Text("Notifications are denied in iOS Settings. Reminder choices are saved, but Health Command Center cannot schedule alerts until permission is allowed.")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineSpacing(3)
             }
@@ -275,6 +339,67 @@ struct ProfileView: View {
             .pickerStyle(.menu)
             .tint(appModel.activeCategory.accent)
         }
+    }
+
+    private func reminderRow(
+        title: String,
+        subtitle: String,
+        icon: String,
+        enabledKeyPath: WritableKeyPath<ReminderSettings, Bool>,
+        timeKeyPath: WritableKeyPath<ReminderSettings, ReminderTime>
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: icon)
+                    .font(.headline)
+                    .foregroundStyle(appModel.activeCategory.accent)
+                    .frame(width: 24, height: 24)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Toggle(title, isOn: reminderToggleBinding(enabledKeyPath))
+                        .font(.subheadline.weight(.semibold))
+                        .tint(appModel.activeCategory.accent)
+                        .disabled(!appModel.reminderSettings.remindersEnabled)
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineSpacing(3)
+                }
+            }
+
+            DatePicker(
+                "Time",
+                selection: reminderTimeBinding(timeKeyPath),
+                displayedComponents: .hourAndMinute
+            )
+            .datePickerStyle(.compact)
+            .tint(appModel.activeCategory.accent)
+            .disabled(!appModel.reminderSettings.remindersEnabled || !appModel.reminderSettings[keyPath: enabledKeyPath])
+        }
+        .padding(10)
+        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+    }
+
+    private func reminderToggleBinding(_ keyPath: WritableKeyPath<ReminderSettings, Bool>) -> Binding<Bool> {
+        Binding(
+            get: { appModel.reminderSettings[keyPath: keyPath] },
+            set: { newValue in
+                var settings = appModel.reminderSettings
+                settings[keyPath: keyPath] = newValue
+                Task { await appModel.saveReminderSettings(settings) }
+            }
+        )
+    }
+
+    private func reminderTimeBinding(_ keyPath: WritableKeyPath<ReminderSettings, ReminderTime>) -> Binding<Date> {
+        Binding(
+            get: { appModel.reminderSettings[keyPath: keyPath].date() },
+            set: { newValue in
+                var settings = appModel.reminderSettings
+                settings[keyPath: keyPath] = ReminderTime.from(date: newValue)
+                Task { await appModel.saveReminderSettings(settings) }
+            }
+        )
     }
 
     private func recoveryCopy(for phase: ProgramPhase) -> String {

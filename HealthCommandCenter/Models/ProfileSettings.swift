@@ -249,6 +249,71 @@ struct DailyChartPoint: Identifiable, Hashable {
     }
 }
 
+struct ReminderTime: Codable, Hashable {
+    var hour: Int
+    var minute: Int
+
+    static let checkInDefault = ReminderTime(hour: 8, minute: 0)
+    static let ritualDefault = ReminderTime(hour: 18, minute: 30)
+    static let sleepDefault = ReminderTime(hour: 21, minute: 30)
+    static let nutritionDefault = ReminderTime(hour: 19, minute: 30)
+
+    var dateComponents: DateComponents {
+        DateComponents(hour: hour, minute: minute)
+    }
+
+    var displayText: String {
+        var components = DateComponents()
+        components.hour = hour
+        components.minute = minute
+        let calendar = Calendar.current
+        let date = calendar.date(from: components) ?? Date()
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter.string(from: date)
+    }
+
+    func date(on baseDate: Date = Date()) -> Date {
+        let calendar = Calendar.current
+        return calendar.date(
+            bySettingHour: hour,
+            minute: minute,
+            second: 0,
+            of: baseDate
+        ) ?? baseDate
+    }
+
+    static func from(date: Date) -> ReminderTime {
+        let components = Calendar.current.dateComponents([.hour, .minute], from: date)
+        return ReminderTime(hour: components.hour ?? 8, minute: components.minute ?? 0)
+    }
+}
+
+struct ReminderSettings: Codable, Hashable {
+    var remindersEnabled: Bool
+    var checkInReminderEnabled: Bool
+    var checkInReminderTime: ReminderTime
+    var ritualReminderEnabled: Bool
+    var ritualReminderTime: ReminderTime
+    var sleepReminderEnabled: Bool
+    var sleepReminderTime: ReminderTime
+    var nutritionReminderEnabled: Bool
+    var nutritionReminderTime: ReminderTime
+
+    static let `default` = ReminderSettings(
+        remindersEnabled: false,
+        checkInReminderEnabled: true,
+        checkInReminderTime: .checkInDefault,
+        ritualReminderEnabled: true,
+        ritualReminderTime: .ritualDefault,
+        sleepReminderEnabled: true,
+        sleepReminderTime: .sleepDefault,
+        nutritionReminderEnabled: false,
+        nutritionReminderTime: .nutritionDefault
+    )
+}
+
 struct DailyNutritionLog: Codable, Identifiable, Hashable {
     var id: String { dateKey }
     let dateKey: String

@@ -57,6 +57,20 @@ final class LocalStorageService {
         }
     }
 
+    var reminderSettings: ReminderSettings {
+        get {
+            guard let data = userDefaults.data(forKey: "reminderSettings"),
+                  let settings = try? JSONDecoder.healthCommand.decode(ReminderSettings.self, from: data) else {
+                return .default
+            }
+            return settings
+        }
+        set {
+            guard let data = try? JSONEncoder.healthCommand.encode(newValue) else { return }
+            userDefaults.set(data, forKey: "reminderSettings")
+        }
+    }
+
     func loadCheckIns() -> [CheckIn] {
         guard let data = try? Data(contentsOf: checkInsURL) else { return [] }
         return (try? JSONDecoder.healthCommand.decode([CheckIn].self, from: data)) ?? []
@@ -115,7 +129,7 @@ final class LocalStorageService {
         try? FileManager.default.removeItem(at: exerciseLogsURL)
         try? FileManager.default.removeItem(at: ritualLogsURL)
         try? FileManager.default.removeItem(at: nutritionLogsURL)
-        ["userName", "hasSeenGreeting", "programPhase", "trainingLocation", "workoutTimePreference"].forEach {
+        ["userName", "hasSeenGreeting", "programPhase", "trainingLocation", "workoutTimePreference", "reminderSettings"].forEach {
             userDefaults.removeObject(forKey: $0)
         }
     }

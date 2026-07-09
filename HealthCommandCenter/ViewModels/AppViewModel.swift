@@ -72,11 +72,15 @@ final class AppViewModel: ObservableObject {
     @Published var programPhase: ProgramPhase
     @Published var trainingLocation: TrainingLocation
     @Published var workoutTimePreference: WorkoutTimePreference
+    @Published var reminderSettings: ReminderSettings
+    @Published var notificationPermissionStatus: String = "Not requested"
+    @Published var scheduledReminderCount: Int = 0
 
     private let storage: LocalStorageService
     private let healthService: HealthDataProviding
     private let ouraService: OuraService
     private let classifier: ReadinessClassifier
+    private let notificationService: LocalNotificationService
     private var didBootstrap = false
     private var didRequestHealth = false
 
@@ -84,16 +88,19 @@ final class AppViewModel: ObservableObject {
         storage: LocalStorageService,
         healthService: HealthDataProviding,
         ouraService: OuraService,
-        classifier: ReadinessClassifier
+        classifier: ReadinessClassifier,
+        notificationService: LocalNotificationService = LocalNotificationService()
     ) {
         self.storage = storage
         self.healthService = healthService
         self.ouraService = ouraService
         self.classifier = classifier
+        self.notificationService = notificationService
         self.userName = storage.userName
         self.programPhase = storage.programPhase
         self.trainingLocation = storage.trainingLocation
         self.workoutTimePreference = storage.workoutTimePreference
+        self.reminderSettings = storage.reminderSettings
     }
 
     func bootstrap() async {
@@ -105,6 +112,7 @@ final class AppViewModel: ObservableObject {
         nutritionLogs = storage.loadNutritionLogs().sorted { $0.dateKey > $1.dateKey }
         prepareTodayStateIfNeeded()
         latestCheckIn = checkIns.first
+        await refreshNotificationStatus()
         route = storage.hasSeenGreeting ? .home : .greeting
     }
 
@@ -553,6 +561,34 @@ final class AppViewModel: ObservableObject {
         appendDebug("Workout time set: \(preference.rawValue)")
     }
 
+    func saveReminderSettings(_ settings: ReminderSettings) async {
+        reminderSettings = settings
+        storage.reminderSettings = settings
+
+        let status: NotificationDebugStatus
+        if settings.remindersEnabled {
+            status = await notificationService.scheduleDailyReminders(settings: settings)
+            if status.permissionStatusText == "Denied" {
+                appendDebug("Notifications denied. Reminder settings saved, but no reminders scheduled.")
+            } else {
+                appendDebug("Reminders scheduled: \(status.scheduledReminderCount)")
+            }
+        } else {
+            notificationService.cancelAllHealthCommandReminders()
+            status = await notificationService.debugStatus()
+            appendDebug("Reminders disabled")
+        }
+
+        notificationPermissionStatus = status.permissionStatusText
+        scheduledReminderCount = status.scheduledReminderCount
+    }
+
+    func refreshNotificationStatus() async {
+        let status = await notificationService.debugStatus()
+        notificationPermissionStatus = status.permissionStatusText
+        scheduledReminderCount = status.scheduledReminderCount
+    }
+
     func resetTodaysRitual() {
         prepareTodayStateIfNeeded()
         let dateKey = RitualLibrary.dateKey()
@@ -576,10 +612,14 @@ final class AppViewModel: ObservableObject {
 
     func deleteAllLocalAppData() {
         storage.deleteAllLocalData()
+        notificationService.cancelAllHealthCommandReminders()
         userName = storage.userName
         programPhase = storage.programPhase
         trainingLocation = storage.trainingLocation
         workoutTimePreference = storage.workoutTimePreference
+        reminderSettings = storage.reminderSettings
+        notificationPermissionStatus = "Not requested"
+        scheduledReminderCount = 0
         checkIns = []
         latestCheckIn = nil
         exerciseLogs = []

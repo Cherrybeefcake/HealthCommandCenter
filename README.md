@@ -197,6 +197,10 @@ Sleep and recovery guidance is rule-based and uses available Check In and Apple 
 
 Progress charts are local-only weekly views built from Check In, Ritual, workout, nutrition, and sleep data already stored on device. They are lightweight visibility tools, not analytics, predictions, or performance scoring.
 
+## Local Notifications MVP
+
+Reminders are optional and local-only. Health Command Center does not request notification permission on first launch and does not schedule reminders unless Brian enables them in Profile. Scheduled reminders use stable local identifiers for Check In, Ritual, Sleep Prep, and Nutrition/Cronometer prompts.
+
 ## Local Development Notes
 
 This project is now tracked with local git history. Make a commit before major feature changes so the MVP can be rolled back to a known working checkpoint. Known simulator warning notes below still apply when builds succeed and the app opens.
@@ -233,6 +237,7 @@ This project is now tracked with local git history. Make a commit before major f
   - `programPhase`: selected Program Phase.
   - `trainingLocation`: selected Training Location.
   - `workoutTimePreference`: selected Workout Time.
+  - `reminderSettings`: optional local reminder toggles and daily reminder times.
 - Profile -> Reset Controls -> `Reset opening screen only` clears only `hasSeenGreeting`.
 
 ## Validation
