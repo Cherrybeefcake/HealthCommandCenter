@@ -851,8 +851,8 @@ struct ProfileView: View {
     private var realDeviceChecklist: [String] {
         [
             "App launches on a real iPhone",
-            "Greeting screen appears on first run",
-            "Greeting completion routes to Home",
+            "Greeting/setup appears on first run",
+            "Setup completion routes to Home",
             "Check In starts from Home",
             "Apple Health connection is user-initiated",
             "HealthKit permissions appear",
@@ -863,6 +863,7 @@ struct ProfileView: View {
             "\"Why this category?\" is hidden by default and expands",
             "Home dashboard reflects latest check-in",
             "Local storage persists after app relaunch",
+            "Nutrition targets and body metrics reflect Profile settings",
             "Debug inputs show raw health values, check-in values, and logs"
         ]
     }
@@ -896,7 +897,7 @@ private enum ResetAction: Identifiable {
 
     var title: String {
         switch self {
-        case .greeting: return "Reset Opening Screen?"
+        case .greeting: return "Reset Opening Setup?"
         case .todayRitual: return "Reset Today's Ritual?"
         case .workoutLogs: return "Delete Workout Logs?"
         case .allLocalData: return "Delete All Local Data?"
@@ -906,7 +907,7 @@ private enum ResetAction: Identifiable {
     var message: String {
         switch self {
         case .greeting:
-            return "This resets only the greeting/onboarding flag so you can test the original opening screen again. Check-ins, workout logs, rituals, and settings stay stored."
+            return "This resets only the greeting/onboarding flag so you can test the setup flow again. Check-ins, workout logs, rituals, body metrics, and settings stay stored."
         case .todayRitual:
             return "This clears today's ritual checkmarks only. Previous days stay stored."
         case .workoutLogs:

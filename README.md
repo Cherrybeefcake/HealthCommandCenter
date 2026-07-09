@@ -4,7 +4,7 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 
 ## What is included
 
-- Personalized greeting for Brian
+- Personalized onboarding/setup for Brian's baseline and preferences
 - Daily Check In flow with energy, soreness, stress, mood, available workout time, and optional pain/problem note
 - Calm first-run HealthKit prompt flow: Apple Health is optional and user-initiated
 - HealthKit service requesting and reading:
@@ -15,8 +15,8 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
   - HRV
   - Active energy
   - Weight
-- Oura service protocol plus `MockOuraService` placeholder for future OAuth integration
-- Local on-device JSON storage for check-ins and `UserDefaults` for preferences
+- Oura foundation with manual/mock snapshots for supplemental recovery context; OAuth is not connected yet
+- Local on-device JSON storage for app data and `UserDefaults` for preferences
 - Readiness classifier for:
   - Push Day
   - Normal Training Day
@@ -25,12 +25,12 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
   - Bare-Minimum Day
 - Result screen with Today's Mission
 - Hidden-by-default "Why this category?" explanation on the result screen
-- Home dashboard plus a readiness-aware weekly Plan foundation
+- Home Today Mission dashboard plus a readiness-aware weekly Plan foundation
 - Plan includes Full Body A, B, and C with full, short, bare-minimum, and recovery versions
 - Local on-device exercise logs with last-time recall for repeated exercises
 - Ritual tab with daily readiness-aware routines and local completion logs
-- Progress tab with workout sessions, ritual history, streaks, and readiness history
-- Profile settings, storage/debug disclosure, reset controls, and MVP info
+- Progress tab with charts, workout sessions, ritual history, streaks, recovery, nutrition, exercise progress, and body metrics
+- Profile settings, storage/debug disclosure, reset controls, reminders, Oura foundation, body metrics, and MVP info
 
 ## Run
 
@@ -62,7 +62,7 @@ HealthKit readings are best tested on a real iPhone with Health data available. 
 10. Confirm HealthKit appears under `Signing & Capabilities`.
 11. Press Run.
 12. On the iPhone, approve any developer trust prompt if iOS asks for it.
-13. Launch the app. On a fresh install, complete the greeting and confirm the app lands on Home.
+13. Launch the app. On a fresh install, complete the greeting/setup flow and confirm the app lands on Home.
 14. Tap `Start Check In` from Home.
 15. Tap `Connect Apple Health` from the Check In screen.
 16. Approve the requested Health permissions.
@@ -71,8 +71,8 @@ HealthKit readings are best tested on a real iPhone with Health data available. 
 ## Real Device Test Checklist
 
 - App launches.
-- Greeting screen appears on a fresh install, full data reset, or after `Reset opening screen only`.
-- Greeting completion routes to Home.
+- Greeting/setup appears on a fresh install, full data reset, or after `Reset opening screen only`.
+- Setup completion routes to Home.
 - Home shows `Start Check In` when no check-in exists today.
 - Check In starts from Home.
 - HealthKit connection is user-initiated.
@@ -173,6 +173,50 @@ HealthKit readings are best tested on a real iPhone with Health data available. 
 - Xcode or `xcodebuild` may print CoreSimulator, `FBSOpenApplication`, or "Busy" warnings while simulator services restart or lag.
 - These warnings are usually safe to ignore when the app builds successfully and opens in Simulator.
 - If Simulator refuses to launch the app, quit Simulator, reopen it from Xcode, and run again. This is simulator state noise, not HealthCommandCenter app state.
+
+## MVP Release Candidate QA Checklist
+
+- Onboarding/setup:
+  - Fresh install or Delete All Local App Data opens greeting/setup.
+  - Setup defaults are Brian-specific and can be accepted quickly with `Start Command Center`.
+  - Reset opening screen only reopens setup with current saved settings and does not delete logs.
+  - Normal relaunch opens Home.
+- Home:
+  - No-check-in state shows `Start Check In`.
+  - Today Mission, Plan, Ritual, Nutrition, Sleep & Recovery, and Body Metrics copy agree with the same DailyPlan/context.
+  - HealthKit missing or partial data reads as optional context.
+- Check In:
+  - Completion updates Home, Plan, Ritual, Progress, DailyPlan, and Recovery.
+  - Missing Apple Health/Oura data does not block readiness.
+  - Subjective low energy, high stress/soreness, or pain notes keep guidance conservative.
+- Plan:
+  - Before Check In, Plan asks Brian to classify the day before training.
+  - Logging multiple sets updates Today's rows, session summary, Home, and Progress.
+  - Coach suggestions and progress summaries remain read-only during rendering.
+- Ritual:
+  - Toggles persist and reset-today only clears today's ritual.
+  - Nutrition target flags use onboarding/Profile protein and water targets.
+  - Sleep Prep responds to Program Phase.
+- Progress:
+  - Charts and histories handle no data and partial data with helpful empty states.
+  - Workout session detail, ritual day detail, Oura test snapshots, nutrition, recovery, exercise progress, and body metrics sections render without fake readiness.
+- Profile:
+  - Personalization, phase, training preferences, reminders, Oura settings, and storage/debug counts reflect current state.
+  - Test reminder, HealthKit refresh, body metrics save, reset opening, reset ritual, delete workout logs, and delete all local data all require the expected user action/confirmation.
+- Storage:
+  - Local JSON files and UserDefaults keys match the Local Storage Reference below.
+  - Delete All Local App Data clears local app files/preferences and returns to setup; it does not delete Apple Health data.
+- Render-time safety:
+  - SwiftUI body helpers are read-only; mutations happen from app startup, lifecycle hooks, buttons, toggles, sheets, or explicit save/reset actions.
+
+## Known Limitations
+
+- Oura OAuth is not connected yet; Oura support is manual/mock only and no real tokens are stored.
+- Cronometer is manual only; HealthCommandCenter stores daily nutrition summaries, not food database records.
+- Apple Health exact per-type authorization status is best-effort; Profile diagnostics show readable values, query windows, no-sample states, and errors where available.
+- Local storage only; there is no account login, cloud sync, export, or backup inside the app.
+- Smart-scale body composition values are trend data, not exact medical measurements.
+- The app is coaching and personal organization software, not medical advice, diagnosis, treatment, or clinical decision support.
 
 ## Plan Tab Test Checklist
 
