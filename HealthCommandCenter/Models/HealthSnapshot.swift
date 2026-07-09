@@ -73,6 +73,15 @@ struct SleepSummary: Codable, Equatable, Hashable {
     }
 }
 
+struct RecoverySourceDecision: Hashable {
+    let primarySource: SleepSource
+    let primaryReason: String
+    let supportingContext: String
+    let subjectiveOverrideText: String?
+    let usesAppleHealthPrimary: Bool
+    let usesOuraSupplement: Bool
+}
+
 struct HealthMetricDiagnostic: Codable, Equatable, Identifiable {
     var id: String
     var title: String

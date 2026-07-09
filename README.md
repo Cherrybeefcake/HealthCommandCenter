@@ -229,7 +229,9 @@ Sleep and recovery guidance is rule-based and uses Apple Health latest sleep whe
 
 ## Oura Foundation
 
-Oura OAuth is not connected yet, and the app does not call Oura's real API or store real Oura tokens. Profile includes Manual Entry and Mock/Test modes so Brian can save local Oura-style recovery snapshots and test source priority behavior. Apple Health remains the current real data source. Future Oura integration should use secure token storage and let the `OuraService` layer provide Oura's own latest sleep/readiness values directly.
+Oura OAuth is not connected yet, and the app does not call Oura's real API or store real Oura tokens. Apple Health is the default trusted source for overlapping metrics such as sleep duration, resting heart rate, HRV, steps, active energy, workouts, and body weight. Oura supplements Apple Health with recovery context Apple Health does not provide directly, such as readiness score, sleep score, body temperature trend, and notes.
+
+Automatic recovery mode uses Apple Health primary plus Oura supplemental context when both exist. Oura can make guidance more conservative when readiness, sleep score, or temperature trend suggests risk, but it should not make the app more aggressive when Apple Health or Brian's check-in suggests caution. Explicit Oura mode can still be selected in Profile for testing manual/mock Oura snapshots. Future Oura integration should use secure token storage and let the `OuraService` layer provide Oura's own latest sleep/readiness values directly.
 
 ## Progress Charts
 

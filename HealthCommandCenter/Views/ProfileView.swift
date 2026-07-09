@@ -155,7 +155,7 @@ struct ProfileView: View {
 
     private var ouraFoundationSection: some View {
         settingsSection("Oura Foundation", icon: "ring") {
-            Text("Oura OAuth is not connected yet. Manual/mock mode helps test how Oura will affect readiness, sleep source, and recovery guidance without storing real tokens.")
+            Text("Oura OAuth is not connected yet. Automatic uses Apple Health as the primary source for overlapping metrics and Oura as supplemental recovery context. Manual/mock mode helps test that behavior without storing real tokens.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineSpacing(3)

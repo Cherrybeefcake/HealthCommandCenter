@@ -356,18 +356,26 @@ final class AppViewModel: ObservableObject {
     func todayRecoveryStatus() -> RecoveryStatus {
         let checkIn = hasCheckedInToday ? latestCheckIn : nil
         let sleepSummary = currentSleepSummary(checkIn: checkIn)
+        let ouraSnapshot = selectedOuraSnapshotForRecovery()
+        let sourceDecision = recoverySourceDecision(
+            checkIn: checkIn,
+            sleepSummary: sleepSummary,
+            ouraSnapshot: ouraSnapshot
+        )
         let sleepHours = sleepSummary.durationHours
         let baseCategory = recoveryCategory(
             sleepHours: sleepHours,
             checkIn: checkIn,
             readiness: hasCheckedInToday ? activeCategory : nil
         )
-        let category = adjustedRecoveryCategory(baseCategory, ouraSnapshot: selectedOuraSnapshotForRecovery())
+        let category = adjustedRecoveryCategory(baseCategory, ouraSnapshot: ouraSnapshot)
 
         return RecoveryStatus(
             sleepDurationText: sleepSummary.durationText,
-            sleepSourceText: sleepSummary.sourceLabel,
+            sleepSourceText: sourceDecision.primaryReason,
             sleepDetailText: sleepSummary.detailText,
+            supportingContextText: sourceDecision.supportingContext,
+            subjectiveOverrideText: sourceDecision.subjectiveOverrideText,
             sleepQualityText: sleepQualityText(for: category, sleepHours: sleepHours),
             recoveryCategory: category,
             trainingAdjustmentText: trainingAdjustmentText(for: category, readiness: hasCheckedInToday ? activeCategory : nil),
@@ -990,60 +998,19 @@ final class AppViewModel: ObservableObject {
     }
 
     private func currentSleepSummary(checkIn: CheckIn?) -> SleepSummary {
-        if shouldUseOuraSource,
-           let oura = checkIn?.ouraSummary,
-           let hours = oura.sleepDurationHours {
-            return SleepSummary(
-                durationHours: hours,
-                durationText: String(format: "%.1f hr", hours),
-                source: .oura,
-                label: "Oura latest sleep",
-                detailText: "Using Oura's latest sleep duration from the service layer.",
-                endDate: nil,
-                includesNapContext: false,
-                lookupWindowDescription: nil
-            )
-        }
-
-        if shouldPreferOura,
-           let snapshot = selectedOuraSnapshotForRecovery(),
-           let hours = snapshot.sleepDurationHours {
-            return SleepSummary(
-                durationHours: hours,
-                durationText: String(format: "%.1f hr", hours),
-                source: .oura,
-                label: "Oura latest sleep",
-                detailText: "Using local Oura manual/mock latest sleep. OAuth is not connected yet.",
-                endDate: nil,
-                includesNapContext: false,
-                lookupWindowDescription: nil
-            )
-        }
+        let appleSummary = appleHealthSleepSummary(checkIn: checkIn)
+        let ouraSummary = ouraSleepSummary(checkIn: checkIn)
+        let manualSummary = manualSleepSummary(checkIn: checkIn)
 
         switch ouraConnectionSettings.preferredRecoverySource {
         case .oura:
-            return appleHealthSleepSummary(checkIn: checkIn) ?? manualSleepSummary(checkIn: checkIn) ?? .none
+            return ouraSummary ?? appleSummary ?? manualSummary ?? .none
         case .appleHealth:
-            return appleHealthSleepSummary(checkIn: checkIn) ?? manualSleepSummary(checkIn: checkIn) ?? .none
+            return appleSummary ?? manualSummary ?? .none
         case .manualCheckIn:
-            return manualSleepSummary(checkIn: checkIn) ?? .none
+            return manualSummary ?? .none
         case .automaticBestAvailable:
-            return appleHealthSleepSummary(checkIn: checkIn) ?? manualSleepSummary(checkIn: checkIn) ?? .none
-        }
-    }
-
-    private var shouldPreferOura: Bool {
-        guard ouraConnectionSettings.isEnabled else { return false }
-        guard selectedOuraSnapshotForRecovery()?.hasRecoveryValues == true else { return false }
-        return shouldUseOuraSource
-    }
-
-    private var shouldUseOuraSource: Bool {
-        switch ouraConnectionSettings.preferredRecoverySource {
-        case .oura, .automaticBestAvailable:
-            return true
-        case .appleHealth, .manualCheckIn:
-            return false
+            return appleSummary ?? ouraSummary ?? manualSummary ?? .none
         }
     }
 
@@ -1059,6 +1026,37 @@ final class AppViewModel: ObservableObject {
         guard ouraConnectionSettings.isEnabled else { return nil }
         guard ouraConnectionSettings.connectionMode == .mock || ouraConnectionSettings.connectionMode == .manual else { return nil }
         return latestOuraManualSnapshot()
+    }
+
+    private func ouraSleepSummary(checkIn: CheckIn?) -> SleepSummary? {
+        guard ouraConnectionSettings.isEnabled else { return nil }
+        if let oura = checkIn?.ouraSummary,
+           let hours = oura.sleepDurationHours {
+            return SleepSummary(
+                durationHours: hours,
+                durationText: String(format: "%.1f hr", hours),
+                source: .oura,
+                label: "Oura latest sleep",
+                detailText: "Using Oura's latest sleep duration from the service layer.",
+                endDate: nil,
+                includesNapContext: false,
+                lookupWindowDescription: nil
+            )
+        }
+        if let snapshot = selectedOuraSnapshotForRecovery(),
+           let hours = snapshot.sleepDurationHours {
+            return SleepSummary(
+                durationHours: hours,
+                durationText: String(format: "%.1f hr", hours),
+                source: .oura,
+                label: "Oura latest sleep",
+                detailText: "Using local Oura manual/mock latest sleep. OAuth is not connected yet.",
+                endDate: nil,
+                includesNapContext: false,
+                lookupWindowDescription: nil
+            )
+        }
+        return nil
     }
 
     private func appleHealthSleepSummary(checkIn: CheckIn?) -> SleepSummary? {
@@ -1085,20 +1083,102 @@ final class AppViewModel: ObservableObject {
         )
     }
 
+    private func recoverySourceDecision(
+        checkIn: CheckIn?,
+        sleepSummary: SleepSummary,
+        ouraSnapshot: OuraManualSnapshot?
+    ) -> RecoverySourceDecision {
+        let primaryReason: String
+        switch ouraConnectionSettings.preferredRecoverySource {
+        case .automaticBestAvailable:
+            switch sleepSummary.source {
+            case .appleHealth:
+                primaryReason = "Apple Health primary"
+            case .oura:
+                primaryReason = "Oura fallback"
+            case .manualCheckIn:
+                primaryReason = "Manual fallback"
+            case .none:
+                primaryReason = "No primary source"
+            }
+        case .appleHealth:
+            primaryReason = sleepSummary.source == .appleHealth ? "Apple Health primary" : sleepSummary.sourceLabel
+        case .oura:
+            primaryReason = sleepSummary.source == .oura ? "Oura primary" : sleepSummary.sourceLabel
+        case .manualCheckIn:
+            primaryReason = sleepSummary.source == .manualCheckIn ? "Manual Check-In primary" : sleepSummary.sourceLabel
+        }
+
+        return RecoverySourceDecision(
+            primarySource: sleepSummary.source,
+            primaryReason: primaryReason,
+            supportingContext: ouraSupportingContext(from: ouraSnapshot),
+            subjectiveOverrideText: subjectiveOverrideText(for: checkIn),
+            usesAppleHealthPrimary: sleepSummary.source == .appleHealth,
+            usesOuraSupplement: ouraSnapshot?.hasRecoveryValues == true && sleepSummary.source != .oura
+        )
+    }
+
+    private func ouraSupportingContext(from snapshot: OuraManualSnapshot?) -> String {
+        guard ouraConnectionSettings.isEnabled,
+              let snapshot,
+              snapshot.hasRecoveryValues else {
+            return "Supporting context: no Oura snapshot active."
+        }
+
+        var parts: [String] = []
+        if let readiness = snapshot.readinessScore {
+            parts.append("readiness \(readiness)")
+        }
+        if let sleepScore = snapshot.sleepScore {
+            parts.append("sleep score \(sleepScore)")
+        }
+        if let trend = snapshot.bodyTemperatureTrend, !trend.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            parts.append("temperature \(trend)")
+        }
+        if !snapshot.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            parts.append("notes saved")
+        }
+
+        let context = parts.isEmpty ? "Oura snapshot saved" : "Oura " + parts.joined(separator: ", ")
+        return "Supporting context: \(context). It can make the plan more conservative, not more aggressive."
+    }
+
+    private func subjectiveOverrideText(for checkIn: CheckIn?) -> String? {
+        guard let checkIn else { return nil }
+        var flags: [String] = []
+        if checkIn.energy <= 3 { flags.append("low energy") }
+        if checkIn.stress >= 8 { flags.append("high stress") }
+        if checkIn.soreness >= 8 { flags.append("high soreness") }
+        if !checkIn.painNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { flags.append("pain note") }
+        guard !flags.isEmpty else { return nil }
+        return "Subjective check-in keeps the plan conservative: \(flags.joined(separator: ", "))."
+    }
+
     private func adjustedRecoveryCategory(_ category: RecoveryCategory, ouraSnapshot: OuraManualSnapshot?) -> RecoveryCategory {
         guard ouraConnectionSettings.isEnabled, let ouraSnapshot else { return category }
         let lowReadiness = (ouraSnapshot.readinessScore ?? 100) < 55
         let veryLowReadiness = (ouraSnapshot.readinessScore ?? 100) < 40
         let lowSleepScore = (ouraSnapshot.sleepScore ?? 100) < 55
         let lowSleepHours = (ouraSnapshot.sleepDurationHours ?? 99) < 5.5
+        let elevatedTemperature = isElevatedTemperatureTrend(ouraSnapshot.bodyTemperatureTrend)
 
         if veryLowReadiness || lowSleepHours {
             return .poor
         }
-        if lowReadiness || lowSleepScore {
+        if lowReadiness || lowSleepScore || elevatedTemperature {
             return category == .poor ? .poor : .limited
         }
         return category
+    }
+
+    private func isElevatedTemperatureTrend(_ trend: String?) -> Bool {
+        guard let trend = trend?.lowercased() else { return false }
+        return trend.contains("high")
+            || trend.contains("elevated")
+            || trend.contains("above")
+            || trend.contains("warm")
+            || trend.contains("+")
     }
 
     private func plannedSetCount(from prescription: String) -> Int {

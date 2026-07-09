@@ -197,6 +197,20 @@ private struct SleepRecoveryHomeCard: View {
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
 
+                Text(status.supportingContextText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let subjectiveOverrideText = status.subjectiveOverrideText {
+                    Text(subjectiveOverrideText)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(accent)
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 Text(status.trainingAdjustmentText)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(accent)

@@ -51,7 +51,7 @@ struct DailyPlanGenerator {
                 workoutRecommendation: workoutText,
                 ritualRecommendation: "If you need one move before Check In, do water, breathing, or a short walk.",
                 nutritionFocus: nutritionFocus(for: category, checkIn: checkIn, log: nutritionLog, targets: nutritionTargets),
-                recoveryFocus: "\(recoveryStatus.sleepSourceText): \(recoveryStatus.sleepDurationText). \(recoveryStatus.coachingLine)",
+                recoveryFocus: recoveryFocusText(status: recoveryStatus, includeAdjustment: false),
                 caffeineCutoffGuidance: phase.caffeineCutoff,
                 sleepPriority: phase.sleepPriority,
                 todaysMission: "Start Check In. \(progressAcknowledgement) \(location.wording) \(phase.timing) \(context)",
@@ -75,7 +75,7 @@ struct DailyPlanGenerator {
             ),
             ritualRecommendation: "\(readiness.ritualRecommendation) \(phase.ritualBias)",
             nutritionFocus: nutritionFocus(for: category, checkIn: checkIn, log: nutritionLog, targets: nutritionTargets),
-            recoveryFocus: "\(recoveryStatus.sleepSourceText): \(recoveryStatus.sleepDurationText). \(recoveryStatus.trainingAdjustmentText) \(recoveryStatus.windDownGuidance)",
+            recoveryFocus: recoveryFocusText(status: recoveryStatus, includeAdjustment: true),
             caffeineCutoffGuidance: phase.caffeineCutoff,
             sleepPriority: phase.sleepPriority,
             todaysMission: todaysMission(
@@ -106,6 +106,16 @@ struct DailyPlanGenerator {
         let sleepPriority: String
         let ritualBias: String
         let recoveryBias: String
+    }
+
+    private static func recoveryFocusText(status: RecoveryStatus, includeAdjustment: Bool) -> String {
+        let base = "\(status.sleepSourceText): \(status.sleepDurationText)."
+        let support = status.supportingContextText
+        let subjective = status.subjectiveOverrideText.map { " \($0)" } ?? ""
+        if includeAdjustment {
+            return "\(base) \(status.trainingAdjustmentText) \(status.windDownGuidance) \(support)\(subjective)"
+        }
+        return "\(base) \(status.coachingLine) \(support)\(subjective)"
     }
 
     private struct LocationGuidance {
