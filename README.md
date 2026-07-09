@@ -205,6 +205,8 @@ Reminders are optional and local-only. Health Command Center does not request no
 
 This project is now tracked with local git history. Make a commit before major feature changes so the MVP can be rolled back to a known working checkpoint. Known simulator warning notes below still apply when builds succeed and the app opens.
 
+Repo-local git identity is configured for Brian Cady.
+
 ## Project Configuration
 
 - App target: `HealthCommandCenter`
