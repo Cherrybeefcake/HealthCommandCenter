@@ -70,6 +70,7 @@ final class AppViewModel: ObservableObject {
     @Published var ritualLogs: [DailyRitualLog] = []
     @Published var nutritionLogs: [DailyNutritionLog] = []
     @Published var ouraManualSnapshots: [OuraManualSnapshot] = []
+    @Published var bodyMetricsEntries: [BodyMetricsEntry] = []
     @Published var todayRitualDateKey: String = RitualLibrary.dateKey()
     @Published var programPhase: ProgramPhase
     @Published var trainingLocation: TrainingLocation
@@ -119,6 +120,7 @@ final class AppViewModel: ObservableObject {
         ritualLogs = storage.loadRitualLogs().sorted { $0.dateKey > $1.dateKey }
         nutritionLogs = storage.loadNutritionLogs().sorted { $0.dateKey > $1.dateKey }
         ouraManualSnapshots = storage.loadOuraManualSnapshots().sorted { $0.updatedAt > $1.updatedAt }
+        bodyMetricsEntries = storage.loadBodyMetricsEntries().sorted { $0.updatedAt > $1.updatedAt }
         prepareTodayStateIfNeeded()
         latestCheckIn = checkIns.first
         await refreshNotificationStatus()
@@ -329,6 +331,50 @@ final class AppViewModel: ObservableObject {
 
     func averageWaterThisWeek() -> Int? {
         averageInt(nutritionLogsThisWeek().compactMap(\.waterOunces))
+    }
+
+    func saveBodyMetricsEntry(_ entry: BodyMetricsEntry) {
+        var updatedEntry = entry
+        updatedEntry.updatedAt = Date()
+        bodyMetricsEntries.removeAll { $0.dateKey == updatedEntry.dateKey && $0.source == updatedEntry.source }
+        bodyMetricsEntries.insert(updatedEntry, at: 0)
+        bodyMetricsEntries.sort { $0.updatedAt > $1.updatedAt }
+        storage.saveBodyMetricsEntries(bodyMetricsEntries)
+        appendDebug("Body metrics saved: \(updatedEntry.dateKey)")
+    }
+
+    func recentBodyMetricsEntries(limit: Int = 8) -> [BodyMetricsEntry] {
+        Array(bodyMetricsEntries.sorted { $0.updatedAt > $1.updatedAt }.prefix(limit))
+    }
+
+    func latestBodyMetricsSummary() -> BodyMetricsSummary {
+        let latestManual = bodyMetricsEntries.sorted { $0.updatedAt > $1.updatedAt }.first
+        let recent = recentBodyMetricsEntries(limit: 8).sorted { $0.dateKey < $1.dateKey }
+        return BodyMetricsSummary(
+            latestEntry: latestManual,
+            appleHealthWeightPounds: todaySnapshot.weightPounds,
+            trendText: bodyMetricTrendText(
+                title: "Weight",
+                unit: "lb",
+                values: recent.compactMap { entry in
+                    entry.weightPounds.map { (entry.dateKey, $0) }
+                }
+            ),
+            bodyFatTrendText: optionalBodyMetricTrendText(
+                title: "Body fat",
+                unit: "%",
+                values: recent.compactMap { entry in
+                    entry.bodyFatPercent.map { (entry.dateKey, $0) }
+                }
+            ),
+            waistTrendText: optionalBodyMetricTrendText(
+                title: "Waist",
+                unit: "in",
+                values: recent.compactMap { entry in
+                    entry.waistInches.map { (entry.dateKey, $0) }
+                }
+            )
+        )
     }
 
     func nutritionStatusLine(for log: DailyNutritionLog? = nil) -> String {
@@ -714,6 +760,7 @@ final class AppViewModel: ObservableObject {
         ritualLogs = []
         nutritionLogs = []
         ouraManualSnapshots = []
+        bodyMetricsEntries = []
         debugLog = []
         todaySnapshot = .empty
         lastHealthRefreshAt = nil
@@ -916,6 +963,7 @@ final class AppViewModel: ObservableObject {
         HRV: \(snapshot.hrvSDNN.map { String(format: "%.0f", $0) } ?? "nil")
         Active energy: \(snapshot.activeEnergy.map { String(format: "%.0f", $0) } ?? "nil")
         Weight: \(snapshot.weightPounds.map { String(format: "%.1f", $0) } ?? "nil")
+        Body metric entries: \(bodyMetricsEntries.count)
         Energy: \(checkIn?.energy.description ?? "nil")
         Soreness: \(checkIn?.soreness.description ?? "nil")
         Stress: \(checkIn?.stress.description ?? "nil")
@@ -1179,6 +1227,26 @@ final class AppViewModel: ObservableObject {
             || trend.contains("above")
             || trend.contains("warm")
             || trend.contains("+")
+    }
+
+    private func optionalBodyMetricTrendText(title: String, unit: String, values: [(String, Double)]) -> String? {
+        guard values.count >= 2 else { return nil }
+        return bodyMetricTrendText(title: title, unit: unit, values: values)
+    }
+
+    private func bodyMetricTrendText(title: String, unit: String, values: [(String, Double)]) -> String {
+        guard let first = values.first, let last = values.last else {
+            return "\(title) trend starts after one local entry."
+        }
+        guard values.count >= 2 else {
+            return "\(title) logged. Add another entry later to see direction."
+        }
+        let delta = last.1 - first.1
+        if abs(delta) < 0.05 {
+            return "\(title) is steady across recent entries."
+        }
+        let direction = delta > 0 ? "up" : "down"
+        return String(format: "\(title) %.1f %@ %@", abs(delta), unit, direction)
     }
 
     private func plannedSetCount(from prescription: String) -> Int {

@@ -41,6 +41,7 @@ struct ProgressDashboardView: View {
                     consistencyStreaksSection
                     exerciseProgressSection
                     nutritionProgressSection
+                    bodyMetricsProgressSection
                     workoutHistorySection
                     ritualHistorySection
                     readinessHistorySection
@@ -353,6 +354,75 @@ struct ProgressDashboardView: View {
                 VStack(spacing: 10) {
                     ForEach(recent) { log in
                         NutritionDayRow(log: log, accent: category.accent)
+                    }
+                }
+            }
+        }
+    }
+
+    private var bodyMetricsProgressSection: some View {
+        let summary = appModel.latestBodyMetricsSummary()
+        let recent = appModel.recentBodyMetricsEntries()
+        return VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(
+                title: "Body Metrics",
+                subtitle: "Trend-focused recomposition notes. Smart-scale composition values are direction data.",
+                icon: "scalemass",
+                accent: category.accent
+            )
+
+            if recent.isEmpty && summary.appleHealthWeightPounds == nil {
+                EmptyStateCard(
+                    title: "No body metrics yet",
+                    message: "Log a simple weight, waist, or smart-scale snapshot in Profile. One entry is enough to start.",
+                    icon: "scalemass",
+                    accent: category.accent,
+                    actionTitle: "Open Profile",
+                    actionIcon: "person.crop.circle",
+                    action: {
+                        appModel.selectedTab = .profile
+                    }
+                )
+            } else {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    overviewMetric("Latest", summary.latestWeightText, summary.sourceText)
+                    overviewMetric("Direction", "Trend", summary.trendText)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    if let bodyFat = summary.bodyFatTrendText {
+                        Text(bodyFat)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let waist = summary.waistTrendText {
+                        Text(waist)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("Use direction over time. Body composition estimates from smart scales are not exact measurements.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary.opacity(0.9))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if recent.isEmpty {
+                    EmptyStateCard(
+                        title: "Apple Health weight only",
+                        message: "Apple Health weight is visible as context. Save a manual or smart-scale entry in Profile to build local trends.",
+                        icon: "heart.text.square",
+                        accent: category.accent,
+                        actionTitle: "Open Profile",
+                        actionIcon: "person.crop.circle",
+                        action: {
+                            appModel.selectedTab = .profile
+                        }
+                    )
+                } else {
+                    VStack(spacing: 10) {
+                        ForEach(recent) { entry in
+                            BodyMetricsRow(entry: entry, accent: category.accent)
+                        }
                     }
                 }
             }
@@ -1340,6 +1410,65 @@ private struct NutritionDayRow: View {
         let water = log.waterOunces.map { "\($0) oz water" } ?? "water not entered"
         let fiber = log.fiberGrams.map { "\($0)g fiber" } ?? "fiber optional"
         return "\(protein) | \(water) | \(fiber)"
+    }
+
+    private func dateFromKey(_ key: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar.current
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: key)
+    }
+}
+
+private struct BodyMetricsRow: View {
+    let entry: BodyMetricsEntry
+    let accent: Color
+
+    var body: some View {
+        CommandCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "scalemass")
+                    .font(.title3)
+                    .foregroundStyle(accent)
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 7) {
+                    Text(dateText)
+                        .font(.headline)
+                    Text(summaryText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !entry.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Text(entry.notes)
+                            .font(.caption)
+                            .foregroundStyle(.secondary.opacity(0.9))
+                            .lineLimit(2)
+                    }
+                }
+
+                Spacer(minLength: 8)
+
+                StatusPill(title: entry.source.rawValue, accent: accent)
+            }
+        }
+    }
+
+    private var dateText: String {
+        if let date = dateFromKey(entry.dateKey) {
+            return date.formatted(date: .abbreviated, time: .omitted)
+        }
+        return entry.dateKey
+    }
+
+    private var summaryText: String {
+        let weight = entry.weightPounds.map { String(format: "%.1f lb", $0) } ?? "weight --"
+        let bodyFat = entry.bodyFatPercent.map { String(format: "%.1f%% body fat", $0) } ?? "body fat --"
+        let muscle = entry.muscleMassPounds.map { String(format: "%.1f lb muscle", $0) } ?? "muscle --"
+        let waist = entry.waistInches.map { String(format: "%.1f in waist", $0) } ?? "waist --"
+        return "\(weight) | \(bodyFat) | \(muscle) | \(waist)"
     }
 
     private func dateFromKey(_ key: String) -> Date? {

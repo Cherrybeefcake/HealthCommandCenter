@@ -7,6 +7,7 @@ final class LocalStorageService {
     private let ritualLogsURL: URL
     private let nutritionLogsURL: URL
     private let ouraManualSnapshotsURL: URL
+    private let bodyMetricsEntriesURL: URL
 
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
@@ -16,6 +17,7 @@ final class LocalStorageService {
         self.ritualLogsURL = documentsURL.appendingPathComponent("daily_ritual_logs.json")
         self.nutritionLogsURL = documentsURL.appendingPathComponent("daily_nutrition_logs.json")
         self.ouraManualSnapshotsURL = documentsURL.appendingPathComponent("oura_manual_snapshots.json")
+        self.bodyMetricsEntriesURL = documentsURL.appendingPathComponent("body_metrics_entries.json")
     }
 
     var userName: String {
@@ -137,6 +139,16 @@ final class LocalStorageService {
         try? data.write(to: ouraManualSnapshotsURL, options: [.atomic])
     }
 
+    func loadBodyMetricsEntries() -> [BodyMetricsEntry] {
+        guard let data = try? Data(contentsOf: bodyMetricsEntriesURL) else { return [] }
+        return (try? JSONDecoder.healthCommand.decode([BodyMetricsEntry].self, from: data)) ?? []
+    }
+
+    func saveBodyMetricsEntries(_ entries: [BodyMetricsEntry]) {
+        guard let data = try? JSONEncoder.healthCommand.encode(entries) else { return }
+        try? data.write(to: bodyMetricsEntriesURL, options: [.atomic])
+    }
+
     func resetTodaysRitual(dateKey: String) {
         var logs = loadRitualLogs()
         if let index = logs.firstIndex(where: { $0.dateKey == dateKey }) {
@@ -156,6 +168,7 @@ final class LocalStorageService {
         try? FileManager.default.removeItem(at: ritualLogsURL)
         try? FileManager.default.removeItem(at: nutritionLogsURL)
         try? FileManager.default.removeItem(at: ouraManualSnapshotsURL)
+        try? FileManager.default.removeItem(at: bodyMetricsEntriesURL)
         ["userName", "hasSeenGreeting", "programPhase", "trainingLocation", "workoutTimePreference", "reminderSettings", "ouraConnectionSettings"].forEach {
             userDefaults.removeObject(forKey: $0)
         }

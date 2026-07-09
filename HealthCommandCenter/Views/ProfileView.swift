@@ -10,6 +10,13 @@ struct ProfileView: View {
     @State private var ouraRestingHeartRate = ""
     @State private var ouraBodyTemperatureTrend = ""
     @State private var ouraNotes = ""
+    @State private var bodyWeight = ""
+    @State private var bodyFatPercent = ""
+    @State private var muscleMass = ""
+    @State private var visceralFat = ""
+    @State private var waist = ""
+    @State private var bodyMetricsNotes = ""
+    @State private var bodyMetricsSource: BodyMetricsSource = .manual
 
     var body: some View {
         ZStack {
@@ -30,6 +37,7 @@ struct ProfileView: View {
                     trainingPreferencesSection
                     remindersSection
                     nutritionPreferencesSection
+                    bodyMetricsSection
                     dataStorageSection
                     resetControlsSection
                     aboutSection
@@ -71,7 +79,7 @@ struct ProfileView: View {
                         .foregroundStyle(appModel.activeCategory.accent)
                 }
 
-                Text("5'6\" | around 174 lb | restarting training")
+                Text("5'6\" | around 174 lb | restarting training | body composition as trend data")
                     .font(.headline)
 
                 Text("Private, local-first command center for rebuilding consistency around real life constraints.")
@@ -229,6 +237,7 @@ struct ProfileView: View {
                 storageMetric("Ritual days", "\(appModel.ritualLogs.count)")
                 storageMetric("Nutrition", "\(appModel.nutritionLogs.count)")
                 storageMetric("Oura tests", "\(appModel.ouraManualSnapshots.count)")
+                storageMetric("Body metrics", "\(appModel.bodyMetricsEntries.count)")
                 storageMetric("Reminders", appModel.reminderSettings.remindersEnabled ? "Enabled" : "Disabled")
                 storageMetric("Scheduled", "\(appModel.scheduledReminderCount)")
             }
@@ -386,6 +395,51 @@ struct ProfileView: View {
         }
     }
 
+    private var bodyMetricsSection: some View {
+        settingsSection("Body Metrics", icon: "scalemass") {
+            let summary = appModel.latestBodyMetricsSummary()
+
+            Text("For recomposition, use body metrics as trend data. Smart-scale body composition estimates are useful for direction, not exact medical measurement.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                storageMetric("Latest weight", summary.latestWeightText)
+                storageMetric("Source", summary.sourceText)
+            }
+
+            if let appleWeight = summary.appleHealthWeightPounds {
+                Text("Apple Health weight available: \(String(format: "%.1f lb", appleWeight)). This is read-only context unless you choose to save a manual entry.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Picker("Entry source", selection: $bodyMetricsSource) {
+                Text(BodyMetricsSource.manual.rawValue).tag(BodyMetricsSource.manual)
+                Text(BodyMetricsSource.smartScaleManual.rawValue).tag(BodyMetricsSource.smartScaleManual)
+            }
+            .pickerStyle(.segmented)
+
+            manualBodyMetricField("Weight", text: $bodyWeight, placeholder: "lb")
+            manualBodyMetricField("Body fat", text: $bodyFatPercent, placeholder: "%")
+            manualBodyMetricField("Muscle mass", text: $muscleMass, placeholder: "lb")
+            manualBodyMetricField("Visceral fat", text: $visceralFat, placeholder: "level")
+            manualBodyMetricField("Waist", text: $waist, placeholder: "in")
+
+            TextField("Notes", text: $bodyMetricsNotes, axis: .vertical)
+                .lineLimit(2...4)
+                .textFieldStyle(.roundedBorder)
+
+            PrimaryActionButton(title: "Save Today's Body Metrics", icon: "square.and.arrow.down", accent: appModel.activeCategory.accent) {
+                saveBodyMetricsEntry()
+            }
+        }
+    }
+
     private var dataStorageSection: some View {
         settingsSection("Data & Storage", icon: "externaldrive") {
             Text("Data is stored locally on this device in the app sandbox. There is no account login, cloud sync, or export in this MVP.")
@@ -402,6 +456,7 @@ struct ProfileView: View {
                     fileRow("daily_ritual_logs.json", "Ritual completions by calendar day")
                     fileRow("daily_nutrition_logs.json", "Manual nutrition summaries by calendar day")
                     fileRow("oura_manual_snapshots.json", "Manual/mock Oura recovery test snapshots")
+                    fileRow("body_metrics_entries.json", "Manual body metrics and smart-scale trend entries")
                     fileRow("UserDefaults reminderSettings", "Reminder toggles, times, and local settings")
                     fileRow("UserDefaults ouraConnectionSettings", "Oura foundation mode and preferred recovery source")
 
@@ -613,6 +668,20 @@ struct ProfileView: View {
         }
     }
 
+    private func manualBodyMetricField(_ title: String, text: Binding<String>, placeholder: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Spacer()
+            TextField(placeholder, text: text)
+                .multilineTextAlignment(.trailing)
+                .textFieldStyle(.roundedBorder)
+                .keyboardType(.decimalPad)
+                .frame(maxWidth: 140)
+        }
+    }
+
     private func saveOuraSnapshot() {
         let snapshot = OuraManualSnapshot(
             readinessScore: optionalInt(ouraReadinessScore),
@@ -624,6 +693,20 @@ struct ProfileView: View {
             notes: ouraNotes
         )
         appModel.saveOuraManualSnapshot(snapshot)
+    }
+
+    private func saveBodyMetricsEntry() {
+        let entry = BodyMetricsEntry(
+            weightPounds: optionalDouble(bodyWeight),
+            bodyFatPercent: optionalDouble(bodyFatPercent),
+            muscleMassPounds: optionalDouble(muscleMass),
+            visceralFatLevel: optionalDouble(visceralFat),
+            waistInches: optionalDouble(waist),
+            notes: bodyMetricsNotes,
+            source: bodyMetricsSource
+        )
+        guard entry.hasAnyMetric || !entry.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        appModel.saveBodyMetricsEntry(entry)
     }
 
     private func optionalInt(_ text: String) -> Int? {
@@ -824,7 +907,7 @@ private enum ResetAction: Identifiable {
         case .workoutLogs:
             return "This removes all locally stored exercise logs from workout_logs.json."
         case .allLocalData:
-            return "This removes check-ins, workout logs, ritual logs, and local preferences. The app returns to first-run state."
+            return "This removes check-ins, workout logs, ritual logs, nutrition logs, Oura test snapshots, body metrics entries, and local preferences. Apple Health data is not deleted. The app returns to first-run state."
         }
     }
 

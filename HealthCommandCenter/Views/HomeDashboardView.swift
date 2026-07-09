@@ -93,6 +93,10 @@ private struct TodayDashboard: View {
                             appModel.goToRitual()
                         }
 
+                        BodyMetricsHomeCard(summary: appModel.latestBodyMetricsSummary(), accent: category.accent) {
+                            appModel.selectedTab = .profile
+                        }
+
                         GlassPanel {
                             VStack(alignment: .leading, spacing: 12) {
                                 SectionHeader(
@@ -168,6 +172,61 @@ private struct TodayDashboard: View {
         .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
     }
 
+}
+
+private struct BodyMetricsHomeCard: View {
+    let summary: BodyMetricsSummary
+    let accent: Color
+    let action: () -> Void
+
+    var body: some View {
+        CommandCard {
+            VStack(alignment: .leading, spacing: 14) {
+                SectionHeader(
+                    title: "Body Metrics",
+                    subtitle: "Trend data for recomposition, not a daily judgment.",
+                    icon: "scalemass",
+                    accent: accent
+                )
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    recoveryMetric(summary.latestWeightText, "Latest weight")
+                    recoveryMetric(summary.sourceText, "Source")
+                }
+
+                Text(summary.trendText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if summary.latestEntry == nil, summary.appleHealthWeightPounds != nil {
+                    Text("Apple Health weight is shown as context only. It is not copied into local body metrics unless Brian saves a manual entry.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary.opacity(0.9))
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                SecondaryActionButton(title: "Log Body Metrics", icon: "square.and.pencil", accent: accent, action: action)
+            }
+        }
+    }
+
+    private func recoveryMetric(_ value: String, _ label: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(2)
+                .minimumScaleFactor(0.75)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+    }
 }
 
 private struct SleepRecoveryHomeCard: View {

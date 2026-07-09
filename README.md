@@ -219,6 +219,10 @@ Ritual completions are stored locally in the app sandbox as `daily_ritual_logs.j
 
 Nutrition tracking is manual for now. Cronometer remains the source of detailed food logging; HealthCommandCenter stores only daily summary values locally: calories, protein, water, fiber, Cronometer completion, target flags, and notes.
 
+## Body Metrics MVP
+
+Apple Health body weight may be shown when available, but it is used as read-only context unless Brian explicitly saves a local entry. Manual and smart-scale body metrics are stored locally in `body_metrics_entries.json`. Body fat, muscle mass, visceral fat, and waist values are treated as trend data for body recomposition, not exact medical measurements.
+
 ## Meal Templates
 
 Meal templates are flexible examples for body recomposition, not a rigid meal plan. They use the formula protein + carb + fruit/vegetable + healthy fat, avoid seafood and mushrooms, and are meant to make Cronometer logging and shift-friendly meals easier.
@@ -274,6 +278,7 @@ Repo-local git identity is configured for Brian Cady.
   - `daily_ritual_logs.json`: Ritual completions by calendar day.
   - `daily_nutrition_logs.json`: Manual nutrition summaries by calendar day.
   - `oura_manual_snapshots.json`: Manual/mock Oura recovery test snapshots.
+  - `body_metrics_entries.json`: Manual body metrics and smart-scale trend entries.
 - UserDefaults keys:
   - `hasSeenGreeting`: controls whether the opening/greeting screen appears on launch.
   - `userName`: Brian's display name.
