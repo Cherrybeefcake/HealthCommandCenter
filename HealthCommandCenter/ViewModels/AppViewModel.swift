@@ -64,6 +64,7 @@ final class AppViewModel: ObservableObject {
     @Published var healthStatusMessage: String = "HealthKit not requested yet"
     @Published var healthState: HealthConnectionState = .notRequested
     @Published var isLoadingHealth = false
+    @Published var lastHealthRefreshAt: Date?
     @Published var debugLog: [String] = []
     @Published var exerciseLogs: [ExerciseLog] = []
     @Published var ritualLogs: [DailyRitualLog] = []
@@ -75,6 +76,7 @@ final class AppViewModel: ObservableObject {
     @Published var reminderSettings: ReminderSettings
     @Published var notificationPermissionStatus: String = "Not requested"
     @Published var scheduledReminderCount: Int = 0
+    @Published var reminderTestStatus: String = "No test reminder sent yet"
 
     private let storage: LocalStorageService
     private let healthService: HealthDataProviding
@@ -142,6 +144,30 @@ final class AppViewModel: ObservableObject {
         )
     }
 
+    var healthAvailabilityText: String {
+        healthService.isHealthDataAvailable ? "Available on this device" : "Unavailable on this device"
+    }
+
+    var healthAuthorizationSummary: String {
+        switch healthState {
+        case .notRequested:
+            return "Not requested"
+        case .loading:
+            return "Authorization/fetch in progress"
+        case .ready:
+            return "Requested; readable data returned"
+        case .empty:
+            return "Requested; no readable data returned yet"
+        case .unavailable:
+            return "Unavailable, denied, or no readable access"
+        }
+    }
+
+    var lastHealthRefreshText: String {
+        guard let lastHealthRefreshAt else { return "No successful refresh yet" }
+        return lastHealthRefreshAt.formatted(date: .abbreviated, time: .shortened)
+    }
+
     func completeGreeting() {
         storage.userName = userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Brian" : userName
         storage.hasSeenGreeting = true
@@ -157,6 +183,7 @@ final class AppViewModel: ObservableObject {
         do {
             try await healthService.requestAuthorization()
             todaySnapshot = try await healthService.fetchTodaySnapshot()
+            lastHealthRefreshAt = Date()
             if todaySnapshot.hasAnyData {
                 healthState = .ready(metricCount: todaySnapshot.availableMetricCount)
             } else {
@@ -589,6 +616,14 @@ final class AppViewModel: ObservableObject {
         scheduledReminderCount = status.scheduledReminderCount
     }
 
+    func scheduleTestReminder() async {
+        let result = await notificationService.scheduleTestReminder()
+        notificationPermissionStatus = result.status.permissionStatusText
+        scheduledReminderCount = result.status.scheduledReminderCount
+        reminderTestStatus = result.message
+        appendDebug(result.didSchedule ? "Test reminder scheduled" : "Test reminder not scheduled: \(result.message)")
+    }
+
     func resetTodaysRitual() {
         prepareTodayStateIfNeeded()
         let dateKey = RitualLibrary.dateKey()
@@ -627,6 +662,7 @@ final class AppViewModel: ObservableObject {
         nutritionLogs = []
         debugLog = []
         todaySnapshot = .empty
+        lastHealthRefreshAt = nil
         healthState = .notRequested
         healthStatusMessage = "HealthKit not requested yet"
         todayRitualDateKey = RitualLibrary.dateKey()
@@ -834,6 +870,54 @@ final class AppViewModel: ObservableObject {
         Ritual logs: \(ritualLogs.count)
         Nutrition logs: \(nutritionLogs.count)
         """
+    }
+
+    func healthMetricStatusItems(snapshot: HealthSnapshot? = nil) -> [DeviceStatusItem] {
+        let snapshot = snapshot ?? todaySnapshot
+        return [
+            DeviceStatusItem(
+                id: "sleep",
+                title: "Sleep",
+                value: snapshot.sleepHours.map { String(format: "%.1f hr", $0) } ?? "No value",
+                detail: snapshot.sleepHours == nil ? "No sleep sample returned for today." : "Sleep sample returned."
+            ),
+            DeviceStatusItem(
+                id: "steps",
+                title: "Steps",
+                value: snapshot.steps.map(String.init) ?? "No value",
+                detail: snapshot.steps == nil ? "No step count returned yet." : "Step count returned."
+            ),
+            DeviceStatusItem(
+                id: "resting-hr",
+                title: "Resting HR",
+                value: snapshot.restingHeartRate.map { String(format: "%.0f bpm", $0) } ?? "No value",
+                detail: snapshot.restingHeartRate == nil ? "No recent resting heart rate returned." : "Recent resting heart rate returned."
+            ),
+            DeviceStatusItem(
+                id: "hrv",
+                title: "HRV",
+                value: snapshot.hrvSDNN.map { String(format: "%.0f ms", $0) } ?? "No value",
+                detail: snapshot.hrvSDNN == nil ? "No recent HRV value returned." : "Recent HRV value returned."
+            ),
+            DeviceStatusItem(
+                id: "active-energy",
+                title: "Active Energy",
+                value: snapshot.activeEnergy.map { String(format: "%.0f kcal", $0) } ?? "No value",
+                detail: snapshot.activeEnergy == nil ? "No active energy returned today." : "Active energy returned."
+            ),
+            DeviceStatusItem(
+                id: "workouts",
+                title: "Workouts",
+                value: snapshot.workoutCount.map { "\($0)" } ?? "No value",
+                detail: snapshot.workoutMinutes.map { String(format: "%.0f workout minutes returned.", $0) } ?? "No workouts returned today."
+            ),
+            DeviceStatusItem(
+                id: "weight",
+                title: "Body Weight",
+                value: snapshot.weightPounds.map { String(format: "%.1f lb", $0) } ?? "No value",
+                detail: snapshot.weightPounds == nil ? "No recent body weight returned." : "Recent body weight returned."
+            )
+        ]
     }
 
     private func plannedSetCount(from prescription: String) -> Int {

@@ -249,6 +249,13 @@ struct DailyChartPoint: Identifiable, Hashable {
     }
 }
 
+struct DeviceStatusItem: Identifiable, Hashable {
+    let id: String
+    let title: String
+    let value: String
+    let detail: String
+}
+
 struct ReminderTime: Codable, Hashable {
     var hour: Int
     var minute: Int

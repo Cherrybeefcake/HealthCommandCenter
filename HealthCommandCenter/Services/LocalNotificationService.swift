@@ -6,8 +6,15 @@ struct NotificationDebugStatus: Hashable {
     let scheduledReminderCount: Int
 }
 
+struct TestNotificationResult: Hashable {
+    let didSchedule: Bool
+    let message: String
+    let status: NotificationDebugStatus
+}
+
 final class LocalNotificationService {
     private let center: UNUserNotificationCenter
+    private let testReminderIdentifier = "hcc.test.10sec"
     private let reminderIdentifiers = [
         "hcc.checkin.daily",
         "hcc.ritual.daily",
@@ -39,7 +46,7 @@ final class LocalNotificationService {
         }
 
         if settings.checkInReminderEnabled {
-            scheduleDailyReminder(
+            await scheduleDailyReminder(
                 identifier: "hcc.checkin.daily",
                 title: "Health Command Center",
                 body: "Start with the data. Classify today.",
@@ -48,7 +55,7 @@ final class LocalNotificationService {
         }
 
         if settings.ritualReminderEnabled {
-            scheduleDailyReminder(
+            await scheduleDailyReminder(
                 identifier: "hcc.ritual.daily",
                 title: "Today’s Ritual",
                 body: "Keep the floor low. Finish today’s ritual.",
@@ -57,7 +64,7 @@ final class LocalNotificationService {
         }
 
         if settings.sleepReminderEnabled {
-            scheduleDailyReminder(
+            await scheduleDailyReminder(
                 identifier: "hcc.sleep.daily",
                 title: "Sleep Prep",
                 body: "Start the wind-down. Protect tomorrow.",
@@ -66,7 +73,7 @@ final class LocalNotificationService {
         }
 
         if settings.nutritionReminderEnabled {
-            scheduleDailyReminder(
+            await scheduleDailyReminder(
                 identifier: "hcc.nutrition.daily",
                 title: "Nutrition Anchors",
                 body: "Log Cronometer and hit the anchors.",
@@ -77,8 +84,35 @@ final class LocalNotificationService {
         return await debugStatus()
     }
 
+    func scheduleTestReminder(secondsFromNow: TimeInterval = 10) async -> TestNotificationResult {
+        center.removePendingNotificationRequests(withIdentifiers: [testReminderIdentifier])
+        let granted = await requestPermission()
+        guard granted else {
+            return TestNotificationResult(
+                didSchedule: false,
+                message: "Notifications are not allowed. Enable them in iOS Settings, then test again.",
+                status: await debugStatus()
+            )
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Health Command Center Test"
+        content.body = "Test reminder: local notifications are working."
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(secondsFromNow, 1), repeats: false)
+        let request = UNNotificationRequest(identifier: testReminderIdentifier, content: content, trigger: trigger)
+        try? await center.add(request)
+
+        return TestNotificationResult(
+            didSchedule: true,
+            message: "Test reminder scheduled for about 10 seconds from now.",
+            status: await debugStatus()
+        )
+    }
+
     func cancelAllHealthCommandReminders() {
-        center.removePendingNotificationRequests(withIdentifiers: reminderIdentifiers)
+        center.removePendingNotificationRequests(withIdentifiers: reminderIdentifiers + [testReminderIdentifier])
     }
 
     func debugStatus() async -> NotificationDebugStatus {
@@ -97,7 +131,7 @@ final class LocalNotificationService {
         title: String,
         body: String,
         time: ReminderTime
-    ) {
+    ) async {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
@@ -105,7 +139,7 @@ final class LocalNotificationService {
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: time.dateComponents, repeats: true)
         let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
-        center.add(request) { _ in }
+        try? await center.add(request)
     }
 
     private func notificationSettings() async -> UNNotificationSettings {

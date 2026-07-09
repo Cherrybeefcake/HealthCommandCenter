@@ -97,7 +97,7 @@ private struct TodayDashboard: View {
                             VStack(alignment: .leading, spacing: 12) {
                                 SectionHeader(
                                     title: "Health context",
-                                    subtitle: "No HealthKit data yet? The check-in still works from Brian's body report.",
+                                    subtitle: "\(appModel.healthAuthorizationSummary). Last refresh: \(appModel.lastHealthRefreshText).",
                                     icon: "heart.text.square",
                                     accent: category.accent
                                 )
@@ -109,6 +109,15 @@ private struct TodayDashboard: View {
                                 Text("Missing HealthKit values are treated as optional context, not blockers.")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+
+                                SecondaryActionButton(
+                                    title: appModel.isLoadingHealth ? "Refreshing Health Data" : "Refresh Health Data",
+                                    icon: "arrow.clockwise",
+                                    accent: category.accent
+                                ) {
+                                    Task { await appModel.refreshHealthData() }
+                                }
+                                .disabled(appModel.isLoadingHealth)
                             }
                         }
                     }

@@ -86,6 +86,22 @@ HealthKit readings are best tested on a real iPhone with Health data available. 
 - Local storage persists after app relaunch.
 - Debug section shows raw inputs/logs.
 
+## Real iPhone QA Checklist
+
+- Enable Developer Mode on the iPhone if iOS requires it.
+- Trust the developer certificate if the first real-device launch asks for trust.
+- Launch Health Command Center and complete the greeting if this is a fresh install.
+- From Home, confirm `Start Check In` appears when no check-in exists today.
+- Start Check In, tap `Connect Apple Health`, and approve or deny HealthKit permissions deliberately.
+- Use Home or Profile -> `Refresh Health Data` and confirm the HealthKit status, last refresh time, and returned metric values update calmly.
+- Confirm Home's Health context matches Profile's Real iPhone HealthKit status.
+- Log one workout set in Plan and confirm it appears in today's sets and Progress.
+- Toggle one Ritual item and confirm the completion count updates.
+- Save Nutrition anchors in Ritual and confirm Profile/Data counts reflect the local log.
+- In Profile -> Reminders, enable reminders if desired and use `Schedule Test Reminder in 10 Seconds`.
+- Close and reopen the app, then confirm check-ins, workout logs, ritual logs, nutrition logs, reminder settings, and Profile preferences persist.
+- Known setup issues: Xcode may require Developer Mode, certificate trust, a selected signing team, or a unique bundle identifier before real-device launch succeeds.
+
 ## MVP QA Checklist
 
 - First launch:

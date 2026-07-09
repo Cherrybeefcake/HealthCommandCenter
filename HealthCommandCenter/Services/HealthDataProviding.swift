@@ -1,6 +1,7 @@
 import Foundation
 
 protocol HealthDataProviding {
+    var isHealthDataAvailable: Bool { get }
     func requestAuthorization() async throws
     func fetchTodaySnapshot() async throws -> HealthSnapshot
 }

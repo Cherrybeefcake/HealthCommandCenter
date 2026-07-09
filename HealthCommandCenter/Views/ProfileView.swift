@@ -17,6 +17,7 @@ struct ProfileView: View {
                     )
 
                     profileSummary
+                    healthKitStatusSection
                     programPhaseSection
                     trainingPreferencesSection
                     remindersSection
@@ -105,6 +106,64 @@ struct ProfileView: View {
         }
     }
 
+    private var healthKitStatusSection: some View {
+        settingsSection("Real iPhone HealthKit", icon: "heart.text.square") {
+            Text("Best-effort real-device status. iOS may not expose a simple per-type authorization answer, so the app shows permission/fetch state and which values actually returned.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                storageMetric("Availability", appModel.healthAvailabilityText)
+                storageMetric("Permission", appModel.healthAuthorizationSummary)
+                storageMetric("Last refresh", appModel.lastHealthRefreshText)
+                storageMetric("Values today", "\(appModel.todaySnapshot.availableMetricCount)/7")
+            }
+
+            SecondaryActionButton(
+                title: appModel.isLoadingHealth ? "Refreshing Health Data" : "Refresh Health Data",
+                icon: "arrow.clockwise",
+                accent: appModel.activeCategory.accent
+            ) {
+                Task { await appModel.refreshHealthData() }
+            }
+            .disabled(appModel.isLoadingHealth)
+
+            DisclosureGroup {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(appModel.healthMetricStatusItems()) { item in
+                        statusRow(item)
+                    }
+                }
+                .padding(.top, 10)
+            } label: {
+                Label("Health values returned", systemImage: "waveform.path.ecg")
+                    .font(.headline)
+            }
+            .tint(appModel.activeCategory.accent)
+        }
+    }
+
+    private var persistenceStatusSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Close and reopen the app after testing. These local counts should still make sense after relaunch.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                storageMetric("Check-ins", "\(appModel.checkIns.count)")
+                storageMetric("Workout logs", "\(appModel.exerciseLogs.count)")
+                storageMetric("Ritual days", "\(appModel.ritualLogs.count)")
+                storageMetric("Nutrition", "\(appModel.nutritionLogs.count)")
+                storageMetric("Reminders", appModel.reminderSettings.remindersEnabled ? "Enabled" : "Disabled")
+                storageMetric("Scheduled", "\(appModel.scheduledReminderCount)")
+            }
+        }
+    }
+
     private var trainingPreferencesSection: some View {
         settingsSection("Training Preferences", icon: "figure.strengthtraining.traditional") {
             preferencePicker("Location", value: Binding(
@@ -185,11 +244,25 @@ struct ProfileView: View {
             }
 
             if appModel.notificationPermissionStatus == "Denied" {
-                Text("Notifications are denied in iOS Settings. Reminder choices are saved, but Health Command Center cannot schedule alerts until permission is allowed.")
+                Text("Notifications are denied in iOS Settings. Open Settings > Notifications > Health Command Center and allow notifications, then return here and test again.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineSpacing(3)
             }
+
+            SecondaryActionButton(
+                title: "Schedule Test Reminder in 10 Seconds",
+                icon: "bell.and.waves.left.and.right",
+                accent: appModel.activeCategory.accent
+            ) {
+                Task { await appModel.scheduleTestReminder() }
+            }
+
+            Text(appModel.reminderTestStatus)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -235,12 +308,7 @@ struct ProfileView: View {
                 .foregroundStyle(.secondary)
                 .lineSpacing(3)
 
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                storageMetric("Check-ins", "\(appModel.checkIns.count)")
-                storageMetric("Workout logs", "\(appModel.exerciseLogs.count)")
-                storageMetric("Ritual days", "\(appModel.ritualLogs.count)")
-                storageMetric("Nutrition", "\(appModel.nutritionLogs.count)")
-            }
+            persistenceStatusSection
 
             DisclosureGroup {
                 VStack(alignment: .leading, spacing: 12) {
@@ -248,6 +316,7 @@ struct ProfileView: View {
                     fileRow("workout_logs.json", "Exercise set logs")
                     fileRow("daily_ritual_logs.json", "Ritual completions by calendar day")
                     fileRow("daily_nutrition_logs.json", "Manual nutrition summaries by calendar day")
+                    fileRow("UserDefaults reminderSettings", "Reminder toggles, times, and local settings")
 
                     Divider()
                         .overlay(.white.opacity(0.16))
@@ -456,13 +525,34 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(value)
                 .font(.headline)
-                .lineLimit(1)
+                .lineLimit(2)
                 .minimumScaleFactor(0.7)
             Text(title)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+    }
+
+    private func statusRow(_ item: DeviceStatusItem) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(item.title)
+                    .font(.subheadline.weight(.semibold))
+                Spacer(minLength: 8)
+                Text(item.value)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(appModel.activeCategory.accent)
+                    .multilineTextAlignment(.trailing)
+            }
+
+            Text(item.detail)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
         .padding(10)
         .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
     }

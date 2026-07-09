@@ -4,6 +4,10 @@ import HealthKit
 final class HealthKitHealthDataService: HealthDataProviding {
     private let store = HKHealthStore()
 
+    var isHealthDataAvailable: Bool {
+        HKHealthStore.isHealthDataAvailable()
+    }
+
     func requestAuthorization() async throws {
         guard HKHealthStore.isHealthDataAvailable() else { throw HealthDataError.unavailable }
 
