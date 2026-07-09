@@ -106,9 +106,11 @@ private struct TodayDashboard: View {
                                     healthMini("Steps", snapshot.steps.map { "\($0)" } ?? "No data")
                                     healthMini("HRV", snapshot.hrvSDNN.map { String(format: "%.0f ms", $0) } ?? "No data")
                                 }
-                                Text("Missing HealthKit values are treated as optional context, not blockers.")
+                                Text("Missing values may be timing, no sample, or permissions. Sleep checks a recent window; steps and active energy can be empty just after midnight.")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+                                    .lineSpacing(3)
+                                    .fixedSize(horizontal: false, vertical: true)
 
                                 SecondaryActionButton(
                                     title: appModel.isLoadingHealth ? "Refreshing Health Data" : "Refresh Health Data",

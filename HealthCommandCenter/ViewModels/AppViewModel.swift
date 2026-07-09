@@ -77,6 +77,9 @@ final class AppViewModel: ObservableObject {
     @Published var notificationPermissionStatus: String = "Not requested"
     @Published var scheduledReminderCount: Int = 0
     @Published var reminderTestStatus: String = "No test reminder sent yet"
+    @Published var pendingHealthCommandNotificationCount: Int = 0
+    @Published var isTestReminderPending = false
+    @Published var lastTestReminderScheduledAt: Date?
 
     private let storage: LocalStorageService
     private let healthService: HealthDataProviding
@@ -155,7 +158,8 @@ final class AppViewModel: ObservableObject {
         case .loading:
             return "Authorization/fetch in progress"
         case .ready:
-            return "Requested; readable data returned"
+            let count = todaySnapshot.availableMetricCount
+            return count >= 7 ? "Requested; all tracked data returned" : "Some data returned (\(count)/7)"
         case .empty:
             return "Requested; no readable data returned yet"
         case .unavailable:
@@ -606,21 +610,21 @@ final class AppViewModel: ObservableObject {
             appendDebug("Reminders disabled")
         }
 
-        notificationPermissionStatus = status.permissionStatusText
-        scheduledReminderCount = status.scheduledReminderCount
+        applyNotificationStatus(status)
     }
 
     func refreshNotificationStatus() async {
         let status = await notificationService.debugStatus()
-        notificationPermissionStatus = status.permissionStatusText
-        scheduledReminderCount = status.scheduledReminderCount
+        applyNotificationStatus(status)
     }
 
     func scheduleTestReminder() async {
         let result = await notificationService.scheduleTestReminder()
-        notificationPermissionStatus = result.status.permissionStatusText
-        scheduledReminderCount = result.status.scheduledReminderCount
+        applyNotificationStatus(result.status)
         reminderTestStatus = result.message
+        if result.didSchedule {
+            lastTestReminderScheduledAt = Date()
+        }
         appendDebug(result.didSchedule ? "Test reminder scheduled" : "Test reminder not scheduled: \(result.message)")
     }
 
@@ -655,6 +659,9 @@ final class AppViewModel: ObservableObject {
         reminderSettings = storage.reminderSettings
         notificationPermissionStatus = "Not requested"
         scheduledReminderCount = 0
+        pendingHealthCommandNotificationCount = 0
+        isTestReminderPending = false
+        lastTestReminderScheduledAt = nil
         checkIns = []
         latestCheckIn = nil
         exerciseLogs = []
@@ -850,6 +857,9 @@ final class AppViewModel: ObservableObject {
         let checkIn = latestCheckIn
         return """
         Health state: \(healthState.title)
+        Health availability: \(healthAvailabilityText)
+        Health authorization: \(healthAuthorizationSummary)
+        Last Health refresh: \(lastHealthRefreshText)
         Sleep: \(snapshot.sleepHours.map { String(format: "%.1f hr", $0) } ?? "nil")
         Steps: \(snapshot.steps.map(String.init) ?? "nil")
         Workouts: \(snapshot.workoutCount.map(String.init) ?? "nil")
@@ -869,17 +879,33 @@ final class AppViewModel: ObservableObject {
         Ritual date: \(todayRitualDateKey)
         Ritual logs: \(ritualLogs.count)
         Nutrition logs: \(nutritionLogs.count)
+        Notification permission: \(notificationPermissionStatus)
+        Pending HCC notifications: \(pendingHealthCommandNotificationCount)
+        Test reminder pending: \(isTestReminderPending ? "yes" : "no")
         """
     }
 
     func healthMetricStatusItems(snapshot: HealthSnapshot? = nil) -> [DeviceStatusItem] {
         let snapshot = snapshot ?? todaySnapshot
+        if let diagnostics = snapshot.metricDiagnostics, !diagnostics.isEmpty {
+            return diagnostics.map { diagnostic in
+                let sampleText = diagnostic.sampleDate.map { "Sample: \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "Sample: none"
+                let errorText = diagnostic.errorText.map { "\nError: \($0)" } ?? ""
+                return DeviceStatusItem(
+                    id: diagnostic.id,
+                    title: diagnostic.title,
+                    value: diagnostic.valueText,
+                    detail: "\(diagnostic.statusText) | \(diagnostic.queryWindow)\n\(sampleText)\n\(diagnostic.detail)\(errorText)"
+                )
+            }
+        }
+
         return [
             DeviceStatusItem(
                 id: "sleep",
                 title: "Sleep",
                 value: snapshot.sleepHours.map { String(format: "%.1f hr", $0) } ?? "No value",
-                detail: snapshot.sleepHours == nil ? "No sleep sample returned for today." : "Sleep sample returned."
+                detail: snapshot.sleepHours == nil ? "No sleep sample returned. New refreshes check the last 36 hours." : "Sleep sample returned."
             ),
             DeviceStatusItem(
                 id: "steps",
@@ -1218,6 +1244,13 @@ final class AppViewModel: ObservableObject {
     private func appendDebug(_ message: String) {
         debugLog.insert("[\(Date().formatted(date: .omitted, time: .standard))] \(message)", at: 0)
         debugLog = Array(debugLog.prefix(12))
+    }
+
+    private func applyNotificationStatus(_ status: NotificationDebugStatus) {
+        notificationPermissionStatus = status.permissionStatusText
+        scheduledReminderCount = status.scheduledReminderCount
+        pendingHealthCommandNotificationCount = status.pendingHealthCommandCount
+        isTestReminderPending = status.isTestReminderPending
     }
 
     private func isInCurrentWeek(_ date: Date) -> Bool {

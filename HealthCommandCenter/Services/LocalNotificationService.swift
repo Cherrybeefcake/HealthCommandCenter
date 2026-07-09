@@ -4,6 +4,8 @@ import UserNotifications
 struct NotificationDebugStatus: Hashable {
     let permissionStatusText: String
     let scheduledReminderCount: Int
+    let pendingHealthCommandCount: Int
+    let isTestReminderPending: Bool
 }
 
 struct TestNotificationResult: Hashable {
@@ -12,7 +14,7 @@ struct TestNotificationResult: Hashable {
     let status: NotificationDebugStatus
 }
 
-final class LocalNotificationService {
+final class LocalNotificationService: NSObject, UNUserNotificationCenterDelegate {
     private let center: UNUserNotificationCenter
     private let testReminderIdentifier = "hcc.test.10sec"
     private let reminderIdentifiers = [
@@ -24,6 +26,8 @@ final class LocalNotificationService {
 
     init(center: UNUserNotificationCenter = .current()) {
         self.center = center
+        super.init()
+        self.center.delegate = self
     }
 
     func requestPermission() async -> Bool {
@@ -102,13 +106,28 @@ final class LocalNotificationService {
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(secondsFromNow, 1), repeats: false)
         let request = UNNotificationRequest(identifier: testReminderIdentifier, content: content, trigger: trigger)
-        try? await center.add(request)
+        do {
+            try await center.add(request)
+        } catch {
+            return TestNotificationResult(
+                didSchedule: false,
+                message: "Test reminder could not be scheduled: \(error.localizedDescription)",
+                status: await debugStatus()
+            )
+        }
 
         return TestNotificationResult(
             didSchedule: true,
             message: "Test reminder scheduled for about 10 seconds from now.",
             status: await debugStatus()
         )
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
+        [.banner, .list, .sound]
     }
 
     func cancelAllHealthCommandReminders() {
@@ -119,10 +138,15 @@ final class LocalNotificationService {
         async let settings = notificationSettings()
         async let requests = pendingRequests()
         let status = await settings.authorizationStatus
-        let count = await requests.filter { reminderIdentifiers.contains($0.identifier) }.count
+        let pending = await requests
+        let count = pending.filter { reminderIdentifiers.contains($0.identifier) }.count
+        let testPending = pending.contains { $0.identifier == testReminderIdentifier }
+        let healthCommandCount = pending.filter { $0.identifier.hasPrefix("hcc.") }.count
         return NotificationDebugStatus(
             permissionStatusText: permissionText(for: status),
-            scheduledReminderCount: count
+            scheduledReminderCount: count,
+            pendingHealthCommandCount: healthCommandCount,
+            isTestReminderPending: testPending
         )
     }
 

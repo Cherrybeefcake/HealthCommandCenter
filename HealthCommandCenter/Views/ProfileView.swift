@@ -108,7 +108,7 @@ struct ProfileView: View {
 
     private var healthKitStatusSection: some View {
         settingsSection("Real iPhone HealthKit", icon: "heart.text.square") {
-            Text("Best-effort real-device status. iOS may not expose a simple per-type authorization answer, so the app shows permission/fetch state and which values actually returned.")
+            Text("Best-effort real-device status. Sleep checks the recent sleep window, workouts check a recent 7-day window, and steps/active energy may be zero or empty just after midnight.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineSpacing(3)
@@ -118,7 +118,7 @@ struct ProfileView: View {
                 storageMetric("Availability", appModel.healthAvailabilityText)
                 storageMetric("Permission", appModel.healthAuthorizationSummary)
                 storageMetric("Last refresh", appModel.lastHealthRefreshText)
-                storageMetric("Values today", "\(appModel.todaySnapshot.availableMetricCount)/7")
+                storageMetric("Values returned", "\(appModel.todaySnapshot.availableMetricCount)/7")
             }
 
             SecondaryActionButton(
@@ -240,7 +240,7 @@ struct ProfileView: View {
 
             HStack(spacing: 10) {
                 StatusPill(title: "Permission: \(appModel.notificationPermissionStatus)", accent: appModel.activeCategory.accent)
-                StatusPill(title: "\(appModel.scheduledReminderCount) scheduled", accent: appModel.activeCategory.accent)
+                StatusPill(title: "\(appModel.pendingHealthCommandNotificationCount) pending", accent: appModel.activeCategory.accent)
             }
 
             if appModel.notificationPermissionStatus == "Denied" {
@@ -249,6 +249,14 @@ struct ProfileView: View {
                     .foregroundStyle(.secondary)
                     .lineSpacing(3)
             }
+
+            VStack(alignment: .leading, spacing: 6) {
+                preferenceRow("Daily reminders", "\(appModel.scheduledReminderCount)")
+                preferenceRow("Test reminder pending", appModel.isTestReminderPending ? "Yes" : "No")
+                preferenceRow("Last test scheduled", appModel.lastTestReminderScheduledAt?.formatted(date: .abbreviated, time: .shortened) ?? "Not yet")
+            }
+            .padding(10)
+            .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
 
             SecondaryActionButton(
                 title: "Schedule Test Reminder in 10 Seconds",
@@ -261,6 +269,12 @@ struct ProfileView: View {
             Text(appModel.reminderTestStatus)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("For the test alert, lock the phone or leave the app if you do not see a banner while the app is open. Focus or Silent mode can suppress alert presentation.")
+                .font(.caption2)
+                .foregroundStyle(.secondary.opacity(0.9))
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
         }

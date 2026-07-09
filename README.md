@@ -102,6 +102,21 @@ HealthKit readings are best tested on a real iPhone with Health data available. 
 - Close and reopen the app, then confirm check-ins, workout logs, ritual logs, nutrition logs, reminder settings, and Profile preferences persist.
 - Known setup issues: Xcode may require Developer Mode, certificate trust, a selected signing team, or a unique bundle identifier before real-device launch succeeds.
 
+## Real-device HealthKit Troubleshooting
+
+- Sleep uses a recent sleep window instead of only calendar today because sleep often starts yesterday and ends today.
+- Steps and active energy can be zero or empty shortly after midnight; Profile shows whether the query returned a value, zero, no sample, or an error.
+- Workouts only appear if Apple Health has workout samples; Profile checks a recent workout window for debugging.
+- Resting heart rate, HRV, and body weight use the most recent readable sample.
+- Verify permissions in the Health app and iOS Settings if a metric consistently shows unavailable, denied, or query error.
+
+## Notification Test Troubleshooting
+
+- Allow notifications when iOS asks, or enable them later in Settings -> Notifications -> Health Command Center.
+- Use Profile -> Reminders -> `Schedule Test Reminder in 10 Seconds`, then watch the pending test reminder status.
+- If no alert appears, lock the phone or leave the app and test again; foreground banners, Focus mode, Silent mode, and notification summary settings can affect presentation.
+- Profile shows permission status, pending HCC notification count, and whether the test reminder is currently pending.
+
 ## MVP QA Checklist
 
 - First launch:

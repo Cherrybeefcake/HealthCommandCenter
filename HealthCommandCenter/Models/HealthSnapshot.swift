@@ -9,6 +9,7 @@ struct HealthSnapshot: Codable, Equatable {
     var hrvSDNN: Double?
     var activeEnergy: Double?
     var weightPounds: Double?
+    var metricDiagnostics: [HealthMetricDiagnostic]?
 
     static let empty = HealthSnapshot()
 
@@ -27,6 +28,17 @@ struct HealthSnapshot: Codable, Equatable {
     var hasAnyData: Bool {
         availableMetricCount > 0
     }
+}
+
+struct HealthMetricDiagnostic: Codable, Equatable, Identifiable {
+    var id: String
+    var title: String
+    var valueText: String
+    var statusText: String
+    var queryWindow: String
+    var detail: String
+    var sampleDate: Date?
+    var errorText: String?
 }
 
 struct OuraDailySummary: Codable, Equatable {
