@@ -69,11 +69,13 @@ final class AppViewModel: ObservableObject {
     @Published var exerciseLogs: [ExerciseLog] = []
     @Published var ritualLogs: [DailyRitualLog] = []
     @Published var nutritionLogs: [DailyNutritionLog] = []
+    @Published var ouraManualSnapshots: [OuraManualSnapshot] = []
     @Published var todayRitualDateKey: String = RitualLibrary.dateKey()
     @Published var programPhase: ProgramPhase
     @Published var trainingLocation: TrainingLocation
     @Published var workoutTimePreference: WorkoutTimePreference
     @Published var reminderSettings: ReminderSettings
+    @Published var ouraConnectionSettings: OuraConnectionSettings
     @Published var notificationPermissionStatus: String = "Not requested"
     @Published var scheduledReminderCount: Int = 0
     @Published var reminderTestStatus: String = "No test reminder sent yet"
@@ -106,6 +108,7 @@ final class AppViewModel: ObservableObject {
         self.trainingLocation = storage.trainingLocation
         self.workoutTimePreference = storage.workoutTimePreference
         self.reminderSettings = storage.reminderSettings
+        self.ouraConnectionSettings = storage.ouraConnectionSettings
     }
 
     func bootstrap() async {
@@ -115,6 +118,7 @@ final class AppViewModel: ObservableObject {
         exerciseLogs = storage.loadExerciseLogs().sorted { $0.date > $1.date }
         ritualLogs = storage.loadRitualLogs().sorted { $0.dateKey > $1.dateKey }
         nutritionLogs = storage.loadNutritionLogs().sorted { $0.dateKey > $1.dateKey }
+        ouraManualSnapshots = storage.loadOuraManualSnapshots().sorted { $0.updatedAt > $1.updatedAt }
         prepareTodayStateIfNeeded()
         latestCheckIn = checkIns.first
         await refreshNotificationStatus()
@@ -204,10 +208,14 @@ final class AppViewModel: ObservableObject {
 
     func submitCheckIn(from form: CheckInViewModel) async {
         let ouraSummary: OuraDailySummary?
-        do {
-            ouraSummary = try await ouraService.fetchDailySummary()
-        } catch {
-            ouraSummary = nil
+        if let localOura = selectedOuraSnapshotForRecovery()?.dailySummary {
+            ouraSummary = localOura
+        } else {
+            do {
+                ouraSummary = try await ouraService.fetchDailySummary()
+            } catch {
+                ouraSummary = nil
+            }
         }
         let result = classifier.classify(
             energy: form.energy,
@@ -349,11 +357,12 @@ final class AppViewModel: ObservableObject {
         let checkIn = hasCheckedInToday ? latestCheckIn : nil
         let sleepSummary = currentSleepSummary(checkIn: checkIn)
         let sleepHours = sleepSummary.durationHours
-        let category = recoveryCategory(
+        let baseCategory = recoveryCategory(
             sleepHours: sleepHours,
             checkIn: checkIn,
             readiness: hasCheckedInToday ? activeCategory : nil
         )
+        let category = adjustedRecoveryCategory(baseCategory, ouraSnapshot: selectedOuraSnapshotForRecovery())
 
         return RecoveryStatus(
             sleepDurationText: sleepSummary.durationText,
@@ -595,6 +604,31 @@ final class AppViewModel: ObservableObject {
         appendDebug("Workout time set: \(preference.rawValue)")
     }
 
+    func saveOuraConnectionSettings(_ settings: OuraConnectionSettings) {
+        ouraConnectionSettings = settings
+        storage.ouraConnectionSettings = settings
+        appendDebug("Oura settings saved: \(settings.connectionMode.rawValue), source \(settings.preferredRecoverySource.rawValue)")
+    }
+
+    func saveOuraManualSnapshot(_ snapshot: OuraManualSnapshot) {
+        var updated = snapshot
+        updated.updatedAt = Date()
+        ouraManualSnapshots.removeAll { $0.dateKey == updated.dateKey }
+        ouraManualSnapshots.insert(updated, at: 0)
+        ouraManualSnapshots.sort { $0.updatedAt > $1.updatedAt }
+        storage.saveOuraManualSnapshots(ouraManualSnapshots)
+
+        var settings = ouraConnectionSettings
+        if settings.connectionMode == .notConnected || settings.connectionMode == .futureOAuth {
+            settings.connectionMode = .manual
+        }
+        settings.isEnabled = settings.connectionMode == .manual || settings.connectionMode == .mock
+        settings.lastMockUpdate = updated.updatedAt
+        ouraConnectionSettings = settings
+        storage.ouraConnectionSettings = settings
+        appendDebug("Oura manual/mock snapshot saved: \(updated.dateKey)")
+    }
+
     func saveReminderSettings(_ settings: ReminderSettings) async {
         reminderSettings = settings
         storage.reminderSettings = settings
@@ -660,6 +694,7 @@ final class AppViewModel: ObservableObject {
         trainingLocation = storage.trainingLocation
         workoutTimePreference = storage.workoutTimePreference
         reminderSettings = storage.reminderSettings
+        ouraConnectionSettings = storage.ouraConnectionSettings
         notificationPermissionStatus = "Not requested"
         scheduledReminderCount = 0
         pendingHealthCommandNotificationCount = 0
@@ -670,6 +705,7 @@ final class AppViewModel: ObservableObject {
         exerciseLogs = []
         ritualLogs = []
         nutritionLogs = []
+        ouraManualSnapshots = []
         debugLog = []
         todaySnapshot = .empty
         lastHealthRefreshAt = nil
@@ -883,6 +919,9 @@ final class AppViewModel: ObservableObject {
         Ritual date: \(todayRitualDateKey)
         Ritual logs: \(ritualLogs.count)
         Nutrition logs: \(nutritionLogs.count)
+        Oura mode: \(ouraConnectionSettings.connectionMode.rawValue)
+        Oura source: \(ouraConnectionSettings.preferredRecoverySource.rawValue)
+        Oura snapshots: \(ouraManualSnapshots.count)
         Notification permission: \(notificationPermissionStatus)
         Pending HCC notifications: \(pendingHealthCommandNotificationCount)
         Test reminder pending: \(isTestReminderPending ? "yes" : "no")
@@ -951,7 +990,9 @@ final class AppViewModel: ObservableObject {
     }
 
     private func currentSleepSummary(checkIn: CheckIn?) -> SleepSummary {
-        if let oura = checkIn?.ouraSummary, let hours = oura.sleepDurationHours {
+        if shouldUseOuraSource,
+           let oura = checkIn?.ouraSummary,
+           let hours = oura.sleepDurationHours {
             return SleepSummary(
                 durationHours: hours,
                 durationText: String(format: "%.1f hr", hours),
@@ -964,28 +1005,100 @@ final class AppViewModel: ObservableObject {
             )
         }
 
-        if let summary = checkIn?.healthSnapshot.sleepSummary, summary.durationHours != nil {
-            return summary
-        }
-
-        if let summary = todaySnapshot.sleepSummary, summary.durationHours != nil {
-            return summary
-        }
-
-        if let legacySleep = checkIn?.healthSnapshot.sleepHours ?? todaySnapshot.sleepHours {
+        if shouldPreferOura,
+           let snapshot = selectedOuraSnapshotForRecovery(),
+           let hours = snapshot.sleepDurationHours {
             return SleepSummary(
-                durationHours: legacySleep,
-                durationText: String(format: "%.1f hr", legacySleep),
-                source: .manualCheckIn,
-                label: "Manual check-in sleep",
-                detailText: "Using stored check-in sleep because no structured sleep summary is available.",
+                durationHours: hours,
+                durationText: String(format: "%.1f hr", hours),
+                source: .oura,
+                label: "Oura latest sleep",
+                detailText: "Using local Oura manual/mock latest sleep. OAuth is not connected yet.",
                 endDate: nil,
                 includesNapContext: false,
                 lookupWindowDescription: nil
             )
         }
 
-        return .none
+        switch ouraConnectionSettings.preferredRecoverySource {
+        case .oura:
+            return appleHealthSleepSummary(checkIn: checkIn) ?? manualSleepSummary(checkIn: checkIn) ?? .none
+        case .appleHealth:
+            return appleHealthSleepSummary(checkIn: checkIn) ?? manualSleepSummary(checkIn: checkIn) ?? .none
+        case .manualCheckIn:
+            return manualSleepSummary(checkIn: checkIn) ?? .none
+        case .automaticBestAvailable:
+            return appleHealthSleepSummary(checkIn: checkIn) ?? manualSleepSummary(checkIn: checkIn) ?? .none
+        }
+    }
+
+    private var shouldPreferOura: Bool {
+        guard ouraConnectionSettings.isEnabled else { return false }
+        guard selectedOuraSnapshotForRecovery()?.hasRecoveryValues == true else { return false }
+        return shouldUseOuraSource
+    }
+
+    private var shouldUseOuraSource: Bool {
+        switch ouraConnectionSettings.preferredRecoverySource {
+        case .oura, .automaticBestAvailable:
+            return true
+        case .appleHealth, .manualCheckIn:
+            return false
+        }
+    }
+
+    func latestOuraManualSnapshot() -> OuraManualSnapshot? {
+        ouraManualSnapshots.sorted { $0.updatedAt > $1.updatedAt }.first
+    }
+
+    func recentOuraManualSnapshots(limit: Int = 6) -> [OuraManualSnapshot] {
+        Array(ouraManualSnapshots.sorted { $0.updatedAt > $1.updatedAt }.prefix(limit))
+    }
+
+    private func selectedOuraSnapshotForRecovery() -> OuraManualSnapshot? {
+        guard ouraConnectionSettings.isEnabled else { return nil }
+        guard ouraConnectionSettings.connectionMode == .mock || ouraConnectionSettings.connectionMode == .manual else { return nil }
+        return latestOuraManualSnapshot()
+    }
+
+    private func appleHealthSleepSummary(checkIn: CheckIn?) -> SleepSummary? {
+        if let summary = checkIn?.healthSnapshot.sleepSummary, summary.durationHours != nil {
+            return summary
+        }
+        if let summary = todaySnapshot.sleepSummary, summary.durationHours != nil {
+            return summary
+        }
+        return nil
+    }
+
+    private func manualSleepSummary(checkIn: CheckIn?) -> SleepSummary? {
+        guard let legacySleep = checkIn?.healthSnapshot.sleepHours ?? todaySnapshot.sleepHours else { return nil }
+        return SleepSummary(
+            durationHours: legacySleep,
+            durationText: String(format: "%.1f hr", legacySleep),
+            source: .manualCheckIn,
+            label: "Manual check-in sleep",
+            detailText: "Using stored check-in sleep because no structured Apple Health or Oura summary is available.",
+            endDate: nil,
+            includesNapContext: false,
+            lookupWindowDescription: nil
+        )
+    }
+
+    private func adjustedRecoveryCategory(_ category: RecoveryCategory, ouraSnapshot: OuraManualSnapshot?) -> RecoveryCategory {
+        guard ouraConnectionSettings.isEnabled, let ouraSnapshot else { return category }
+        let lowReadiness = (ouraSnapshot.readinessScore ?? 100) < 55
+        let veryLowReadiness = (ouraSnapshot.readinessScore ?? 100) < 40
+        let lowSleepScore = (ouraSnapshot.sleepScore ?? 100) < 55
+        let lowSleepHours = (ouraSnapshot.sleepDurationHours ?? 99) < 5.5
+
+        if veryLowReadiness || lowSleepHours {
+            return .poor
+        }
+        if lowReadiness || lowSleepScore {
+            return category == .poor ? .poor : .limited
+        }
+        return category
     }
 
     private func plannedSetCount(from prescription: String) -> Int {

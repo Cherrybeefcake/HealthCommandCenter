@@ -89,5 +89,92 @@ struct OuraDailySummary: Codable, Equatable {
     var sleepScore: Int?
     var sleepDurationHours: Double?
     var restingHeartRate: Double?
+    var hrv: Double?
+    var bodyTemperatureTrend: String?
     var hrvBalance: String?
+}
+
+enum OuraConnectionMode: String, Codable, CaseIterable, Identifiable, Hashable {
+    case notConnected = "Not Connected"
+    case mock = "Mock/Test"
+    case manual = "Manual Entry"
+    case futureOAuth = "Future OAuth"
+
+    var id: String { rawValue }
+}
+
+enum RecoveryDataSource: String, Codable, CaseIterable, Identifiable, Hashable {
+    case appleHealth = "Apple Health"
+    case oura = "Oura"
+    case manualCheckIn = "Manual Check-In"
+    case automaticBestAvailable = "Automatic Best Available"
+
+    var id: String { rawValue }
+}
+
+struct OuraConnectionSettings: Codable, Hashable {
+    var isEnabled: Bool
+    var connectionMode: OuraConnectionMode
+    var preferredRecoverySource: RecoveryDataSource
+    var lastMockUpdate: Date?
+    var notes: String
+
+    static let `default` = OuraConnectionSettings(
+        isEnabled: false,
+        connectionMode: .notConnected,
+        preferredRecoverySource: .automaticBestAvailable,
+        lastMockUpdate: nil,
+        notes: ""
+    )
+}
+
+struct OuraManualSnapshot: Codable, Identifiable, Hashable {
+    var id: String { dateKey }
+    var dateKey: String
+    var readinessScore: Int?
+    var sleepScore: Int?
+    var sleepDurationHours: Double?
+    var hrv: Double?
+    var restingHeartRate: Double?
+    var bodyTemperatureTrend: String?
+    var notes: String
+    var updatedAt: Date
+
+    init(
+        dateKey: String = RitualLibrary.dateKey(),
+        readinessScore: Int? = nil,
+        sleepScore: Int? = nil,
+        sleepDurationHours: Double? = nil,
+        hrv: Double? = nil,
+        restingHeartRate: Double? = nil,
+        bodyTemperatureTrend: String? = nil,
+        notes: String = "",
+        updatedAt: Date = Date()
+    ) {
+        self.dateKey = dateKey
+        self.readinessScore = readinessScore
+        self.sleepScore = sleepScore
+        self.sleepDurationHours = sleepDurationHours
+        self.hrv = hrv
+        self.restingHeartRate = restingHeartRate
+        self.bodyTemperatureTrend = bodyTemperatureTrend
+        self.notes = notes
+        self.updatedAt = updatedAt
+    }
+
+    var dailySummary: OuraDailySummary {
+        OuraDailySummary(
+            readinessScore: readinessScore,
+            sleepScore: sleepScore,
+            sleepDurationHours: sleepDurationHours,
+            restingHeartRate: restingHeartRate,
+            hrv: hrv,
+            bodyTemperatureTrend: bodyTemperatureTrend,
+            hrvBalance: nil
+        )
+    }
+
+    var hasRecoveryValues: Bool {
+        readinessScore != nil || sleepScore != nil || sleepDurationHours != nil || hrv != nil || restingHeartRate != nil
+    }
 }

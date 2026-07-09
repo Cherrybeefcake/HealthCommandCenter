@@ -37,6 +37,7 @@ struct ProgressDashboardView: View {
                     thisWeekSection
                     chartsSection
                     recoveryProgressSection
+                    ouraProgressSection
                     consistencyStreaksSection
                     exerciseProgressSection
                     nutritionProgressSection
@@ -187,6 +188,44 @@ struct ProgressDashboardView: View {
                 VStack(spacing: 10) {
                     ForEach(recent) { checkIn in
                         RecoveryHistoryRow(checkIn: checkIn, accent: category.accent)
+                    }
+                }
+            }
+        }
+    }
+
+    private var ouraProgressSection: some View {
+        let snapshots = appModel.recentOuraManualSnapshots()
+        return VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(
+                title: "Oura Test Snapshots",
+                subtitle: "Manual/mock Oura values for testing recovery source behavior. OAuth is not connected yet.",
+                icon: "ring",
+                accent: category.accent
+            )
+
+            if snapshots.isEmpty {
+                EmptyStateCard(
+                    title: "No Oura test data yet",
+                    message: "Add a manual/mock Oura snapshot in Profile to test how Oura affects recovery guidance.",
+                    icon: "ring",
+                    accent: category.accent,
+                    actionTitle: "Open Profile",
+                    actionIcon: "person.crop.circle",
+                    action: {
+                        appModel.selectedTab = .profile
+                    }
+                )
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(snapshots) { snapshot in
+                        HistoryRow(
+                            title: "Oura test snapshot",
+                            subtitle: "\(snapshot.dateKey) | updated \(snapshot.updatedAt.formatted(date: .abbreviated, time: .shortened))",
+                            detail: ouraSnapshotDetail(snapshot),
+                            icon: "ring",
+                            accent: category.accent
+                        )
                     }
                 }
             }
@@ -491,6 +530,15 @@ struct ProgressDashboardView: View {
 
     private var workoutSessionsThisWeekCount: Int {
         appModel.workoutSessionsThisWeek().count
+    }
+
+    private func ouraSnapshotDetail(_ snapshot: OuraManualSnapshot) -> String {
+        let readiness = snapshot.readinessScore.map { "Readiness \($0)" } ?? "readiness --"
+        let sleepScore = snapshot.sleepScore.map { "Sleep score \($0)" } ?? "sleep score --"
+        let sleep = snapshot.sleepDurationHours.map { String(format: "%.1f hr sleep", $0) } ?? "sleep --"
+        let hrv = snapshot.hrv.map { String(format: "HRV %.0f", $0) } ?? "HRV --"
+        let note = snapshot.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "" : " | notes"
+        return "\(readiness) | \(sleepScore) | \(sleep) | \(hrv)\(note)"
     }
 
     private var ritualPercentText: String {

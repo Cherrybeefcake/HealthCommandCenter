@@ -3,6 +3,13 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject private var appModel: AppViewModel
     @State private var resetAction: ResetAction?
+    @State private var ouraReadinessScore = ""
+    @State private var ouraSleepScore = ""
+    @State private var ouraSleepDuration = ""
+    @State private var ouraHRV = ""
+    @State private var ouraRestingHeartRate = ""
+    @State private var ouraBodyTemperatureTrend = ""
+    @State private var ouraNotes = ""
 
     var body: some View {
         ZStack {
@@ -18,6 +25,7 @@ struct ProfileView: View {
 
                     profileSummary
                     healthKitStatusSection
+                    ouraFoundationSection
                     programPhaseSection
                     trainingPreferencesSection
                     remindersSection
@@ -145,6 +153,68 @@ struct ProfileView: View {
         }
     }
 
+    private var ouraFoundationSection: some View {
+        settingsSection("Oura Foundation", icon: "ring") {
+            Text("Oura OAuth is not connected yet. Manual/mock mode helps test how Oura will affect readiness, sleep source, and recovery guidance without storing real tokens.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Toggle("Enable Oura foundation", isOn: ouraEnabledBinding)
+                .font(.headline)
+                .tint(appModel.activeCategory.accent)
+
+            preferencePicker("Mode", value: ouraModeBinding, cases: OuraConnectionMode.allCases)
+            preferencePicker("Recovery source", value: recoverySourceBinding, cases: RecoveryDataSource.allCases)
+
+            let latest = appModel.latestOuraManualSnapshot()
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                storageMetric("Status", appModel.ouraConnectionSettings.connectionMode.rawValue)
+                storageMetric("Snapshots", "\(appModel.ouraManualSnapshots.count)")
+                storageMetric("Readiness", latest?.readinessScore.map(String.init) ?? "--")
+                storageMetric("Sleep", latest?.sleepDurationHours.map { String(format: "%.1f hr", $0) } ?? "--")
+            }
+
+            DisclosureGroup {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Save a local test snapshot for today. Cronometer-style precision is not needed; this is only for testing source behavior.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineSpacing(3)
+
+                    manualOuraField("Readiness score", text: $ouraReadinessScore, placeholder: "0-100")
+                    manualOuraField("Sleep score", text: $ouraSleepScore, placeholder: "0-100")
+                    manualOuraField("Sleep duration", text: $ouraSleepDuration, placeholder: "hours")
+                    manualOuraField("HRV", text: $ouraHRV, placeholder: "ms")
+                    manualOuraField("Resting HR", text: $ouraRestingHeartRate, placeholder: "bpm")
+
+                    TextField("Body temperature trend", text: $ouraBodyTemperatureTrend)
+                        .textFieldStyle(.roundedBorder)
+                    TextField("Notes", text: $ouraNotes, axis: .vertical)
+                        .lineLimit(2...4)
+                        .textFieldStyle(.roundedBorder)
+
+                    PrimaryActionButton(title: "Save Oura Test Snapshot", icon: "square.and.arrow.down", accent: appModel.activeCategory.accent) {
+                        saveOuraSnapshot()
+                    }
+                }
+                .padding(.top, 10)
+            } label: {
+                Label("Manual/mock Oura entry", systemImage: "square.and.pencil")
+                    .font(.headline)
+            }
+            .tint(appModel.activeCategory.accent)
+
+            if let latest {
+                Text("Latest Oura test data updated \(latest.updatedAt.formatted(date: .abbreviated, time: .shortened)).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
     private var persistenceStatusSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Close and reopen the app after testing. These local counts should still make sense after relaunch.")
@@ -158,6 +228,7 @@ struct ProfileView: View {
                 storageMetric("Workout logs", "\(appModel.exerciseLogs.count)")
                 storageMetric("Ritual days", "\(appModel.ritualLogs.count)")
                 storageMetric("Nutrition", "\(appModel.nutritionLogs.count)")
+                storageMetric("Oura tests", "\(appModel.ouraManualSnapshots.count)")
                 storageMetric("Reminders", appModel.reminderSettings.remindersEnabled ? "Enabled" : "Disabled")
                 storageMetric("Scheduled", "\(appModel.scheduledReminderCount)")
             }
@@ -330,7 +401,9 @@ struct ProfileView: View {
                     fileRow("workout_logs.json", "Exercise set logs")
                     fileRow("daily_ritual_logs.json", "Ritual completions by calendar day")
                     fileRow("daily_nutrition_logs.json", "Manual nutrition summaries by calendar day")
+                    fileRow("oura_manual_snapshots.json", "Manual/mock Oura recovery test snapshots")
                     fileRow("UserDefaults reminderSettings", "Reminder toggles, times, and local settings")
+                    fileRow("UserDefaults ouraConnectionSettings", "Oura foundation mode and preferred recovery source")
 
                     Divider()
                         .overlay(.white.opacity(0.16))
@@ -483,6 +556,82 @@ struct ProfileView: View {
                 Task { await appModel.saveReminderSettings(settings) }
             }
         )
+    }
+
+    private var ouraEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { appModel.ouraConnectionSettings.isEnabled },
+            set: { isEnabled in
+                var settings = appModel.ouraConnectionSettings
+                settings.isEnabled = isEnabled
+                if !isEnabled {
+                    settings.connectionMode = .notConnected
+                } else if settings.connectionMode == .notConnected {
+                    settings.connectionMode = .manual
+                }
+                appModel.saveOuraConnectionSettings(settings)
+            }
+        )
+    }
+
+    private var ouraModeBinding: Binding<OuraConnectionMode> {
+        Binding(
+            get: { appModel.ouraConnectionSettings.connectionMode },
+            set: { mode in
+                var settings = appModel.ouraConnectionSettings
+                settings.connectionMode = mode
+                settings.isEnabled = mode == .mock || mode == .manual
+                if mode == .futureOAuth {
+                    settings.notes = "Future OAuth placeholder. No real Oura tokens are stored."
+                }
+                appModel.saveOuraConnectionSettings(settings)
+            }
+        )
+    }
+
+    private var recoverySourceBinding: Binding<RecoveryDataSource> {
+        Binding(
+            get: { appModel.ouraConnectionSettings.preferredRecoverySource },
+            set: { source in
+                var settings = appModel.ouraConnectionSettings
+                settings.preferredRecoverySource = source
+                appModel.saveOuraConnectionSettings(settings)
+            }
+        )
+    }
+
+    private func manualOuraField(_ title: String, text: Binding<String>, placeholder: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Spacer()
+            TextField(placeholder, text: text)
+                .multilineTextAlignment(.trailing)
+                .textFieldStyle(.roundedBorder)
+                .frame(maxWidth: 140)
+        }
+    }
+
+    private func saveOuraSnapshot() {
+        let snapshot = OuraManualSnapshot(
+            readinessScore: optionalInt(ouraReadinessScore),
+            sleepScore: optionalInt(ouraSleepScore),
+            sleepDurationHours: optionalDouble(ouraSleepDuration),
+            hrv: optionalDouble(ouraHRV),
+            restingHeartRate: optionalDouble(ouraRestingHeartRate),
+            bodyTemperatureTrend: ouraBodyTemperatureTrend.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            notes: ouraNotes
+        )
+        appModel.saveOuraManualSnapshot(snapshot)
+    }
+
+    private func optionalInt(_ text: String) -> Int? {
+        Int(text.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    private func optionalDouble(_ text: String) -> Double? {
+        Double(text.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     private func recoveryCopy(for phase: ProgramPhase) -> String {
@@ -695,5 +844,12 @@ private enum ResetAction: Identifiable {
         case .workoutLogs, .allLocalData:
             return true
         }
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }

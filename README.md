@@ -227,6 +227,10 @@ Meal templates are flexible examples for body recomposition, not a rigid meal pl
 
 Sleep and recovery guidance is rule-based and uses Apple Health latest sleep when available, with Oura structured for a future latest-sleep/readiness source. Wider HealthKit lookup windows are only used to find relevant sleep samples, not as the user-facing sleep total. Weekly recovery history currently depends on stored check-ins unless historical sleep summaries are added later.
 
+## Oura Foundation
+
+Oura OAuth is not connected yet, and the app does not call Oura's real API or store real Oura tokens. Profile includes Manual Entry and Mock/Test modes so Brian can save local Oura-style recovery snapshots and test source priority behavior. Apple Health remains the current real data source. Future Oura integration should use secure token storage and let the `OuraService` layer provide Oura's own latest sleep/readiness values directly.
+
 ## Progress Charts
 
 Progress charts are local-only weekly views built from Check In, Ritual, workout, nutrition, and sleep data already stored on device. They are lightweight visibility tools, not analytics, predictions, or performance scoring.
@@ -267,6 +271,7 @@ Repo-local git identity is configured for Brian Cady.
   - `workout_logs.json`: Strength set logs.
   - `daily_ritual_logs.json`: Ritual completions by calendar day.
   - `daily_nutrition_logs.json`: Manual nutrition summaries by calendar day.
+  - `oura_manual_snapshots.json`: Manual/mock Oura recovery test snapshots.
 - UserDefaults keys:
   - `hasSeenGreeting`: controls whether the opening/greeting screen appears on launch.
   - `userName`: Brian's display name.
@@ -274,6 +279,7 @@ Repo-local git identity is configured for Brian Cady.
   - `trainingLocation`: selected Training Location.
   - `workoutTimePreference`: selected Workout Time.
   - `reminderSettings`: optional local reminder toggles and daily reminder times.
+  - `ouraConnectionSettings`: Oura foundation mode and preferred recovery source.
 - Profile -> Reset Controls -> `Reset opening screen only` clears only `hasSeenGreeting`.
 
 ## Validation

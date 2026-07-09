@@ -6,6 +6,7 @@ final class LocalStorageService {
     private let exerciseLogsURL: URL
     private let ritualLogsURL: URL
     private let nutritionLogsURL: URL
+    private let ouraManualSnapshotsURL: URL
 
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
@@ -14,6 +15,7 @@ final class LocalStorageService {
         self.exerciseLogsURL = documentsURL.appendingPathComponent("workout_logs.json")
         self.ritualLogsURL = documentsURL.appendingPathComponent("daily_ritual_logs.json")
         self.nutritionLogsURL = documentsURL.appendingPathComponent("daily_nutrition_logs.json")
+        self.ouraManualSnapshotsURL = documentsURL.appendingPathComponent("oura_manual_snapshots.json")
     }
 
     var userName: String {
@@ -71,6 +73,20 @@ final class LocalStorageService {
         }
     }
 
+    var ouraConnectionSettings: OuraConnectionSettings {
+        get {
+            guard let data = userDefaults.data(forKey: "ouraConnectionSettings"),
+                  let settings = try? JSONDecoder.healthCommand.decode(OuraConnectionSettings.self, from: data) else {
+                return .default
+            }
+            return settings
+        }
+        set {
+            guard let data = try? JSONEncoder.healthCommand.encode(newValue) else { return }
+            userDefaults.set(data, forKey: "ouraConnectionSettings")
+        }
+    }
+
     func loadCheckIns() -> [CheckIn] {
         guard let data = try? Data(contentsOf: checkInsURL) else { return [] }
         return (try? JSONDecoder.healthCommand.decode([CheckIn].self, from: data)) ?? []
@@ -111,6 +127,16 @@ final class LocalStorageService {
         try? data.write(to: nutritionLogsURL, options: [.atomic])
     }
 
+    func loadOuraManualSnapshots() -> [OuraManualSnapshot] {
+        guard let data = try? Data(contentsOf: ouraManualSnapshotsURL) else { return [] }
+        return (try? JSONDecoder.healthCommand.decode([OuraManualSnapshot].self, from: data)) ?? []
+    }
+
+    func saveOuraManualSnapshots(_ snapshots: [OuraManualSnapshot]) {
+        guard let data = try? JSONEncoder.healthCommand.encode(snapshots) else { return }
+        try? data.write(to: ouraManualSnapshotsURL, options: [.atomic])
+    }
+
     func resetTodaysRitual(dateKey: String) {
         var logs = loadRitualLogs()
         if let index = logs.firstIndex(where: { $0.dateKey == dateKey }) {
@@ -129,7 +155,8 @@ final class LocalStorageService {
         try? FileManager.default.removeItem(at: exerciseLogsURL)
         try? FileManager.default.removeItem(at: ritualLogsURL)
         try? FileManager.default.removeItem(at: nutritionLogsURL)
-        ["userName", "hasSeenGreeting", "programPhase", "trainingLocation", "workoutTimePreference", "reminderSettings"].forEach {
+        try? FileManager.default.removeItem(at: ouraManualSnapshotsURL)
+        ["userName", "hasSeenGreeting", "programPhase", "trainingLocation", "workoutTimePreference", "reminderSettings", "ouraConnectionSettings"].forEach {
             userDefaults.removeObject(forKey: $0)
         }
     }
