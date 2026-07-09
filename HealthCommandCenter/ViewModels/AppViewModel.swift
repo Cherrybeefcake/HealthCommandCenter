@@ -347,7 +347,8 @@ final class AppViewModel: ObservableObject {
 
     func todayRecoveryStatus() -> RecoveryStatus {
         let checkIn = hasCheckedInToday ? latestCheckIn : nil
-        let sleepHours = checkIn?.healthSnapshot.sleepHours ?? todaySnapshot.sleepHours
+        let sleepSummary = currentSleepSummary(checkIn: checkIn)
+        let sleepHours = sleepSummary.durationHours
         let category = recoveryCategory(
             sleepHours: sleepHours,
             checkIn: checkIn,
@@ -355,7 +356,9 @@ final class AppViewModel: ObservableObject {
         )
 
         return RecoveryStatus(
-            sleepDurationText: sleepHours.map { String(format: "%.1f hr sleep", $0) } ?? "No sleep data",
+            sleepDurationText: sleepSummary.durationText,
+            sleepSourceText: sleepSummary.sourceLabel,
+            sleepDetailText: sleepSummary.detailText,
             sleepQualityText: sleepQualityText(for: category, sleepHours: sleepHours),
             recoveryCategory: category,
             trainingAdjustmentText: trainingAdjustmentText(for: category, readiness: hasCheckedInToday ? activeCategory : nil),
@@ -861,6 +864,7 @@ final class AppViewModel: ObservableObject {
         Health authorization: \(healthAuthorizationSummary)
         Last Health refresh: \(lastHealthRefreshText)
         Sleep: \(snapshot.sleepHours.map { String(format: "%.1f hr", $0) } ?? "nil")
+        Sleep source: \(currentSleepSummary(checkIn: checkIn).sourceLabel)
         Steps: \(snapshot.steps.map(String.init) ?? "nil")
         Workouts: \(snapshot.workoutCount.map(String.init) ?? "nil")
         Workout minutes: \(snapshot.workoutMinutes.map { String(format: "%.0f", $0) } ?? "nil")
@@ -905,7 +909,7 @@ final class AppViewModel: ObservableObject {
                 id: "sleep",
                 title: "Sleep",
                 value: snapshot.sleepHours.map { String(format: "%.1f hr", $0) } ?? "No value",
-                detail: snapshot.sleepHours == nil ? "No sleep sample returned. New refreshes check the last 36 hours." : "Sleep sample returned."
+                detail: snapshot.sleepHours == nil ? "No latest sleep summary returned." : "Sleep sample returned."
             ),
             DeviceStatusItem(
                 id: "steps",
@@ -944,6 +948,44 @@ final class AppViewModel: ObservableObject {
                 detail: snapshot.weightPounds == nil ? "No recent body weight returned." : "Recent body weight returned."
             )
         ]
+    }
+
+    private func currentSleepSummary(checkIn: CheckIn?) -> SleepSummary {
+        if let oura = checkIn?.ouraSummary, let hours = oura.sleepDurationHours {
+            return SleepSummary(
+                durationHours: hours,
+                durationText: String(format: "%.1f hr", hours),
+                source: .oura,
+                label: "Oura latest sleep",
+                detailText: "Using Oura's latest sleep duration from the service layer.",
+                endDate: nil,
+                includesNapContext: false,
+                lookupWindowDescription: nil
+            )
+        }
+
+        if let summary = checkIn?.healthSnapshot.sleepSummary, summary.durationHours != nil {
+            return summary
+        }
+
+        if let summary = todaySnapshot.sleepSummary, summary.durationHours != nil {
+            return summary
+        }
+
+        if let legacySleep = checkIn?.healthSnapshot.sleepHours ?? todaySnapshot.sleepHours {
+            return SleepSummary(
+                durationHours: legacySleep,
+                durationText: String(format: "%.1f hr", legacySleep),
+                source: .manualCheckIn,
+                label: "Manual check-in sleep",
+                detailText: "Using stored check-in sleep because no structured sleep summary is available.",
+                endDate: nil,
+                includesNapContext: false,
+                lookupWindowDescription: nil
+            )
+        }
+
+        return .none
     }
 
     private func plannedSetCount(from prescription: String) -> Int {

@@ -51,7 +51,7 @@ struct DailyPlanGenerator {
                 workoutRecommendation: workoutText,
                 ritualRecommendation: "If you need one move before Check In, do water, breathing, or a short walk.",
                 nutritionFocus: nutritionFocus(for: category, checkIn: checkIn, log: nutritionLog, targets: nutritionTargets),
-                recoveryFocus: recoveryStatus.coachingLine,
+                recoveryFocus: "\(recoveryStatus.sleepSourceText): \(recoveryStatus.sleepDurationText). \(recoveryStatus.coachingLine)",
                 caffeineCutoffGuidance: phase.caffeineCutoff,
                 sleepPriority: phase.sleepPriority,
                 todaysMission: "Start Check In. \(progressAcknowledgement) \(location.wording) \(phase.timing) \(context)",
@@ -75,7 +75,7 @@ struct DailyPlanGenerator {
             ),
             ritualRecommendation: "\(readiness.ritualRecommendation) \(phase.ritualBias)",
             nutritionFocus: nutritionFocus(for: category, checkIn: checkIn, log: nutritionLog, targets: nutritionTargets),
-            recoveryFocus: "\(recoveryStatus.trainingAdjustmentText) \(recoveryStatus.windDownGuidance)",
+            recoveryFocus: "\(recoveryStatus.sleepSourceText): \(recoveryStatus.sleepDurationText). \(recoveryStatus.trainingAdjustmentText) \(recoveryStatus.windDownGuidance)",
             caffeineCutoffGuidance: phase.caffeineCutoff,
             sleepPriority: phase.sleepPriority,
             todaysMission: todaysMission(
@@ -313,7 +313,7 @@ struct DailyPlanGenerator {
         case .limited:
             return "Use the short version or reduce one set. Protect tonight's sleep."
         case .strong:
-            return readiness.recommendedAction + " Recovery looks available, but do not overreach."
+            return readiness.recommendedAction + " \(recoveryStatus.sleepSourceText) looks supportive, but do not overreach."
         case .unknown:
             return "Start with Check In and protect basics: caffeine, light, and wind-down."
         case .okay:

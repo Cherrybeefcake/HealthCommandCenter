@@ -227,6 +227,8 @@ enum RecoveryCategory: String, Hashable {
 
 struct RecoveryStatus: Hashable {
     let sleepDurationText: String
+    let sleepSourceText: String
+    let sleepDetailText: String
     let sleepQualityText: String
     let recoveryCategory: RecoveryCategory
     let trainingAdjustmentText: String

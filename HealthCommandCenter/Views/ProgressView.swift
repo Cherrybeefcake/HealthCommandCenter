@@ -145,7 +145,7 @@ struct ProgressDashboardView: View {
 
             WeeklyBarChartCard(
                 title: "Sleep",
-                subtitle: "Sleep hours from Check In / Apple Health when available.",
+                subtitle: "Stored check-in sleep summaries when available.",
                 points: appModel.weeklySleepChartPoints(),
                 maxValue: 9,
                 unit: "hr",
@@ -160,7 +160,7 @@ struct ProgressDashboardView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(
                 title: "Recovery",
-                subtitle: "Sleep and readiness signals from check-ins and Apple Health when available.",
+                subtitle: "Recovery history from stored check-ins. Historical Apple/Oura sleep summaries can come later.",
                 icon: "bed.double",
                 accent: category.accent
             )

@@ -106,7 +106,7 @@ private struct TodayDashboard: View {
                                     healthMini("Steps", snapshot.steps.map { "\($0)" } ?? "No data")
                                     healthMini("HRV", snapshot.hrvSDNN.map { String(format: "%.0f ms", $0) } ?? "No data")
                                 }
-                                Text("Missing values may be timing, no sample, or permissions. Sleep checks a recent window; steps and active energy can be empty just after midnight.")
+                                Text("Missing values may be timing, no sample, or permissions. Sleep uses the latest available sleep summary; steps and active energy can be empty just after midnight.")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .lineSpacing(3)
@@ -187,8 +187,15 @@ private struct SleepRecoveryHomeCard: View {
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                     recoveryMetric(status.sleepDurationText, "Sleep")
+                    recoveryMetric(status.sleepSourceText, "Source")
                     recoveryMetric(status.sleepQualityText, "Status")
                 }
+
+                Text(status.sleepDetailText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Text(status.trainingAdjustmentText)
                     .font(.subheadline.weight(.medium))

@@ -79,6 +79,7 @@ final class HealthKitHealthDataService: HealthDataProviding {
 
         return HealthSnapshot(
             sleepHours: sleep.value,
+            sleepSummary: sleep.summary,
             steps: steps.value.map { Int($0.rounded()) },
             workoutCount: workoutSummary.count,
             workoutMinutes: workoutSummary.minutes,
@@ -132,6 +133,13 @@ final class HealthKitHealthDataService: HealthDataProviding {
     private struct QuantityResult {
         let value: Double?
         let diagnostic: HealthMetricDiagnostic
+        let summary: SleepSummary?
+
+        init(value: Double?, diagnostic: HealthMetricDiagnostic, summary: SleepSummary? = nil) {
+            self.value = value
+            self.diagnostic = diagnostic
+            self.summary = summary
+        }
     }
 
     private struct WorkoutResult {
@@ -198,7 +206,11 @@ final class HealthKitHealthDataService: HealthDataProviding {
 
     private func sleepResult() async -> QuantityResult {
         guard let type = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) else {
-            return QuantityResult(value: nil, diagnostic: diagnostic(id: "sleep", title: "Sleep", value: "Unavailable", status: "Unavailable", window: QueryWindow.lastHours(36).text, detail: "Sleep analysis is unavailable on this device."))
+            return QuantityResult(
+                value: nil,
+                diagnostic: diagnostic(id: "sleep", title: "Sleep", value: "Unavailable", status: "Unavailable", window: QueryWindow.lastHours(48).text, detail: "Sleep analysis is unavailable on this device."),
+                summary: SleepSummary.none
+            )
         }
 
         let asleepValues: Set<Int> = [
@@ -207,22 +219,62 @@ final class HealthKitHealthDataService: HealthDataProviding {
             HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
             HKCategoryValueSleepAnalysis.asleepREM.rawValue
         ]
-        let window = QueryWindow.lastHours(36)
+        let window = QueryWindow.lastHours(48)
 
         do {
             let samples = try await categorySamples(type: type, predicate: window.predicate)
             let asleepSamples = samples.filter { asleepValues.contains($0.value) }
-            let seconds = asleepSamples.reduce(0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
-            let latest = asleepSamples.first?.endDate ?? samples.first?.endDate
+            let grouped = Dictionary(grouping: asleepSamples, by: sleepDayKey(for:))
+            let latestGroup = grouped
+                .map { (key: $0.key, samples: $0.value) }
+                .sorted { $0.key > $1.key }
+                .first
+            let latestSamples = latestGroup?.samples ?? []
+            let seconds = latestSamples.reduce(0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
+            let sortedLatestSamples = latestSamples.sorted { $0.endDate > $1.endDate }
+            let latest = sortedLatestSamples.first?.endDate ?? asleepSamples.first?.endDate ?? samples.first?.endDate
+            let includesNapContext = latestSamples.count > 1 && hasSeparatedSleepBlocks(latestSamples)
 
             guard seconds > 0 else {
-                return QuantityResult(value: nil, diagnostic: diagnostic(id: "sleep", title: "Sleep", value: "No sample", status: "No sleep sample in window", window: window.text, detail: "Sleep checks the recent sleep window, not just calendar today. No asleep samples returned.", sampleDate: latest))
+                return QuantityResult(
+                    value: nil,
+                    diagnostic: diagnostic(id: "sleep", title: "Sleep", value: "No sample", status: "No sleep sample in lookup", window: window.text, detail: "The wider lookup is only used to find Apple Health sleep samples. No asleep samples returned.", sampleDate: latest),
+                    summary: SleepSummary.none
+                )
             }
 
             let hours = seconds / 3600
-            return QuantityResult(value: hours, diagnostic: diagnostic(id: "sleep", title: "Sleep", value: String(format: "%.1f hr", hours), status: "Value returned", window: window.text, detail: "\(asleepSamples.count) asleep sample\(asleepSamples.count == 1 ? "" : "s") returned from the recent sleep window.", sampleDate: latest))
+            let summary = SleepSummary(
+                durationHours: hours,
+                durationText: String(format: "%.1f hr", hours),
+                source: .appleHealth,
+                label: "Apple Health latest sleep",
+                detailText: includesNapContext
+                    ? "Built from the latest Apple Health sleep-day group, including separated sleep blocks or naps in that sleep day."
+                    : "Built from the latest Apple Health sleep-day group.",
+                endDate: latest,
+                includesNapContext: includesNapContext,
+                lookupWindowDescription: window.text
+            )
+            return QuantityResult(
+                value: hours,
+                diagnostic: diagnostic(
+                    id: "sleep",
+                    title: "Sleep",
+                    value: summary.durationText,
+                    status: "Apple Health latest sleep",
+                    window: window.text,
+                    detail: "Lookup window is only used to find Apple Health sleep samples. Readiness uses the latest sleep-day summary, not the raw lookup-window total.",
+                    sampleDate: latest
+                ),
+                summary: summary
+            )
         } catch {
-            return QuantityResult(value: nil, diagnostic: diagnostic(id: "sleep", title: "Sleep", value: "Query error", status: "Query error", window: window.text, detail: "The HealthKit sleep query failed. Check Sleep permission in Health/Settings.", error: error))
+            return QuantityResult(
+                value: nil,
+                diagnostic: diagnostic(id: "sleep", title: "Sleep", value: "Query error", status: "Query error", window: window.text, detail: "The HealthKit sleep query failed. Check Sleep permission in Health/Settings.", error: error),
+                summary: SleepSummary.none
+            )
         }
     }
 
@@ -311,6 +363,33 @@ final class HealthKitHealthDataService: HealthDataProviding {
             }
             store.execute(query)
         }
+    }
+
+    /// Approximation for Apple's displayed latest sleep day:
+    /// fetch a recent window for overnight/naps, then group samples by a sleep day
+    /// that rolls over in the evening instead of at midnight. This avoids treating
+    /// the full lookup window as "sleep" while still catching naps tied to the
+    /// latest overnight sleep block.
+    private func sleepDayKey(for sample: HKCategorySample) -> Date {
+        let calendar = Calendar.current
+        let end = sample.endDate
+        let hour = calendar.component(.hour, from: end)
+        let anchor = hour < 18
+            ? (calendar.date(byAdding: .day, value: -1, to: end) ?? end)
+            : end
+        return calendar.startOfDay(for: anchor)
+    }
+
+    private func hasSeparatedSleepBlocks(_ samples: [HKCategorySample]) -> Bool {
+        let sorted = samples.sorted { $0.startDate < $1.startDate }
+        guard sorted.count > 1 else { return false }
+
+        for index in 1..<sorted.count {
+            if sorted[index].startDate.timeIntervalSince(sorted[index - 1].endDate) > 90 * 60 {
+                return true
+            }
+        }
+        return false
     }
 
     private func diagnostic(

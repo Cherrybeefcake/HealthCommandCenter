@@ -108,7 +108,7 @@ struct ProfileView: View {
 
     private var healthKitStatusSection: some View {
         settingsSection("Real iPhone HealthKit", icon: "heart.text.square") {
-            Text("Best-effort real-device status. Sleep checks the recent sleep window, workouts check a recent 7-day window, and steps/active energy may be zero or empty just after midnight.")
+            Text("Best-effort real-device status. Sleep uses Apple Health latest sleep when available; any wider lookup shown below is only used to find Apple sleep samples. Steps and active energy may be zero or empty just after midnight.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineSpacing(3)

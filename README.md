@@ -104,7 +104,10 @@ HealthKit readings are best tested on a real iPhone with Health data available. 
 
 ## Real-device HealthKit Troubleshooting
 
-- Sleep uses a recent sleep window instead of only calendar today because sleep often starts yesterday and ends today.
+- Sleep uses the Apple Health latest sleep summary when available, not a raw multi-hour total.
+- A wider HealthKit lookup may be used internally only to find overnight sleep and nap samples; readiness uses the latest sleep-day summary.
+- Oura integration will eventually use Oura's own latest sleep/readiness values directly.
+- Weekly recovery averages currently depend on stored check-ins unless historical sleep summaries are added later.
 - Steps and active energy can be zero or empty shortly after midnight; Profile shows whether the query returned a value, zero, no sample, or an error.
 - Workouts only appear if Apple Health has workout samples; Profile checks a recent workout window for debugging.
 - Resting heart rate, HRV, and body weight use the most recent readable sample.
@@ -222,7 +225,7 @@ Meal templates are flexible examples for body recomposition, not a rigid meal pl
 
 ## Sleep and Recovery Guidance
 
-Sleep and recovery guidance is rule-based and uses available Check In and Apple Health sleep data when present. It is meant to help Brian adjust training, caffeine, wind-down, and naps around night shift, day shift, new-baby, or normal routine phases; it is not medical advice or diagnosis.
+Sleep and recovery guidance is rule-based and uses Apple Health latest sleep when available, with Oura structured for a future latest-sleep/readiness source. Wider HealthKit lookup windows are only used to find relevant sleep samples, not as the user-facing sleep total. Weekly recovery history currently depends on stored check-ins unless historical sleep summaries are added later.
 
 ## Progress Charts
 
