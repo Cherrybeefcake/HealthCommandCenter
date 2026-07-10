@@ -51,6 +51,7 @@ struct RitualView: View {
                 }
                 .padding(CommandDesign.pagePadding)
             }
+            .commandKeyboardDismissal()
         }
         .onAppear {
             DispatchQueue.main.async {
@@ -146,6 +147,7 @@ private struct RitualItemCard: View {
     let item: RitualItem
     let accent: Color
     @State private var isExpanded = false
+    @State private var dailyWinText = ""
 
     private var isComplete: Bool {
         appModel.isRitualItemComplete(item.id)
@@ -197,6 +199,26 @@ private struct RitualItemCard: View {
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(accent)
                     .lineSpacing(3)
+
+                if item.kind == .dailyWin {
+                    VStack(alignment: .leading, spacing: 10) {
+                        TextField("What is today's win?", text: $dailyWinText, axis: .vertical)
+                            .lineLimit(2...4)
+                            .padding(12)
+                            .background(.black.opacity(0.28), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                            .onSubmit {
+                                appModel.saveDailyWinText(dailyWinText)
+                            }
+
+                        SecondaryActionButton(title: "Save Daily Win", icon: "checkmark", accent: accent) {
+                            dismissCommandKeyboard()
+                            appModel.saveDailyWinText(dailyWinText)
+                        }
+                    }
+                    .onAppear {
+                        dailyWinText = appModel.todayDailyWinText()
+                    }
+                }
 
                 if isExpanded {
                     VStack(alignment: .leading, spacing: 10) {
@@ -309,6 +331,18 @@ private struct NutritionLogSection: View {
                     accent: accent
                 )
 
+                let display = appModel.todayNutritionDisplay()
+                VStack(alignment: .leading, spacing: 6) {
+                    StatusPill(title: display.source, icon: display.source == "Apple Health" ? "heart.text.square" : "square.and.pencil", accent: accent)
+                    Text(display.detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(10)
+                .background(.black.opacity(0.18), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+
                 Toggle(isOn: $cronometerCompleted) {
                     Label("Cronometer completed", systemImage: cronometerCompleted ? "checkmark.circle.fill" : "circle")
                         .font(.subheadline.weight(.semibold))
@@ -393,7 +427,7 @@ private struct NutritionLogSection: View {
     }
 
     private func loadFromToday() {
-        let log = appModel.todayNutritionLog()
+        let log = appModel.todayNutritionDisplay().log
         caloriesText = log.caloriesLogged.map(String.init) ?? ""
         proteinText = log.proteinGrams.map(String.init) ?? ""
         waterText = log.waterOunces.map(String.init) ?? ""
@@ -403,6 +437,7 @@ private struct NutritionLogSection: View {
     }
 
     private func save() {
+        dismissCommandKeyboard()
         let protein = intValue(proteinText)
         let water = intValue(waterText)
         let targets = appModel.nutritionTargets

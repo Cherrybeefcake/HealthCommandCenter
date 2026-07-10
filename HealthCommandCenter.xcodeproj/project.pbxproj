@@ -36,6 +36,7 @@
 		01A00000000000000000011A /* ProfileSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000001C /* ProfileSettings.swift */; };
 		01A00000000000000000011B /* DailyPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000001D /* DailyPlan.swift */; };
 		01A00000000000000000011D /* BodyMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000001F /* BodyMetrics.swift */; };
+		01A00000000000000000011E /* CustomWorkout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000021 /* CustomWorkout.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -70,6 +71,7 @@
 		01A00000000000000000001C /* ProfileSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSettings.swift; sourceTree = "<group>"; };
 		01A00000000000000000001D /* DailyPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyPlan.swift; sourceTree = "<group>"; };
 		01A00000000000000000001F /* BodyMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyMetrics.swift; sourceTree = "<group>"; };
+		01A000000000000000000021 /* CustomWorkout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWorkout.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,6 +129,7 @@
 				01A00000000000000000001C /* ProfileSettings.swift */,
 				01A00000000000000000001D /* DailyPlan.swift */,
 				01A00000000000000000001F /* BodyMetrics.swift */,
+				01A000000000000000000021 /* CustomWorkout.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -283,6 +286,7 @@
 				01A00000000000000000011A /* ProfileSettings.swift in Sources */,
 				01A00000000000000000011B /* DailyPlan.swift in Sources */,
 				01A00000000000000000011D /* BodyMetrics.swift in Sources */,
+				01A00000000000000000011E /* CustomWorkout.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

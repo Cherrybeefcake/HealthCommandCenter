@@ -58,12 +58,14 @@ struct CheckInView: View {
                     }
 
                     PrimaryActionButton(title: "Classify Today", icon: "sparkles", accent: .white) {
+                        dismissCommandKeyboard()
                         Task { await appModel.submitCheckIn(from: viewModel) }
                     }
                     .padding(.bottom, 24)
                 }
                 .padding(CommandDesign.pagePadding)
             }
+            .commandKeyboardDismissal()
         }
     }
 }

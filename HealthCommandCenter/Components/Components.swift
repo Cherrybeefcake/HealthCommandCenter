@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 enum CommandDesign {
     static let pagePadding: CGFloat = 24
@@ -6,6 +9,41 @@ enum CommandDesign {
     static let cardRadius: CGFloat = 22
     static let innerRadius: CGFloat = 14
 }
+
+#if canImport(UIKit)
+@MainActor
+func dismissCommandKeyboard() {
+    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+}
+
+private struct CommandKeyboardDismissalModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .scrollDismissesKeyboard(.interactively)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        dismissCommandKeyboard()
+                    }
+                }
+            }
+    }
+}
+
+extension View {
+    func commandKeyboardDismissal() -> some View {
+        modifier(CommandKeyboardDismissalModifier())
+    }
+}
+#else
+@MainActor
+func dismissCommandKeyboard() {}
+
+extension View {
+    func commandKeyboardDismissal() -> some View { self }
+}
+#endif
 
 struct CommandBackground: View {
     let category: ReadinessCategory

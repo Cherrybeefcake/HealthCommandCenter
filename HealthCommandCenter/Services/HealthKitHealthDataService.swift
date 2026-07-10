@@ -15,10 +15,30 @@ final class HealthKitHealthDataService: HealthDataProviding {
             HKObjectType.categoryType(forIdentifier: .sleepAnalysis),
             HKObjectType.quantityType(forIdentifier: .stepCount),
             HKObjectType.workoutType(),
+            HKObjectType.quantityType(forIdentifier: .appleExerciseTime),
+            HKObjectType.quantityType(forIdentifier: .appleStandTime),
+            HKObjectType.quantityType(forIdentifier: .flightsClimbed),
+            HKObjectType.quantityType(forIdentifier: .distanceWalkingRunning),
             HKObjectType.quantityType(forIdentifier: .restingHeartRate),
             HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN),
+            HKObjectType.quantityType(forIdentifier: .heartRate),
+            HKObjectType.quantityType(forIdentifier: .respiratoryRate),
+            HKObjectType.quantityType(forIdentifier: .oxygenSaturation),
+            HKObjectType.quantityType(forIdentifier: .bodyTemperature),
             HKObjectType.quantityType(forIdentifier: .activeEnergyBurned),
-            HKObjectType.quantityType(forIdentifier: .bodyMass)
+            HKObjectType.quantityType(forIdentifier: .bodyMass),
+            HKObjectType.quantityType(forIdentifier: .bodyFatPercentage),
+            HKObjectType.quantityType(forIdentifier: .leanBodyMass),
+            HKObjectType.quantityType(forIdentifier: .waistCircumference),
+            HKObjectType.quantityType(forIdentifier: .dietaryEnergyConsumed),
+            HKObjectType.quantityType(forIdentifier: .dietaryProtein),
+            HKObjectType.quantityType(forIdentifier: .dietaryCarbohydrates),
+            HKObjectType.quantityType(forIdentifier: .dietaryFatTotal),
+            HKObjectType.quantityType(forIdentifier: .dietaryFiber),
+            HKObjectType.quantityType(forIdentifier: .dietarySugar),
+            HKObjectType.quantityType(forIdentifier: .dietarySodium),
+            HKObjectType.quantityType(forIdentifier: .dietaryWater),
+            HKObjectType.quantityType(forIdentifier: .dietaryCaffeine)
         ].compactMap { $0 })
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -54,6 +74,10 @@ final class HealthKitHealthDataService: HealthDataProviding {
             unitText: "kcal",
             window: .today
         )
+        let exerciseMinutes = await quantitySumResult(id: "exercise-minutes", title: "Exercise Minutes", identifier: .appleExerciseTime, unit: .minute(), unitText: "min", window: .today)
+        let standMinutes = await quantitySumResult(id: "stand-time", title: "Stand Time", identifier: .appleStandTime, unit: .minute(), unitText: "min", window: .today)
+        let flights = await quantitySumResult(id: "flights", title: "Flights Climbed", identifier: .flightsClimbed, unit: .count(), unitText: "flights", window: .today)
+        let distance = await quantitySumResult(id: "walking-running-distance", title: "Walking + Running Distance", identifier: .distanceWalkingRunning, unit: .mile(), unitText: "mi", window: .today)
         let restingHeartRate = await recentQuantityResult(
             id: "resting-hr",
             title: "Resting HR",
@@ -68,6 +92,10 @@ final class HealthKitHealthDataService: HealthDataProviding {
             unit: .secondUnit(with: .milli),
             unitText: "ms"
         )
+        let heartRate = await recentQuantityResult(id: "heart-rate", title: "Heart Rate", identifier: .heartRate, unit: HKUnit.count().unitDivided(by: HKUnit.minute()), unitText: "bpm")
+        let respiratoryRate = await recentQuantityResult(id: "respiratory-rate", title: "Respiratory Rate", identifier: .respiratoryRate, unit: HKUnit.count().unitDivided(by: HKUnit.minute()), unitText: "breaths/min")
+        let bloodOxygen = await recentQuantityResult(id: "blood-oxygen", title: "Blood Oxygen", identifier: .oxygenSaturation, unit: .percent(), unitText: "%")
+        let bodyTemperature = await recentQuantityResult(id: "body-temperature", title: "Body Temperature", identifier: .bodyTemperature, unit: .degreeFahrenheit(), unitText: "F")
         let weight = await recentQuantityResult(
             id: "weight",
             title: "Body Weight",
@@ -75,7 +103,22 @@ final class HealthKitHealthDataService: HealthDataProviding {
             unit: .pound(),
             unitText: "lb"
         )
+        let bodyFat = await recentQuantityResult(id: "body-fat", title: "Body Fat", identifier: .bodyFatPercentage, unit: .percent(), unitText: "%")
+        let leanBodyMass = await recentQuantityResult(id: "lean-body-mass", title: "Lean Body Mass", identifier: .leanBodyMass, unit: .pound(), unitText: "lb")
+        let waist = await recentQuantityResult(id: "waist", title: "Waist Circumference", identifier: .waistCircumference, unit: .inch(), unitText: "in")
         let workoutSummary = await workoutResult()
+        let nutritionResults = await nutritionResults()
+        let nutrition = HealthNutritionSummary(
+            calories: nutritionResults.calories.value,
+            proteinGrams: nutritionResults.protein.value,
+            carbohydratesGrams: nutritionResults.carbs.value,
+            fatGrams: nutritionResults.fat.value,
+            fiberGrams: nutritionResults.fiber.value,
+            sugarGrams: nutritionResults.sugar.value,
+            sodiumMilligrams: nutritionResults.sodium.value,
+            waterOunces: nutritionResults.water.value,
+            caffeineMilligrams: nutritionResults.caffeine.value
+        )
 
         return HealthSnapshot(
             sleepHours: sleep.value,
@@ -83,18 +126,50 @@ final class HealthKitHealthDataService: HealthDataProviding {
             steps: steps.value.map { Int($0.rounded()) },
             workoutCount: workoutSummary.count,
             workoutMinutes: workoutSummary.minutes,
+            exerciseMinutes: exerciseMinutes.value,
+            standMinutes: standMinutes.value,
+            flightsClimbed: flights.value,
+            walkingRunningDistanceMiles: distance.value,
             restingHeartRate: restingHeartRate.value,
             hrvSDNN: hrv.value,
+            heartRate: heartRate.value,
+            respiratoryRate: respiratoryRate.value,
+            bloodOxygenPercent: bloodOxygen.value.map { $0 * 100 },
+            bodyTemperatureFahrenheit: bodyTemperature.value,
             activeEnergy: activeEnergy.value,
             weightPounds: weight.value,
+            bodyFatPercent: bodyFat.value.map { $0 * 100 },
+            leanBodyMassPounds: leanBodyMass.value,
+            waistInches: waist.value,
+            nutrition: nutrition.availableMetricCount > 0 ? nutrition : nil,
             metricDiagnostics: [
                 sleep.diagnostic,
                 steps.diagnostic,
                 activeEnergy.diagnostic,
+                exerciseMinutes.diagnostic,
+                standMinutes.diagnostic,
+                flights.diagnostic,
+                distance.diagnostic,
                 workoutSummary.diagnostic,
                 restingHeartRate.diagnostic,
                 hrv.diagnostic,
-                weight.diagnostic
+                heartRate.diagnostic,
+                respiratoryRate.diagnostic,
+                bloodOxygen.diagnostic,
+                bodyTemperature.diagnostic,
+                weight.diagnostic,
+                bodyFat.diagnostic,
+                leanBodyMass.diagnostic,
+                waist.diagnostic,
+                nutritionResults.calories.diagnostic,
+                nutritionResults.protein.diagnostic,
+                nutritionResults.carbs.diagnostic,
+                nutritionResults.fat.diagnostic,
+                nutritionResults.fiber.diagnostic,
+                nutritionResults.sugar.diagnostic,
+                nutritionResults.sodium.diagnostic,
+                nutritionResults.water.diagnostic,
+                nutritionResults.caffeine.diagnostic
             ]
         )
     }
@@ -146,6 +221,32 @@ final class HealthKitHealthDataService: HealthDataProviding {
         let count: Int?
         let minutes: Double?
         let diagnostic: HealthMetricDiagnostic
+    }
+
+    private struct NutritionResults {
+        let calories: QuantityResult
+        let protein: QuantityResult
+        let carbs: QuantityResult
+        let fat: QuantityResult
+        let fiber: QuantityResult
+        let sugar: QuantityResult
+        let sodium: QuantityResult
+        let water: QuantityResult
+        let caffeine: QuantityResult
+    }
+
+    private func nutritionResults() async -> NutritionResults {
+        NutritionResults(
+            calories: await quantitySumResult(id: "nutrition-calories", title: "Dietary Calories", identifier: .dietaryEnergyConsumed, unit: .kilocalorie(), unitText: "kcal", window: .today),
+            protein: await quantitySumResult(id: "nutrition-protein", title: "Protein", identifier: .dietaryProtein, unit: .gram(), unitText: "g", window: .today),
+            carbs: await quantitySumResult(id: "nutrition-carbs", title: "Carbohydrates", identifier: .dietaryCarbohydrates, unit: .gram(), unitText: "g", window: .today),
+            fat: await quantitySumResult(id: "nutrition-fat", title: "Fat", identifier: .dietaryFatTotal, unit: .gram(), unitText: "g", window: .today),
+            fiber: await quantitySumResult(id: "nutrition-fiber", title: "Fiber", identifier: .dietaryFiber, unit: .gram(), unitText: "g", window: .today),
+            sugar: await quantitySumResult(id: "nutrition-sugar", title: "Sugar", identifier: .dietarySugar, unit: .gram(), unitText: "g", window: .today),
+            sodium: await quantitySumResult(id: "nutrition-sodium", title: "Sodium", identifier: .dietarySodium, unit: .gramUnit(with: .milli), unitText: "mg", window: .today),
+            water: await quantitySumResult(id: "nutrition-water", title: "Water", identifier: .dietaryWater, unit: .fluidOunceUS(), unitText: "oz", window: .today),
+            caffeine: await quantitySumResult(id: "nutrition-caffeine", title: "Caffeine", identifier: .dietaryCaffeine, unit: .gramUnit(with: .milli), unitText: "mg", window: .today)
+        )
     }
 
     private func quantitySumResult(
@@ -418,8 +519,14 @@ final class HealthKitHealthDataService: HealthDataProviding {
         switch unitText {
         case "lb":
             return String(format: "%.1f %@", value, unitText)
-        case "ms", "bpm", "kcal", "steps":
+        case "%":
+            return String(format: "%.0f%%", value * 100)
+        case "F":
+            return String(format: "%.1f °F", value)
+        case "ms", "bpm", "kcal", "steps", "min", "flights", "mg":
             return String(format: "%.0f %@", value, unitText)
+        case "mi", "in":
+            return String(format: "%.2f %@", value, unitText)
         default:
             return String(format: "%.1f %@", value, unitText)
         }

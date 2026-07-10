@@ -71,6 +71,7 @@ final class AppViewModel: ObservableObject {
     @Published var nutritionLogs: [DailyNutritionLog] = []
     @Published var ouraManualSnapshots: [OuraManualSnapshot] = []
     @Published var bodyMetricsEntries: [BodyMetricsEntry] = []
+    @Published var customWorkouts: [CustomWorkout] = []
     @Published var todayRitualDateKey: String = RitualLibrary.dateKey()
     @Published var programPhase: ProgramPhase
     @Published var trainingLocation: TrainingLocation
@@ -92,6 +93,10 @@ final class AppViewModel: ObservableObject {
     private let notificationService: LocalNotificationService
     private var didBootstrap = false
     private var didRequestHealth = false
+    private let dailyWinItemID = RitualItemKind.dailyWin.rawValue
+        .lowercased()
+        .replacingOccurrences(of: " / ", with: "-")
+        .replacingOccurrences(of: " ", with: "-")
 
     init(
         storage: LocalStorageService,
@@ -123,6 +128,7 @@ final class AppViewModel: ObservableObject {
         nutritionLogs = storage.loadNutritionLogs().sorted { $0.dateKey > $1.dateKey }
         ouraManualSnapshots = storage.loadOuraManualSnapshots().sorted { $0.updatedAt > $1.updatedAt }
         bodyMetricsEntries = storage.loadBodyMetricsEntries().sorted { $0.updatedAt > $1.updatedAt }
+        customWorkouts = storage.loadCustomWorkouts().sorted { $0.updatedAt > $1.updatedAt }
         prepareTodayStateIfNeeded()
         latestCheckIn = checkIns.first
         await refreshNotificationStatus()
@@ -149,7 +155,7 @@ final class AppViewModel: ObservableObject {
             workoutLogsToday: todayExerciseLogs(),
             ritualCompletedCount: todayRitualCompletedCount(),
             ritualTotalCount: ritualItems.count,
-            nutritionLog: todayNutritionLog(),
+            nutritionLog: todayNutritionDisplay().log,
             nutritionTargets: nutritionTargets,
             recoveryStatus: todayRecoveryStatus()
         )
@@ -372,15 +378,34 @@ final class AppViewModel: ObservableObject {
         appendDebug("Body metrics saved: \(updatedEntry.dateKey)")
     }
 
+    func saveCustomWorkout(_ workout: CustomWorkout) {
+        var updatedWorkout = workout
+        updatedWorkout.updatedAt = Date()
+        customWorkouts.removeAll { $0.id == updatedWorkout.id }
+        customWorkouts.insert(updatedWorkout, at: 0)
+        customWorkouts.sort { $0.updatedAt > $1.updatedAt }
+        storage.saveCustomWorkouts(customWorkouts)
+        appendDebug("Custom workout saved: \(updatedWorkout.name)")
+    }
+
+    func deleteCustomWorkout(_ workout: CustomWorkout) {
+        customWorkouts.removeAll { $0.id == workout.id }
+        storage.saveCustomWorkouts(customWorkouts)
+        appendDebug("Custom workout deleted: \(workout.name)")
+    }
+
     func recentBodyMetricsEntries(limit: Int = 8) -> [BodyMetricsEntry] {
         Array(bodyMetricsEntries.sorted { $0.updatedAt > $1.updatedAt }.prefix(limit))
     }
 
     func latestBodyMetricsSummary() -> BodyMetricsSummary {
         let latestManual = bodyMetricsEntries.sorted { $0.updatedAt > $1.updatedAt }.first
-        let recent = recentBodyMetricsEntries(limit: 8).sorted { $0.dateKey < $1.dateKey }
+        let appleEntry = appleHealthBodyMetricsEntry()
+        let recent = (recentBodyMetricsEntries(limit: 8) + [appleEntry].compactMap { $0 })
+            .sorted { $0.dateKey < $1.dateKey }
         return BodyMetricsSummary(
             latestEntry: latestManual,
+            appleHealthEntry: appleEntry,
             appleHealthWeightPounds: todaySnapshot.weightPounds,
             trendText: bodyMetricTrendText(
                 title: "Weight",
@@ -404,6 +429,52 @@ final class AppViewModel: ObservableObject {
                 }
             )
         )
+    }
+
+    func appleHealthBodyMetricsEntry() -> BodyMetricsEntry? {
+        guard todaySnapshot.weightPounds != nil
+            || todaySnapshot.bodyFatPercent != nil
+            || todaySnapshot.leanBodyMassPounds != nil
+            || todaySnapshot.waistInches != nil else {
+            return nil
+        }
+        return BodyMetricsEntry(
+            weightPounds: todaySnapshot.weightPounds,
+            bodyFatPercent: todaySnapshot.bodyFatPercent,
+            muscleMassPounds: todaySnapshot.leanBodyMassPounds,
+            visceralFatLevel: nil,
+            waistInches: todaySnapshot.waistInches,
+            notes: "Read from Apple Health on refresh.",
+            source: .appleHealth,
+            updatedAt: lastHealthRefreshAt ?? Date()
+        )
+    }
+
+    func todayNutritionDisplay() -> (log: DailyNutritionLog, source: String, detail: String) {
+        let manual = todayNutritionLog()
+        let hasManual = manual.caloriesLogged != nil
+            || manual.proteinGrams != nil
+            || manual.waterOunces != nil
+            || manual.fiberGrams != nil
+            || manual.cronometerCompleted
+        if hasManual {
+            return (manual, "HCC manual", nutritionDetailLine(for: manual))
+        }
+        if let nutrition = todaySnapshot.nutrition {
+            let log = DailyNutritionLog(
+                dateKey: RitualLibrary.dateKey(),
+                caloriesLogged: nutrition.calories.map { Int($0.rounded()) },
+                proteinGrams: nutrition.proteinGrams.map { Int($0.rounded()) },
+                waterOunces: nutrition.waterOunces.map { Int($0.rounded()) },
+                fiberGrams: nutrition.fiberGrams.map { Int($0.rounded()) },
+                cronometerCompleted: false,
+                proteinTargetHit: (nutrition.proteinGrams ?? 0) >= Double(nutritionTargets.proteinGrams),
+                waterTargetHit: (nutrition.waterOunces ?? 0) >= Double(nutritionTargets.waterOunces),
+                notes: "Apple Health nutrition summary"
+            )
+            return (log, "Apple Health", nutritionDetailLine(for: log))
+        }
+        return (manual, "No nutrition source", "No Apple Health nutrition samples found. Save anchors manually in Ritual.")
     }
 
     func nutritionStatusLine(for log: DailyNutritionLog? = nil) -> String {
@@ -632,7 +703,11 @@ final class AppViewModel: ObservableObject {
     }
 
     func isRitualItemComplete(_ itemID: String) -> Bool {
-        ritualLogs.first { $0.dateKey == RitualLibrary.dateKey() }?.completedItemIDs.contains(itemID) ?? false
+        guard let log = ritualLogs.first(where: { $0.dateKey == RitualLibrary.dateKey() }) else { return false }
+        if itemID == dailyWinItemID, !log.dailyWinText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+        return log.completedItemIDs.contains(itemID)
     }
 
     func setRitualItem(_ itemID: String, completed: Bool) {
@@ -649,14 +724,31 @@ final class AppViewModel: ObservableObject {
         appendDebug("Ritual \(completed ? "complete" : "incomplete"): \(itemID)")
     }
 
+    func todayDailyWinText() -> String {
+        ritualLogs.first { $0.dateKey == RitualLibrary.dateKey() }?.dailyWinText ?? ""
+    }
+
+    func saveDailyWinText(_ text: String) {
+        prepareTodayStateIfNeeded()
+        let dateKey = RitualLibrary.dateKey()
+        guard let index = ritualLogs.firstIndex(where: { $0.dateKey == dateKey }) else { return }
+        let cleanText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        ritualLogs[index].dailyWinText = cleanText
+        if !cleanText.isEmpty {
+            ritualLogs[index].completedItemIDs.insert(dailyWinItemID)
+        }
+        ritualLogs[index].updatedAt = Date()
+        storage.saveRitualLogs(ritualLogs)
+        appendDebug(cleanText.isEmpty ? "Daily Win cleared" : "Daily Win saved")
+    }
+
     func todayRitualItems() -> [RitualItem] {
         // Render-time helpers must stay side-effect free; prepare missing daily state from lifecycle hooks or actions.
         return RitualLibrary.items(for: activeCategory)
     }
 
     func todayRitualCompletedCount() -> Int {
-        let completedIDs = ritualLogs.first { $0.dateKey == RitualLibrary.dateKey() }?.completedItemIDs ?? []
-        return todayRitualItems().filter { completedIDs.contains($0.id) }.count
+        return todayRitualItems().filter { isRitualItemComplete($0.id) }.count
     }
 
     func goToPlan() {
@@ -797,6 +889,7 @@ final class AppViewModel: ObservableObject {
         nutritionLogs = []
         ouraManualSnapshots = []
         bodyMetricsEntries = []
+        customWorkouts = []
         debugLog = []
         todaySnapshot = .empty
         lastHealthRefreshAt = nil
@@ -1014,6 +1107,7 @@ final class AppViewModel: ObservableObject {
         Oura mode: \(ouraConnectionSettings.connectionMode.rawValue)
         Oura source: \(ouraConnectionSettings.preferredRecoverySource.rawValue)
         Oura snapshots: \(ouraManualSnapshots.count)
+        Custom workouts: \(customWorkouts.count)
         Notification permission: \(notificationPermissionStatus)
         Pending HCC notifications: \(pendingHealthCommandNotificationCount)
         Test reminder pending: \(isTestReminderPending ? "yes" : "no")

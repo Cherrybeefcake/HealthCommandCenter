@@ -11,10 +11,14 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
   - Sleep duration
   - Steps
   - Workouts
+  - Exercise time, stand time, flights climbed, and walking/running distance
   - Resting heart rate
   - HRV
+  - Heart rate, respiratory rate, blood oxygen, and body temperature when available
   - Active energy
   - Weight
+  - Body fat percentage, lean body mass, and waist circumference when available
+  - Apple Health nutrition summaries when another app writes samples there
 - Oura foundation with manual/mock snapshots for supplemental recovery context; OAuth is not connected yet
 - Local on-device JSON storage for app data and `UserDefaults` for preferences
 - Readiness classifier for:
@@ -25,9 +29,10 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
   - Bare-Minimum Day
 - Result screen with Today's Mission
 - Hidden-by-default "Why this category?" explanation on the result screen
-- Home Today Mission dashboard plus a readiness-aware weekly Plan foundation
-- Plan includes Full Body A, B, and C with full, short, bare-minimum, and recovery versions
+- Home Today Mission dashboard plus readiness-aware Workouts
+- Workouts include Full Body A, B, and C with full, short, bare-minimum, and recovery versions
 - Local on-device exercise logs with last-time recall for repeated exercises
+- Custom workout templates stored locally for changed workout days
 - Ritual tab with daily readiness-aware routines and local completion logs
 - Progress tab with charts, workout sessions, ritual history, streaks, recovery, nutrition, exercise progress, and body metrics
 - Profile settings, storage/debug disclosure, reset controls, reminders, Oura foundation, body metrics, and MVP info
@@ -95,7 +100,7 @@ HealthKit readings are best tested on a real iPhone with Health data available. 
 - Start Check In, tap `Connect Apple Health`, and approve or deny HealthKit permissions deliberately.
 - Use Home or Profile -> `Refresh Health Data` and confirm the HealthKit status, last refresh time, and returned metric values update calmly.
 - Confirm Home's Health context matches Profile's Real iPhone HealthKit status.
-- Log one workout set in Plan and confirm it appears in today's sets and Progress.
+- Log one workout set in Workouts and confirm it appears in today's sets and Progress.
 - Toggle one Ritual item and confirm the completion count updates.
 - Save Nutrition anchors in Ritual and confirm Profile/Data counts reflect the local log.
 - In Profile -> Reminders, enable reminders if desired and use `Schedule Test Reminder in 10 Seconds`.
@@ -142,19 +147,21 @@ HealthKit readings are best tested on a real iPhone with Health data available. 
 - Home mission:
   - Today's Mission leads with the recommended action.
   - If no check-in exists today, the next action starts Check In.
-  - Training days route to Plan; Recovery and Bare-Minimum days route to Ritual.
+  - Training days route to Workouts; Recovery and Bare-Minimum days route to Ritual.
   - Missing HealthKit data reads as optional context, not an error.
-- Plan:
-  - Before Check In, Plan shows a `Classify today before training` prompt and does not imply a full workout is unlocked.
+- Workouts:
+  - Before Check In, Workouts shows a `Classify today before training` prompt and does not imply a full workout is unlocked.
   - Recommendation changes with readiness category.
   - Exercise cards show written cues and a clear logging action.
   - Log multiple sets for the same exercise and confirm Today's sets update immediately.
   - Delete a mistaken logged set and confirm the session summary updates.
   - Last-time data stays separate from today's logs.
+  - Add a custom workout, log one custom exercise, and confirm Progress shows the custom workout name.
 - Ritual:
   - Toggle ritual items and confirm the progress count updates.
+  - Enter a Daily Win answer and confirm it counts as completion and appears in Progress detail.
   - Relaunch the app and confirm today's ritual completions persist.
-  - Reset today's ritual from Profile and confirm only today's ritual checkmarks clear.
+  - Reset today's ritual from Profile and confirm today's checkmarks and Daily Win clear.
 - Progress:
   - Empty history sections explain what Brian should do next.
   - Weekly overview reflects check-ins, workout logs, ritual completions, and consistency.
@@ -183,16 +190,17 @@ HealthKit readings are best tested on a real iPhone with Health data available. 
   - Normal relaunch opens Home.
 - Home:
   - No-check-in state shows `Start Check In`.
-  - Today Mission, Plan, Ritual, Nutrition, Sleep & Recovery, and Body Metrics copy agree with the same DailyPlan/context.
+  - Today Mission, Workouts, Ritual, Nutrition, Sleep & Recovery, and Body Metrics copy agree with the same DailyPlan/context.
   - HealthKit missing or partial data reads as optional context.
 - Check In:
-  - Completion updates Home, Plan, Ritual, Progress, DailyPlan, and Recovery.
+  - Completion updates Home, Workouts, Ritual, Progress, DailyPlan, and Recovery.
   - Missing Apple Health/Oura data does not block readiness.
   - Subjective low energy, high stress/soreness, or pain notes keep guidance conservative.
-- Plan:
-  - Before Check In, Plan asks Brian to classify the day before training.
+- Workouts:
+  - Before Check In, Workouts asks Brian to classify the day before training.
   - Logging multiple sets updates Today's rows, session summary, Home, and Progress.
   - Coach suggestions and progress summaries remain read-only during rendering.
+  - Custom workouts can be created, selected, logged, and deleted without deleting old workout logs.
 - Ritual:
   - Toggles persist and reset-today only clears today's ritual.
   - Nutrition target flags use onboarding/Profile protein and water targets.
@@ -212,15 +220,15 @@ HealthKit readings are best tested on a real iPhone with Health data available. 
 ## Known Limitations
 
 - Oura OAuth is not connected yet; Oura support is manual/mock only and no real tokens are stored.
-- Cronometer is manual only; HealthCommandCenter stores daily nutrition summaries, not food database records.
+- Cronometer API is not connected; HealthCommandCenter reads Apple Health nutrition summaries when available and stores only manual daily nutrition anchors locally.
 - Apple Health exact per-type authorization status is best-effort; Profile diagnostics show readable values, query windows, no-sample states, and errors where available.
 - Local storage only; there is no account login, cloud sync, export, or backup inside the app.
 - Smart-scale body composition values are trend data, not exact medical measurements.
 - The app is coaching and personal organization software, not medical advice, diagnosis, treatment, or clinical decision support.
 
-## Plan Tab Test Checklist
+## Workouts Tab Test Checklist
 
-- Open the `Plan` tab after completing or skipping a Check In.
+- Open the `Workouts` tab after completing or skipping a Check In.
 - Confirm the top recommendation changes from the latest readiness category:
   - Push Day: Full Version with "push intelligently" language
   - Normal Training Day: Full Version
@@ -233,6 +241,8 @@ HealthKit readings are best tested on a real iPhone with Health data available. 
 - Enter weight, reps, sets completed, effort, and optional notes.
 - Save the log.
 - Reopen the same exercise and confirm `Last time` appears.
+- Add a custom workout, add at least one exercise, save it, select it, and log a set.
+- Delete the custom workout template and confirm old logged sets remain in Progress history.
 - Relaunch the app and confirm the last-time log persists.
 
 ## Workout Log Storage
@@ -241,7 +251,7 @@ Workout logs are stored locally in the app sandbox as `workout_logs.json`. In th
 
 ## Smart Workout Progression
 
-Plan exercise cards show local, rule-based Coach Suggestions from recent logs, today's logged sets, readiness, and the DailyPlan recommendation. Suggestions are conservative by design: repeat clean work, add reps before load, back off after high-effort sets, and avoid pushing strength on Recovery or Bare-Minimum days. This is coaching guidance for training consistency, not medical advice.
+Workouts exercise cards show local, rule-based Coach Suggestions from recent logs, today's logged sets, readiness, and the DailyPlan recommendation. Suggestions are conservative by design: repeat clean work, add reps before load, back off after high-effort sets, and avoid pushing strength on Recovery or Bare-Minimum days. This is coaching guidance for training consistency, not medical advice.
 
 ## Exercise Progress Summaries
 
@@ -263,11 +273,19 @@ Ritual completions are stored locally in the app sandbox as `daily_ritual_logs.j
 
 ## Nutrition Tracking
 
-Nutrition tracking is manual for now. Cronometer remains the source of detailed food logging; HealthCommandCenter stores only daily summary values locally: calories, protein, water, fiber, Cronometer completion, target flags, and notes.
+Nutrition tracking is manual plus Apple Health read-only summaries. Cronometer remains the source of detailed food logging; if Cronometer or another app writes nutrition samples to Apple Health, HealthCommandCenter can surface those daily totals. HCC stores only manual daily summary values locally: calories, protein, water, fiber, Cronometer completion, target flags, and notes.
 
 ## Body Metrics MVP
 
 Apple Health body weight may be shown when available, but it is used as read-only context unless Brian explicitly saves a local entry. Manual and smart-scale body metrics are stored locally in `body_metrics_entries.json`. Body fat, muscle mass, visceral fat, and waist values are treated as trend data for body recomposition, not exact medical measurements.
+
+## Custom Workouts
+
+Custom workout templates are stored locally in `custom_workouts.json`. They are meant for first-test flexibility when Brian changes the planned workout but still wants the session logged in the same Workouts and Progress flow. Deleting a custom workout removes the template only; existing workout logs remain in `workout_logs.json`.
+
+## Daily Win
+
+Daily Win is an answerable Ritual prompt. A saved answer counts the item complete and appears in Ritual history/detail. Older ritual logs without a Daily Win answer still decode safely.
 
 ## Meal Templates
 
@@ -291,6 +309,10 @@ Progress charts are local-only weekly views built from Check In, Ritual, workout
 
 Reminders are optional and local-only. Health Command Center does not request notification permission on first launch and does not schedule reminders unless Brian enables them in Profile. Scheduled reminders use stable local identifiers for Check In, Ritual, Sleep Prep, and Nutrition/Cronometer prompts.
 
+## Long-Term App Replacement Direction
+
+Health Command Center is moving toward being Brian's daily dashboard and coaching layer over the apps he already uses. Apple Health is the automatic data layer; Cronometer remains the detailed food log for now; Oura is supplemental recovery context until real OAuth is added; Workouts owns training, logging, and custom workout templates. Future versions can deepen integrations, automate imports, expand the custom workout library, and make guidance smarter without adding cloud sync or accounts before they are needed.
+
 ## Local Development Notes
 
 This project is now tracked with local git history. Make a commit before major feature changes so the MVP can be rolled back to a known working checkpoint. Known simulator warning notes below still apply when builds succeed and the app opens.
@@ -311,10 +333,22 @@ Repo-local git identity is configured for Brian Cady.
   - Sleep analysis
   - Step count
   - Workouts
+  - Exercise time
+  - Stand time
+  - Flights climbed
+  - Walking/running distance
   - Resting heart rate
   - Heart rate variability SDNN
+  - Heart rate
+  - Respiratory rate
+  - Blood oxygen
+  - Body temperature
   - Active energy burned
   - Body mass
+  - Body fat percentage
+  - Lean body mass
+  - Waist circumference
+  - Dietary energy, protein, carbohydrates, fat, fiber, sugar, sodium, water, and caffeine
 
 ## Local Storage Reference
 
@@ -325,6 +359,7 @@ Repo-local git identity is configured for Brian Cady.
   - `daily_nutrition_logs.json`: Manual nutrition summaries by calendar day.
   - `oura_manual_snapshots.json`: Manual/mock Oura recovery test snapshots.
   - `body_metrics_entries.json`: Manual body metrics and smart-scale trend entries.
+  - `custom_workouts.json`: Brian-built custom workout templates.
 - UserDefaults keys:
   - `hasSeenGreeting`: controls whether the opening/greeting screen appears on launch.
   - `userName`: Brian's display name.

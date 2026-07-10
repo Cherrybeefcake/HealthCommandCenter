@@ -26,9 +26,32 @@ struct RitualItem: Codable, Identifiable, Hashable {
 struct DailyRitualLog: Codable, Identifiable, Hashable {
     let dateKey: String
     var completedItemIDs: Set<String>
+    var dailyWinText: String
     var updatedAt: Date
 
     var id: String { dateKey }
+
+    init(dateKey: String, completedItemIDs: Set<String> = [], dailyWinText: String = "", updatedAt: Date = Date()) {
+        self.dateKey = dateKey
+        self.completedItemIDs = completedItemIDs
+        self.dailyWinText = dailyWinText
+        self.updatedAt = updatedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case dateKey
+        case completedItemIDs
+        case dailyWinText
+        case updatedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        dateKey = try container.decode(String.self, forKey: .dateKey)
+        completedItemIDs = try container.decodeIfPresent(Set<String>.self, forKey: .completedItemIDs) ?? []
+        dailyWinText = try container.decodeIfPresent(String.self, forKey: .dailyWinText) ?? ""
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
+    }
 }
 
 enum RitualDayStatus: String, Hashable {
@@ -49,11 +72,11 @@ struct RitualDaySummary: Identifiable, Hashable {
     var dateKey: String { log.dateKey }
 
     var completedItems: [RitualItem] {
-        items.filter { log.completedItemIDs.contains($0.id) }
+        items.filter { isComplete($0) }
     }
 
     var incompleteItems: [RitualItem] {
-        items.filter { !log.completedItemIDs.contains($0.id) }
+        items.filter { !isComplete($0) }
     }
 
     var completedCount: Int {
@@ -101,6 +124,17 @@ struct RitualDaySummary: Identifiable, Hashable {
 
     var usedBareMinimumRitual: Bool {
         category == .bareMinimumDay || items.count <= RitualLibrary.items(for: .bareMinimumDay).count
+    }
+
+    var dailyWinText: String {
+        log.dailyWinText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func isComplete(_ item: RitualItem) -> Bool {
+        if item.kind == .dailyWin, !dailyWinText.isEmpty {
+            return true
+        }
+        return log.completedItemIDs.contains(item.id)
     }
 }
 

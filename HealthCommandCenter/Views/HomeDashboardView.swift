@@ -10,7 +10,7 @@ struct HomeDashboardView: View {
                 .tag(AppViewModel.AppTab.today)
 
             PlanView()
-                .tabItem { Label("Plan", systemImage: "calendar") }
+                .tabItem { Label("Workouts", systemImage: "dumbbell") }
                 .tag(AppViewModel.AppTab.plan)
 
             RitualView()
@@ -83,7 +83,7 @@ private struct TodayDashboard: View {
                         }
 
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                            MissionStatusCard(title: "Plan", value: mission.planStatusValue, detail: mission.planStatusDetail, icon: "calendar", accent: category.accent)
+                            MissionStatusCard(title: "Workouts", value: mission.planStatusValue, detail: mission.planStatusDetail, icon: "dumbbell", accent: category.accent)
                             MissionStatusCard(title: "Ritual", value: mission.ritualStatusValue, detail: mission.ritualStatusDetail, icon: "moon.stars", accent: category.accent)
                             MissionStatusCard(title: "Recovery", value: mission.recoveryStatus.recoveryCategory.rawValue, detail: mission.recoveryStatus.sleepDurationText, icon: "bed.double", accent: category.accent)
                             MissionStatusCard(title: "Nutrition", value: mission.nutritionStatusValue, detail: mission.nutritionStatusDetail, icon: "fork.knife", accent: category.accent)
@@ -343,7 +343,7 @@ private struct TodayMission {
     var ritualItems: [RitualItem] { appModel.todayRitualItems() }
     var ritualCompleted: Int { appModel.todayRitualCompletedCount() }
     var ritualTotal: Int { ritualItems.count }
-    var nutritionLog: DailyNutritionLog { appModel.todayNutritionLog() }
+    var nutritionDisplay: (log: DailyNutritionLog, source: String, detail: String) { appModel.todayNutritionDisplay() }
     var recoveryStatus: RecoveryStatus { appModel.todayRecoveryStatus() }
     var todayLogs: [ExerciseLog] { appModel.todayExerciseLogs() }
     var dailyPlan: DailyPlan { appModel.todayDailyPlan }
@@ -391,7 +391,7 @@ private struct TodayMission {
         if !appModel.hasCheckedInToday { return "Start Check In" }
         if hasRitualProgress && ritualCompleted < ritualTotal { return "Continue Ritual" }
         if isRecoveryBiased { return "Open Ritual" }
-        return "Open Plan"
+        return "Open Workouts"
     }
 
     var nextActionIcon: String {
@@ -459,10 +459,10 @@ private struct TodayMission {
     }
 
     var nutritionStatusDetail: String {
-        appModel.nutritionDetailLine(for: nutritionLog)
+        "\(nutritionDisplay.source): \(nutritionDisplay.detail)"
     }
 
     var nutritionStatusValue: String {
-        appModel.nutritionStatusLine(for: nutritionLog)
+        appModel.nutritionStatusLine(for: nutritionDisplay.log)
     }
 }

@@ -46,6 +46,7 @@ struct GreetingView: View {
                 }
                 .padding(CommandDesign.pagePadding)
             }
+            .commandKeyboardDismissal()
         }
         .onAppear(perform: loadDefaultsIfNeeded)
     }
@@ -185,6 +186,7 @@ struct GreetingView: View {
     }
 
     private func finishOnboarding() {
+        dismissCommandKeyboard()
         let settings = PersonalizationSettings(
             goal: goal.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? PersonalizationSettings.brianDefault.goal : goal,
             heightText: heightText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? PersonalizationSettings.brianDefault.heightText : heightText,

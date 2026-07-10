@@ -44,6 +44,7 @@ struct ProfileView: View {
                 }
                 .padding(CommandDesign.pagePadding)
             }
+            .commandKeyboardDismissal()
         }
         .alert(item: $resetAction) { action in
             let confirmButton: Alert.Button = action.isDestructive
@@ -134,7 +135,7 @@ struct ProfileView: View {
                 storageMetric("Availability", appModel.healthAvailabilityText)
                 storageMetric("Permission", appModel.healthAuthorizationSummary)
                 storageMetric("Last refresh", appModel.lastHealthRefreshText)
-                storageMetric("Values returned", "\(appModel.todaySnapshot.availableMetricCount)/7")
+                storageMetric("Values returned", "\(appModel.todaySnapshot.availableMetricCount)")
             }
 
             SecondaryActionButton(
@@ -147,9 +148,14 @@ struct ProfileView: View {
             .disabled(appModel.isLoadingHealth)
 
             DisclosureGroup {
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(appModel.healthMetricStatusItems()) { item in
-                        statusRow(item)
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(Array(healthMetricGroups.enumerated()), id: \.offset) { _, group in
+                        VStack(alignment: .leading, spacing: 8) {
+                            SectionHeader(title: group.title, icon: group.icon, accent: appModel.activeCategory.accent)
+                            ForEach(group.items) { item in
+                                statusRow(item)
+                            }
+                        }
                     }
                 }
                 .padding(.top, 10)
@@ -159,6 +165,20 @@ struct ProfileView: View {
             }
             .tint(appModel.activeCategory.accent)
         }
+    }
+
+    private var healthMetricGroups: [(title: String, icon: String, items: [DeviceStatusItem])] {
+        let items = appModel.healthMetricStatusItems()
+        let activityIDs: Set<String> = ["steps", "active-energy", "workouts", "exercise-minutes", "stand-minutes", "flights", "distance"]
+        let recoveryIDs: Set<String> = ["sleep", "resting-hr", "hrv", "heart-rate", "respiratory-rate", "blood-oxygen", "body-temperature"]
+        let bodyIDs: Set<String> = ["weight", "body-fat", "lean-body-mass", "waist"]
+        let nutritionIDs = Set(items.map(\.id).filter { $0.hasPrefix("nutrition-") })
+        return [
+            ("Activity", "figure.walk", items.filter { activityIDs.contains($0.id) }),
+            ("Recovery / Vitals", "waveform.path.ecg", items.filter { recoveryIDs.contains($0.id) }),
+            ("Body", "scalemass", items.filter { bodyIDs.contains($0.id) }),
+            ("Nutrition", "fork.knife", items.filter { nutritionIDs.contains($0.id) })
+        ].filter { !$0.items.isEmpty }
     }
 
     private var ouraFoundationSection: some View {
@@ -238,6 +258,7 @@ struct ProfileView: View {
                 storageMetric("Nutrition", "\(appModel.nutritionLogs.count)")
                 storageMetric("Oura tests", "\(appModel.ouraManualSnapshots.count)")
                 storageMetric("Body metrics", "\(appModel.bodyMetricsEntries.count)")
+                storageMetric("Custom workouts", "\(appModel.customWorkouts.count)")
                 storageMetric("Reminders", appModel.reminderSettings.remindersEnabled ? "Enabled" : "Disabled")
                 storageMetric("Scheduled", "\(appModel.scheduledReminderCount)")
             }
@@ -461,6 +482,7 @@ struct ProfileView: View {
                     fileRow("daily_nutrition_logs.json", "Manual nutrition summaries by calendar day")
                     fileRow("oura_manual_snapshots.json", "Manual/mock Oura recovery test snapshots")
                     fileRow("body_metrics_entries.json", "Manual body metrics and smart-scale trend entries")
+                    fileRow("custom_workouts.json", "Brian-built workout templates stored locally")
                     fileRow("UserDefaults personalizationSettings", "Onboarding baseline, goal, equipment, and nutrition anchors")
                     fileRow("UserDefaults reminderSettings", "Reminder toggles, times, and local settings")
                     fileRow("UserDefaults ouraConnectionSettings", "Oura foundation mode and preferred recovery source")
@@ -688,6 +710,7 @@ struct ProfileView: View {
     }
 
     private func saveOuraSnapshot() {
+        dismissCommandKeyboard()
         let snapshot = OuraManualSnapshot(
             readinessScore: optionalInt(ouraReadinessScore),
             sleepScore: optionalInt(ouraSleepScore),
@@ -701,6 +724,7 @@ struct ProfileView: View {
     }
 
     private func saveBodyMetricsEntry() {
+        dismissCommandKeyboard()
         let entry = BodyMetricsEntry(
             weightPounds: optionalDouble(bodyWeight),
             bodyFatPercent: optionalDouble(bodyFatPercent),
@@ -909,11 +933,11 @@ private enum ResetAction: Identifiable {
         case .greeting:
             return "This resets only the greeting/onboarding flag so you can test the setup flow again. Check-ins, workout logs, rituals, body metrics, and settings stay stored."
         case .todayRitual:
-            return "This clears today's ritual checkmarks only. Previous days stay stored."
+            return "This clears today's ritual checkmarks and Daily Win answer only. Previous days stay stored."
         case .workoutLogs:
             return "This removes all locally stored exercise logs from workout_logs.json."
         case .allLocalData:
-            return "This removes check-ins, workout logs, ritual logs, nutrition logs, Oura test snapshots, body metrics entries, and local preferences. Apple Health data is not deleted. The app returns to first-run state."
+            return "This removes check-ins, workout logs, custom workouts, ritual logs, nutrition logs, Oura test snapshots, body metrics entries, and local preferences. Apple Health data is not deleted. The app returns to first-run state."
         }
     }
 

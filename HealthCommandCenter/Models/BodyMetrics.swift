@@ -54,28 +54,23 @@ struct BodyMetricsEntry: Codable, Identifiable, Hashable {
 
 struct BodyMetricsSummary: Hashable {
     let latestEntry: BodyMetricsEntry?
+    let appleHealthEntry: BodyMetricsEntry?
     let appleHealthWeightPounds: Double?
     let trendText: String
     let bodyFatTrendText: String?
     let waistTrendText: String?
 
     var latestWeightText: String {
-        if let weight = latestEntry?.weightPounds {
+        let latest = [latestEntry, appleHealthEntry].compactMap { $0 }.sorted { $0.updatedAt > $1.updatedAt }.first
+        if let weight = latest?.weightPounds {
             return String(format: "%.1f lb", weight)
-        }
-        if let appleHealthWeightPounds {
-            return String(format: "%.1f lb", appleHealthWeightPounds)
         }
         return "No weight yet"
     }
 
     var sourceText: String {
-        if let latestEntry {
-            return latestEntry.source.rawValue
-        }
-        if appleHealthWeightPounds != nil {
-            return BodyMetricsSource.appleHealth.rawValue
-        }
+        let latest = [latestEntry, appleHealthEntry].compactMap { $0 }.sorted { $0.updatedAt > $1.updatedAt }.first
+        if let latest { return latest.source.rawValue }
         return "No source"
     }
 }

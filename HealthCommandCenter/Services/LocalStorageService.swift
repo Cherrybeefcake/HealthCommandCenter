@@ -8,6 +8,7 @@ final class LocalStorageService {
     private let nutritionLogsURL: URL
     private let ouraManualSnapshotsURL: URL
     private let bodyMetricsEntriesURL: URL
+    private let customWorkoutsURL: URL
 
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
@@ -18,6 +19,7 @@ final class LocalStorageService {
         self.nutritionLogsURL = documentsURL.appendingPathComponent("daily_nutrition_logs.json")
         self.ouraManualSnapshotsURL = documentsURL.appendingPathComponent("oura_manual_snapshots.json")
         self.bodyMetricsEntriesURL = documentsURL.appendingPathComponent("body_metrics_entries.json")
+        self.customWorkoutsURL = documentsURL.appendingPathComponent("custom_workouts.json")
     }
 
     var userName: String {
@@ -163,10 +165,21 @@ final class LocalStorageService {
         try? data.write(to: bodyMetricsEntriesURL, options: [.atomic])
     }
 
+    func loadCustomWorkouts() -> [CustomWorkout] {
+        guard let data = try? Data(contentsOf: customWorkoutsURL) else { return [] }
+        return (try? JSONDecoder.healthCommand.decode([CustomWorkout].self, from: data)) ?? []
+    }
+
+    func saveCustomWorkouts(_ workouts: [CustomWorkout]) {
+        guard let data = try? JSONEncoder.healthCommand.encode(workouts) else { return }
+        try? data.write(to: customWorkoutsURL, options: [.atomic])
+    }
+
     func resetTodaysRitual(dateKey: String) {
         var logs = loadRitualLogs()
         if let index = logs.firstIndex(where: { $0.dateKey == dateKey }) {
             logs[index].completedItemIDs = []
+            logs[index].dailyWinText = ""
             logs[index].updatedAt = Date()
             saveRitualLogs(logs)
         }
@@ -183,6 +196,7 @@ final class LocalStorageService {
         try? FileManager.default.removeItem(at: nutritionLogsURL)
         try? FileManager.default.removeItem(at: ouraManualSnapshotsURL)
         try? FileManager.default.removeItem(at: bodyMetricsEntriesURL)
+        try? FileManager.default.removeItem(at: customWorkoutsURL)
         ["userName", "hasSeenGreeting", "programPhase", "trainingLocation", "workoutTimePreference", "personalizationSettings", "reminderSettings", "ouraConnectionSettings"].forEach {
             userDefaults.removeObject(forKey: $0)
         }

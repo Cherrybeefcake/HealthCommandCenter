@@ -119,7 +119,7 @@ struct ProgressDashboardView: View {
                 maxValue: nil,
                 unit: "sets",
                 emptyTitle: "No workout sets this week",
-                emptyMessage: "Open Plan and log one honest set to start the chart.",
+                emptyMessage: "Open Workouts and log one honest set to start the chart.",
                 accent: category.accent
             )
 
@@ -246,10 +246,10 @@ struct ProgressDashboardView: View {
             if sessions.isEmpty {
                 EmptyStateCard(
                     title: "No workout sessions yet",
-                    message: "Open Plan and log one honest set. That is enough to start a session history.",
+                    message: "Open Workouts and log one honest set. That is enough to start a session history.",
                     icon: "dumbbell",
                     accent: category.accent,
-                    actionTitle: "Open Plan",
+                    actionTitle: "Open Workouts",
                     actionIcon: "calendar",
                     action: {
                         appModel.goToPlan()
@@ -303,10 +303,10 @@ struct ProgressDashboardView: View {
             if summaries.isEmpty {
                 EmptyStateCard(
                     title: "No exercise summaries yet",
-                    message: "Log one set in Plan. The app will start showing best-so-far summaries without turning it into a max test.",
+                    message: "Log one set in Workouts. The app will start showing best-so-far summaries without turning it into a max test.",
                     icon: "chart.line.uptrend.xyaxis",
                     accent: category.accent,
-                    actionTitle: "Open Plan",
+                    actionTitle: "Open Workouts",
                     actionIcon: "calendar",
                     action: {
                         appModel.goToPlan()
@@ -326,16 +326,18 @@ struct ProgressDashboardView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(
                 title: "Nutrition",
-                subtitle: "Manual daily summaries from Ritual. Cronometer remains the detailed food log.",
+                subtitle: "HCC manual anchors plus Apple Health nutrition when another app writes samples there.",
                 icon: "fork.knife",
                 accent: category.accent
             )
 
             let recent = appModel.recentNutritionLogs()
-            if recent.isEmpty {
+            let display = appModel.todayNutritionDisplay()
+            let hasAppleHealthNutrition = display.source == "Apple Health"
+            if recent.isEmpty && !hasAppleHealthNutrition {
                 EmptyStateCard(
                     title: "No nutrition summaries yet",
-                    message: "Open Ritual and save today's Cronometer, protein, and water anchors. Keep it simple.",
+                    message: "Open Ritual and save today's anchors, or let Cronometer write nutrition to Apple Health so HCC can read the summary.",
                     icon: "fork.knife",
                     accent: category.accent,
                     actionTitle: "Open Ritual",
@@ -352,8 +354,11 @@ struct ProgressDashboardView: View {
                 }
 
                 VStack(spacing: 10) {
+                    if hasAppleHealthNutrition {
+                        NutritionDayRow(log: display.log, source: display.source, accent: category.accent)
+                    }
                     ForEach(recent) { log in
-                        NutritionDayRow(log: log, accent: category.accent)
+                        NutritionDayRow(log: log, source: "HCC manual", accent: category.accent)
                     }
                 }
             }
@@ -724,6 +729,14 @@ private struct RitualDayCard: View {
                     .foregroundStyle(.secondary)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
+
+                if !day.dailyWinText.isEmpty {
+                    Label(day.dailyWinText, systemImage: "sparkle")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(accent)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
@@ -833,6 +846,21 @@ private struct RitualDayDetailView: View {
                     summaryMetric("\(day.completedCount)/\(day.totalCount)", "Completed", "checklist")
                     summaryMetric("\(day.completionPercent)%", "Percent", "gauge.with.dots.needle.bottom.100percent")
                     summaryMetric(day.status.rawValue, "Status", "checkmark.seal")
+                }
+
+                if !day.dailyWinText.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Daily Win")
+                            .font(.caption.weight(.semibold))
+                            .textCase(.uppercase)
+                            .foregroundStyle(.secondary)
+                        Text(day.dailyWinText)
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(accent)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(10)
+                    .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
                 }
             }
         }
@@ -1365,6 +1393,7 @@ private struct ExerciseProgressCard: View {
 
 private struct NutritionDayRow: View {
     let log: DailyNutritionLog
+    var source: String = "HCC manual"
     let accent: Color
 
     var body: some View {
@@ -1393,7 +1422,7 @@ private struct NutritionDayRow: View {
 
                 Spacer(minLength: 8)
 
-                StatusPill(title: log.cronometerCompleted ? "Logged" : "Open", accent: accent)
+                StatusPill(title: source, icon: source == "Apple Health" ? "heart.text.square" : nil, accent: accent)
             }
         }
     }

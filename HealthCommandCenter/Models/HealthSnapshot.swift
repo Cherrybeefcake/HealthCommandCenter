@@ -6,10 +6,22 @@ struct HealthSnapshot: Codable, Equatable {
     var steps: Int?
     var workoutCount: Int?
     var workoutMinutes: Double?
+    var exerciseMinutes: Double?
+    var standMinutes: Double?
+    var flightsClimbed: Double?
+    var walkingRunningDistanceMiles: Double?
     var restingHeartRate: Double?
     var hrvSDNN: Double?
+    var heartRate: Double?
+    var respiratoryRate: Double?
+    var bloodOxygenPercent: Double?
+    var bodyTemperatureFahrenheit: Double?
     var activeEnergy: Double?
     var weightPounds: Double?
+    var bodyFatPercent: Double?
+    var leanBodyMassPounds: Double?
+    var waistInches: Double?
+    var nutrition: HealthNutritionSummary?
     var metricDiagnostics: [HealthMetricDiagnostic]?
 
     static let empty = HealthSnapshot()
@@ -19,15 +31,53 @@ struct HealthSnapshot: Codable, Equatable {
             sleepHours.map { _ in true },
             steps.map { _ in true },
             workoutCount.map { _ in true },
+            exerciseMinutes.map { _ in true },
+            standMinutes.map { _ in true },
+            flightsClimbed.map { _ in true },
+            walkingRunningDistanceMiles.map { _ in true },
             restingHeartRate.map { _ in true },
             hrvSDNN.map { _ in true },
+            heartRate.map { _ in true },
+            respiratoryRate.map { _ in true },
+            bloodOxygenPercent.map { _ in true },
+            bodyTemperatureFahrenheit.map { _ in true },
             activeEnergy.map { _ in true },
-            weightPounds.map { _ in true }
+            weightPounds.map { _ in true },
+            bodyFatPercent.map { _ in true },
+            leanBodyMassPounds.map { _ in true },
+            waistInches.map { _ in true },
+            (nutrition?.availableMetricCount ?? 0) > 0 ? true : nil
         ].compactMap { $0 }.count
     }
 
     var hasAnyData: Bool {
         availableMetricCount > 0
+    }
+}
+
+struct HealthNutritionSummary: Codable, Equatable, Hashable {
+    var calories: Double?
+    var proteinGrams: Double?
+    var carbohydratesGrams: Double?
+    var fatGrams: Double?
+    var fiberGrams: Double?
+    var sugarGrams: Double?
+    var sodiumMilligrams: Double?
+    var waterOunces: Double?
+    var caffeineMilligrams: Double?
+
+    var availableMetricCount: Int {
+        [
+            calories,
+            proteinGrams,
+            carbohydratesGrams,
+            fatGrams,
+            fiberGrams,
+            sugarGrams,
+            sodiumMilligrams,
+            waterOunces,
+            caffeineMilligrams
+        ].compactMap { $0 }.count
     }
 }
 
