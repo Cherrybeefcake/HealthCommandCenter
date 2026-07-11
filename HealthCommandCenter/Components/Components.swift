@@ -277,6 +277,26 @@ struct StatusPill: View {
     }
 }
 
+struct CommandFeedbackPill: View {
+    let message: String
+    var icon: String = "checkmark.circle.fill"
+    let accent: Color
+
+    var body: some View {
+        Label(message, systemImage: icon)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(accent)
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 8)
+            .background(accent.opacity(0.11), in: Capsule())
+            .overlay { Capsule().stroke(accent.opacity(0.22), lineWidth: 1) }
+            .transition(.move(edge: .top).combined(with: .opacity))
+            .accessibilityLabel(message)
+    }
+}
+
 struct EmptyStateCard: View {
     let title: String
     let message: String
@@ -299,6 +319,7 @@ struct EmptyStateCard: View {
                 }
             }
         }
+        .transition(.opacity.combined(with: .scale(scale: 0.98)))
     }
 }
 
@@ -346,7 +367,9 @@ struct RatingSelector: View {
             HStack(spacing: 8) {
                 ForEach(options, id: \.self) { option in
                     Button {
-                        value = option
+                        withAnimation(.easeOut(duration: 0.16)) {
+                            value = option
+                        }
                     } label: {
                         Text("\(option)")
                             .font(.subheadline.weight(.semibold))
@@ -357,6 +380,7 @@ struct RatingSelector: View {
                             .clipShape(RoundedRectangle(cornerRadius: CommandDesign.compactRadius, style: .continuous))
                     }
                     .buttonStyle(.plain)
+                    .sensoryFeedback(.selection, trigger: value)
                 }
             }
             HStack {

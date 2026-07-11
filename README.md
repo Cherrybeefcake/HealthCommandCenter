@@ -41,6 +41,8 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 
 - Premium redesign milestone 1 refreshed the shared design system, Today, Check In, and Readiness Result surfaces.
 - Premium redesign milestone 2 extends the same graphite/dark system, restrained readiness accents, clearer card hierarchy, and calmer coaching language across Train, Recovery, Insights, You, custom workout forms, and dense settings/debug sections.
+- Premium redesign milestone 3 adds subtle micro-interactions, inline action feedback, improved empty/loading/error states, and real-use polish for saves, refreshes, reminders, ritual toggles, and workout logging.
+- Real-device QA should be repeated after design changes, especially HealthKit refresh, local reminder testing, keyboard dismissal, and persistence after relaunch.
 
 ## Run
 

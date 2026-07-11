@@ -6,6 +6,7 @@ struct PlanView: View {
     @State private var selectedCustomWorkoutID: String?
     @State private var showingCustomWorkoutSheet = false
     @State private var customWorkoutToDelete: CustomWorkout?
+    @State private var customWorkoutFeedback: String?
 
     private var selectedStarterWorkout: WorkoutPlan {
         StarterWorkoutLibrary.workouts.first { $0.id == selectedWorkoutID } ?? StarterWorkoutLibrary.workouts[0]
@@ -60,6 +61,9 @@ struct PlanView: View {
                     }
                     weeklyPlanSelector(category: category)
                     customWorkoutSection(category: category)
+                    if let customWorkoutFeedback {
+                        CommandFeedbackPill(message: customWorkoutFeedback, accent: category.accent)
+                    }
                     workoutVersionPanel(category: category)
                 }
                 .padding(CommandDesign.pagePadding)
@@ -79,6 +83,7 @@ struct PlanView: View {
                     if selectedCustomWorkoutID == customWorkoutToDelete.id {
                         selectedCustomWorkoutID = nil
                     }
+                    showCustomWorkoutFeedback("Custom workout deleted")
                 }
                 customWorkoutToDelete = nil
             }
@@ -299,6 +304,18 @@ struct PlanView: View {
         }
     }
 
+    private func showCustomWorkoutFeedback(_ message: String) {
+        withAnimation(.easeOut(duration: 0.16)) {
+            customWorkoutFeedback = message
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            withAnimation(.easeOut(duration: 0.18)) {
+                customWorkoutFeedback = nil
+            }
+        }
+    }
+
 }
 
 private struct ExercisePlanCard: View {
@@ -311,6 +328,7 @@ private struct ExercisePlanCard: View {
     @State private var isProgressExpanded = false
     @State private var isCoachExpanded = false
     @State private var isLogging = false
+    @State private var actionFeedback: String?
 
     var body: some View {
         let todayLogs = appModel.todayExerciseLogs(for: exercise.id, exerciseName: exercise.name)
@@ -329,7 +347,9 @@ private struct ExercisePlanCard: View {
                     }
                     Spacer()
                     Button {
-                        isExpanded.toggle()
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            isExpanded.toggle()
+                        }
                     } label: {
                         Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle")
                             .font(.title3)
@@ -368,7 +388,10 @@ private struct ExercisePlanCard: View {
                                     log: log,
                                     accent: accent
                                 ) {
-                                    appModel.deleteExerciseLog(log)
+                                    withAnimation(.easeOut(duration: 0.18)) {
+                                        appModel.deleteExerciseLog(log)
+                                    }
+                                    showActionFeedback("Set deleted")
                                 }
                             }
                         }
@@ -409,6 +432,7 @@ private struct ExercisePlanCard: View {
                             .foregroundStyle(.white)
                     }
                     .tint(accent)
+                    .animation(.easeInOut(duration: 0.18), value: isCoachExpanded)
                 }
 
                 if isExpanded {
@@ -425,16 +449,35 @@ private struct ExercisePlanCard: View {
                         isLogging = true
                     }
                 }
+
+                if let actionFeedback {
+                    CommandFeedbackPill(message: actionFeedback, accent: accent)
+                }
             }
         }
+        .animation(.easeInOut(duration: 0.18), value: isExpanded)
+        .animation(.spring(response: 0.24, dampingFraction: 0.86), value: todayLogs.count)
         .sheet(isPresented: $isLogging) {
             ExerciseLogSheet(
                 workout: workout,
                 version: version,
                 exercise: exercise,
-                accent: accent
+                accent: accent,
+                onSaved: { showActionFeedback("Set saved") }
             )
             .environmentObject(appModel)
+        }
+    }
+
+    private func showActionFeedback(_ message: String) {
+        withAnimation(.easeOut(duration: 0.16)) {
+            actionFeedback = message
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            withAnimation(.easeOut(duration: 0.18)) {
+                actionFeedback = nil
+            }
         }
     }
 
@@ -755,6 +798,7 @@ private struct ExerciseLogSheet: View {
     let version: WorkoutVersion
     let exercise: ExercisePlan
     let accent: Color
+    let onSaved: () -> Void
 
     @State private var weightText = ""
     @State private var reps = 8
@@ -846,6 +890,7 @@ private struct ExerciseLogSheet: View {
                 notes: notes
             )
         )
+        onSaved()
         dismiss()
     }
 }
@@ -864,6 +909,7 @@ private struct CustomWorkoutSheet: View {
     @State private var targetReps = "8-12"
     @State private var exerciseNotes = ""
     @State private var exercises: [CustomExercise] = []
+    @State private var validationMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -885,7 +931,10 @@ private struct CustomWorkoutSheet: View {
                         PrimaryActionButton(title: "Save Custom Workout", icon: "checkmark", accent: accent) {
                             save()
                         }
-                        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || exercises.isEmpty)
+
+                        if let validationMessage {
+                            CommandFeedbackPill(message: validationMessage, icon: "info.circle", accent: accent)
+                        }
                     }
                     .padding(CommandDesign.pagePadding)
                 }
@@ -949,7 +998,13 @@ private struct CustomWorkoutSheet: View {
                 SecondaryActionButton(title: "Add Exercise", icon: "plus", accent: accent) {
                     addExercise()
                 }
-                .disabled(exerciseName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                if exerciseName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text("Add an exercise name before adding it to the custom workout.")
+                        .font(.caption)
+                        .foregroundStyle(CommandDesign.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
@@ -998,17 +1053,23 @@ private struct CustomWorkoutSheet: View {
     private func addExercise() {
         dismissCommandKeyboard()
         let cleanName = exerciseName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanName.isEmpty else { return }
-        exercises.append(
-            CustomExercise(
-                name: cleanName,
-                category: exerciseCategory.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Strength" : exerciseCategory.trimmingCharacters(in: .whitespacesAndNewlines),
-                equipment: exerciseEquipment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Available equipment" : exerciseEquipment.trimmingCharacters(in: .whitespacesAndNewlines),
-                targetSets: targetSets,
-                targetReps: targetReps.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "8-12" : targetReps.trimmingCharacters(in: .whitespacesAndNewlines),
-                notes: exerciseNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanName.isEmpty else {
+            showValidation("Exercise needs a name first")
+            return
+        }
+        withAnimation(.easeOut(duration: 0.18)) {
+            exercises.append(
+                CustomExercise(
+                    name: cleanName,
+                    category: exerciseCategory.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Strength" : exerciseCategory.trimmingCharacters(in: .whitespacesAndNewlines),
+                    equipment: exerciseEquipment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Available equipment" : exerciseEquipment.trimmingCharacters(in: .whitespacesAndNewlines),
+                    targetSets: targetSets,
+                    targetReps: targetReps.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "8-12" : targetReps.trimmingCharacters(in: .whitespacesAndNewlines),
+                    notes: exerciseNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+                )
             )
-        )
+        }
+        showValidation("Exercise added")
         exerciseName = ""
         exerciseNotes = ""
         targetSets = 2
@@ -1018,7 +1079,14 @@ private struct CustomWorkoutSheet: View {
     private func save() {
         dismissCommandKeyboard()
         let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanName.isEmpty, !exercises.isEmpty else { return }
+        guard !cleanName.isEmpty else {
+            showValidation("Custom workout needs a name")
+            return
+        }
+        guard !exercises.isEmpty else {
+            showValidation("Add at least one exercise before saving")
+            return
+        }
         appModel.saveCustomWorkout(
             CustomWorkout(
                 name: cleanName,
@@ -1027,5 +1095,17 @@ private struct CustomWorkoutSheet: View {
             )
         )
         dismiss()
+    }
+
+    private func showValidation(_ message: String) {
+        withAnimation(.easeOut(duration: 0.16)) {
+            validationMessage = message
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            withAnimation(.easeOut(duration: 0.18)) {
+                validationMessage = nil
+            }
+        }
     }
 }

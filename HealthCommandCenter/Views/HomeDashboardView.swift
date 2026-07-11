@@ -26,6 +26,7 @@ struct HomeDashboardView: View {
                 .tag(AppViewModel.AppTab.profile)
         }
         .tint(CommandPalette.brand)
+        .animation(.easeInOut(duration: 0.18), value: appModel.selectedTab)
     }
 }
 
@@ -149,6 +150,13 @@ private struct TodayDashboard: View {
                                 }
                                 .buttonStyle(.plain)
                                 .disabled(appModel.isLoadingHealth)
+                                .accessibilityLabel("Refresh health data")
+
+                                if appModel.isLoadingHealth {
+                                    CommandFeedbackPill(message: "Refreshing Apple Health", icon: "arrow.clockwise", accent: category.accent)
+                                } else if appModel.lastHealthRefreshAt != nil || appModel.healthStatusMessage != "HealthKit not requested yet" {
+                                    CommandFeedbackPill(message: appModel.healthStatusMessage, icon: snapshot.hasAnyData ? "checkmark.circle.fill" : "info.circle", accent: category.accent)
+                                }
                             }
                         }
 

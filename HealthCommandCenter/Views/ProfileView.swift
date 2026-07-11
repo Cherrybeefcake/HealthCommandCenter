@@ -17,6 +17,7 @@ struct ProfileView: View {
     @State private var waist = ""
     @State private var bodyMetricsNotes = ""
     @State private var bodyMetricsSource: BodyMetricsSource = .manual
+    @State private var profileFeedback: String?
 
     var body: some View {
         ZStack {
@@ -31,6 +32,9 @@ struct ProfileView: View {
                     )
 
                     profileSummary
+                    if let profileFeedback {
+                        CommandFeedbackPill(message: profileFeedback, accent: appModel.activeCategory.accent)
+                    }
                     profileGroupHeader("Personalization", "Brian’s phase, training preferences, and nutrition anchors.", "person.crop.circle")
                     programPhaseSection
                     trainingPreferencesSection
@@ -154,9 +158,19 @@ struct ProfileView: View {
                 icon: "arrow.clockwise",
                 accent: appModel.activeCategory.accent
             ) {
-                Task { await appModel.refreshHealthData() }
+                Task {
+                    await appModel.refreshHealthData()
+                    showProfileFeedback(appModel.healthStatusMessage)
+                }
             }
             .disabled(appModel.isLoadingHealth)
+            .accessibilityLabel("Refresh health data")
+
+            if appModel.isLoadingHealth {
+                CommandFeedbackPill(message: "Refreshing Apple Health", icon: "arrow.clockwise", accent: appModel.activeCategory.accent)
+            } else if appModel.lastHealthRefreshAt != nil || appModel.healthStatusMessage != "HealthKit not requested yet" {
+                CommandFeedbackPill(message: appModel.healthStatusMessage, icon: appModel.todaySnapshot.hasAnyData ? "checkmark.circle.fill" : "info.circle", accent: appModel.activeCategory.accent)
+            }
 
             DisclosureGroup {
                 VStack(alignment: .leading, spacing: 14) {
@@ -206,6 +220,10 @@ struct ProfileView: View {
 
             preferencePicker("Mode", value: ouraModeBinding, cases: OuraConnectionMode.allCases)
             preferencePicker("Recovery source", value: recoverySourceBinding, cases: RecoveryDataSource.allCases)
+
+            if !appModel.ouraConnectionSettings.isEnabled {
+                CommandFeedbackPill(message: "Oura is not connected. Apple Health remains primary.", icon: "info.circle", accent: appModel.activeCategory.accent)
+            }
 
             let latest = appModel.latestOuraManualSnapshot()
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
@@ -317,6 +335,10 @@ struct ProfileView: View {
                 .font(.headline)
                 .tint(appModel.activeCategory.accent)
 
+            if !appModel.reminderSettings.remindersEnabled {
+                CommandFeedbackPill(message: "Reminders are off. Nothing schedules until Brian enables them.", icon: "bell.slash", accent: appModel.activeCategory.accent)
+            }
+
             Divider()
                 .overlay(.white.opacity(0.16))
 
@@ -377,8 +399,12 @@ struct ProfileView: View {
                 icon: "bell.and.waves.left.and.right",
                 accent: appModel.activeCategory.accent
             ) {
-                Task { await appModel.scheduleTestReminder() }
+                Task {
+                    await appModel.scheduleTestReminder()
+                    showProfileFeedback(appModel.reminderTestStatus)
+                }
             }
+            .accessibilityLabel("Schedule test reminder")
 
             Text(appModel.reminderTestStatus)
                 .font(.caption)
@@ -751,6 +777,7 @@ struct ProfileView: View {
             notes: ouraNotes
         )
         appModel.saveOuraManualSnapshot(snapshot)
+        showProfileFeedback("Oura test snapshot saved")
     }
 
     private func saveBodyMetricsEntry() {
@@ -764,8 +791,24 @@ struct ProfileView: View {
             notes: bodyMetricsNotes,
             source: bodyMetricsSource
         )
-        guard entry.hasAnyMetric || !entry.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        guard entry.hasAnyMetric || !entry.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            showProfileFeedback("Add at least one body metric or note")
+            return
+        }
         appModel.saveBodyMetricsEntry(entry)
+        showProfileFeedback("Body metrics saved")
+    }
+
+    private func showProfileFeedback(_ message: String) {
+        withAnimation(.easeOut(duration: 0.16)) {
+            profileFeedback = message
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2.4))
+            withAnimation(.easeOut(duration: 0.18)) {
+                profileFeedback = nil
+            }
+        }
     }
 
     private func optionalInt(_ text: String) -> Int? {

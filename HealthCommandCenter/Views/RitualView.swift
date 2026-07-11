@@ -155,6 +155,7 @@ private struct RitualItemCard: View {
     let accent: Color
     @State private var isExpanded = false
     @State private var dailyWinText = ""
+    @State private var dailyWinFeedback: String?
 
     private var isComplete: Bool {
         appModel.isRitualItemComplete(item.id)
@@ -165,7 +166,9 @@ private struct RitualItemCard: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top, spacing: 12) {
                     Button {
-                        appModel.setRitualItem(item.id, completed: !isComplete)
+                        withAnimation(.spring(response: 0.22, dampingFraction: 0.82)) {
+                            appModel.setRitualItem(item.id, completed: !isComplete)
+                        }
                     } label: {
                         Image(systemName: isComplete ? "checkmark.circle.fill" : "circle")
                             .font(.title2)
@@ -193,7 +196,9 @@ private struct RitualItemCard: View {
                     Spacer(minLength: 6)
 
                     Button {
-                        isExpanded.toggle()
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            isExpanded.toggle()
+                        }
                     } label: {
                         Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle")
                             .font(.title3)
@@ -222,11 +227,17 @@ private struct RitualItemCard: View {
                             }
                             .onSubmit {
                                 appModel.saveDailyWinText(dailyWinText)
+                                showDailyWinFeedback(dailyWinText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Daily Win cleared" : "Daily Win saved")
                             }
 
                         SecondaryActionButton(title: "Save Daily Win", icon: "checkmark", accent: accent) {
                             dismissCommandKeyboard()
                             appModel.saveDailyWinText(dailyWinText)
+                            showDailyWinFeedback(dailyWinText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Daily Win cleared" : "Daily Win saved")
+                        }
+
+                        if let dailyWinFeedback {
+                            CommandFeedbackPill(message: dailyWinFeedback, accent: accent)
                         }
                     }
                     .onAppear {
@@ -257,6 +268,20 @@ private struct RitualItemCard: View {
                     .padding(12)
                     .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
                 }
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: isExpanded)
+        .animation(.spring(response: 0.22, dampingFraction: 0.82), value: isComplete)
+    }
+
+    private func showDailyWinFeedback(_ message: String) {
+        withAnimation(.easeOut(duration: 0.16)) {
+            dailyWinFeedback = message
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            withAnimation(.easeOut(duration: 0.18)) {
+                dailyWinFeedback = nil
             }
         }
     }
@@ -334,6 +359,7 @@ private struct NutritionLogSection: View {
     @State private var fiberText = ""
     @State private var cronometerCompleted = false
     @State private var notes = ""
+    @State private var saveFeedback: String?
 
     var body: some View {
         CommandCard {
@@ -386,6 +412,11 @@ private struct NutritionLogSection: View {
 
                 SecondaryActionButton(title: "Save Nutrition Summary", icon: "checkmark", accent: accent) {
                     save()
+                }
+                .accessibilityLabel("Save nutrition summary")
+
+                if let saveFeedback {
+                    CommandFeedbackPill(message: saveFeedback, accent: accent)
                 }
 
                 nutritionGuidance
@@ -468,6 +499,19 @@ private struct NutritionLogSection: View {
                 notes: notes.trimmingCharacters(in: .whitespacesAndNewlines)
             )
         )
+        showSaveFeedback("Nutrition anchors saved")
+    }
+
+    private func showSaveFeedback(_ message: String) {
+        withAnimation(.easeOut(duration: 0.16)) {
+            saveFeedback = message
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            withAnimation(.easeOut(duration: 0.18)) {
+                saveFeedback = nil
+            }
+        }
     }
 
     private func intValue(_ text: String) -> Int? {
