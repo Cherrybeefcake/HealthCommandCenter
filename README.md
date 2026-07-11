@@ -37,6 +37,11 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Progress tab with charts, workout sessions, ritual history, streaks, recovery, nutrition, exercise progress, and body metrics
 - Profile settings, storage/debug disclosure, reset controls, reminders, Oura foundation, body metrics, and MVP info
 
+## Design / Polish Notes
+
+- Premium redesign milestone 1 refreshed the shared design system, Today, Check In, and Readiness Result surfaces.
+- Premium redesign milestone 2 extends the same graphite/dark system, restrained readiness accents, clearer card hierarchy, and calmer coaching language across Train, Recovery, Insights, You, custom workout forms, and dense settings/debug sections.
+
 ## Run
 
 Open `HealthCommandCenter.xcodeproj` in Xcode, select an iPhone simulator or device, and run the `HealthCommandCenter` scheme.

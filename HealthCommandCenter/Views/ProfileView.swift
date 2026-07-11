@@ -25,21 +25,27 @@ struct ProfileView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: CommandDesign.stackSpacing) {
                     ScreenHeader(
-                        eyebrow: "Profile",
+                        eyebrow: "YOU",
                         title: appModel.userName,
-                        subtitle: "Build the daily system. Keep the floor low. Stack wins."
+                        subtitle: "Personalization, sources, reminders, storage, and reset controls."
                     )
 
                     profileSummary
-                    healthKitStatusSection
-                    ouraFoundationSection
+                    profileGroupHeader("Personalization", "Brian’s phase, training preferences, and nutrition anchors.", "person.crop.circle")
                     programPhaseSection
                     trainingPreferencesSection
-                    remindersSection
                     nutritionPreferencesSection
+                    profileGroupHeader("Data Sources", "Apple Health is primary where available; Oura stays supplemental until OAuth exists.", "externaldrive.connected.to.line.below")
+                    healthKitStatusSection
+                    ouraFoundationSection
+                    profileGroupHeader("Notifications", "Optional local reminders only. No push service, no account.", "bell.badge")
+                    remindersSection
+                    profileGroupHeader("Body Metrics", "Trend context for recomposition, not daily judgment.", "scalemass")
                     bodyMetricsSection
+                    profileGroupHeader("Storage & Reset", "Local files, debug context, and confirmed destructive actions.", "lock.doc")
                     dataStorageSection
                     resetControlsSection
+                    profileGroupHeader("About", "Current MVP scope and integration direction.", "info.circle")
                     aboutSection
                 }
                 .padding(CommandDesign.pagePadding)
@@ -63,7 +69,7 @@ struct ProfileView: View {
     }
 
     private var profileSummary: some View {
-        GlassPanel {
+        HeroCard(accent: appModel.activeCategory.accent) {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 6) {
@@ -72,7 +78,7 @@ struct ProfileView: View {
                             .foregroundStyle(appModel.activeCategory.accent)
                         Text("Current phase")
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(CommandDesign.secondaryText)
                     }
                     Spacer()
                     Image(systemName: "person.crop.circle")
@@ -85,10 +91,15 @@ struct ProfileView: View {
 
                 Text("Private, local-first command center for rebuilding consistency around real life constraints.")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(CommandDesign.secondaryText)
                     .lineSpacing(3)
             }
         }
+    }
+
+    private func profileGroupHeader(_ title: String, _ subtitle: String, _ icon: String) -> some View {
+        SectionHeader(title: title, subtitle: subtitle, icon: icon, accent: appModel.activeCategory.accent)
+            .padding(.top, 4)
     }
 
     private var programPhaseSection: some View {
@@ -106,7 +117,7 @@ struct ProfileView: View {
 
             Text("Manual for now. This lets the app shape language and expectations around shift work, baby season, or a normal routine.")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(CommandDesign.secondaryText)
                 .lineSpacing(3)
 
             HStack(alignment: .top, spacing: 10) {
@@ -114,20 +125,20 @@ struct ProfileView: View {
                     .foregroundStyle(appModel.activeCategory.accent)
                 Text(recoveryCopy(for: appModel.programPhase))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(CommandDesign.secondaryText)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(10)
-            .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+            .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
         }
     }
 
     private var healthKitStatusSection: some View {
-        settingsSection("Real iPhone HealthKit", icon: "heart.text.square") {
+        settingsSection("HealthKit", icon: "heart.text.square") {
             Text("Best-effort real-device status. Sleep uses Apple Health latest sleep when available; any wider lookup shown below is only used to find Apple sleep samples. Steps and active energy may be zero or empty just after midnight.")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(CommandDesign.secondaryText)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -160,7 +171,7 @@ struct ProfileView: View {
                 }
                 .padding(.top, 10)
             } label: {
-                Label("Health values returned", systemImage: "waveform.path.ecg")
+                Label("Detailed HealthKit coverage", systemImage: "waveform.path.ecg")
                     .font(.headline)
             }
             .tint(appModel.activeCategory.accent)
@@ -182,10 +193,10 @@ struct ProfileView: View {
     }
 
     private var ouraFoundationSection: some View {
-        settingsSection("Oura Foundation", icon: "ring") {
+        settingsSection("Oura", icon: "ring") {
             Text("Oura OAuth is not connected yet. Automatic uses Apple Health as the primary source for overlapping metrics and Oura as supplemental recovery context. Manual/mock mode helps test that behavior without storing real tokens.")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(CommandDesign.secondaryText)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -217,11 +228,9 @@ struct ProfileView: View {
                     manualOuraField("HRV", text: $ouraHRV, placeholder: "ms")
                     manualOuraField("Resting HR", text: $ouraRestingHeartRate, placeholder: "bpm")
 
-                    TextField("Body temperature trend", text: $ouraBodyTemperatureTrend)
-                        .textFieldStyle(.roundedBorder)
-                    TextField("Notes", text: $ouraNotes, axis: .vertical)
+                    styledProfileField("Body temperature trend", text: $ouraBodyTemperatureTrend)
+                    styledProfileField("Notes", text: $ouraNotes, axis: .vertical)
                         .lineLimit(2...4)
-                        .textFieldStyle(.roundedBorder)
 
                     PrimaryActionButton(title: "Save Oura Test Snapshot", icon: "square.and.arrow.down", accent: appModel.activeCategory.accent) {
                         saveOuraSnapshot()
@@ -455,9 +464,8 @@ struct ProfileView: View {
             manualBodyMetricField("Visceral fat", text: $visceralFat, placeholder: "level")
             manualBodyMetricField("Waist", text: $waist, placeholder: "in")
 
-            TextField("Notes", text: $bodyMetricsNotes, axis: .vertical)
+            styledProfileField("Notes", text: $bodyMetricsNotes, axis: .vertical)
                 .lineLimit(2...4)
-                .textFieldStyle(.roundedBorder)
 
             PrimaryActionButton(title: "Save Today's Body Metrics", icon: "square.and.arrow.down", accent: appModel.activeCategory.accent) {
                 saveBodyMetricsEntry()
@@ -556,7 +564,7 @@ struct ProfileView: View {
     }
 
     private func settingsSection<Content: View>(_ title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
-        GlassPanel {
+        CommandCard {
             VStack(alignment: .leading, spacing: 14) {
                 SectionHeader(title: title, icon: icon, accent: appModel.activeCategory.accent)
                 content()
@@ -690,7 +698,13 @@ struct ProfileView: View {
             Spacer()
             TextField(placeholder, text: text)
                 .multilineTextAlignment(.trailing)
-                .textFieldStyle(.roundedBorder)
+                .padding(.horizontal, 12)
+                .frame(minHeight: 42)
+                .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
+                        .stroke(CommandDesign.hairline, lineWidth: 1)
+                }
                 .frame(maxWidth: 140)
         }
     }
@@ -703,10 +717,26 @@ struct ProfileView: View {
             Spacer()
             TextField(placeholder, text: text)
                 .multilineTextAlignment(.trailing)
-                .textFieldStyle(.roundedBorder)
                 .keyboardType(.decimalPad)
+                .padding(.horizontal, 12)
+                .frame(minHeight: 42)
+                .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
+                        .stroke(CommandDesign.hairline, lineWidth: 1)
+                }
                 .frame(maxWidth: 140)
         }
+    }
+
+    private func styledProfileField(_ title: String, text: Binding<String>, axis: Axis = .horizontal) -> some View {
+        TextField(title, text: text, axis: axis)
+            .padding(12)
+            .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
+                    .stroke(CommandDesign.hairline, lineWidth: 1)
+            }
     }
 
     private func saveOuraSnapshot() {

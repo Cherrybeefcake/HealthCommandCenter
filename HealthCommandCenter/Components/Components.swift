@@ -13,6 +13,7 @@ enum CommandDesign {
     static let surface = Color.white.opacity(0.055)
     static let elevatedSurface = Color.white.opacity(0.085)
     static let secondaryText = Color.white.opacity(0.62)
+    static let tertiaryText = Color.white.opacity(0.45)
 }
 
 enum CommandPalette {
@@ -187,6 +188,47 @@ struct CommandCard<Content: View>: View {
 }
 
 typealias GlassPanel = CommandCard
+
+struct CommandSection<Content: View>: View {
+    let title: String
+    var subtitle: String? = nil
+    var icon: String? = nil
+    let accent: Color
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(title: title, subtitle: subtitle, icon: icon, accent: accent)
+            content
+        }
+    }
+}
+
+struct CommandDivider: View {
+    var body: some View {
+        Divider().overlay(CommandDesign.hairline)
+    }
+}
+
+private struct CommandFieldStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .textFieldStyle(.plain)
+            .padding(12)
+            .frame(minHeight: 46)
+            .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
+                    .stroke(CommandDesign.hairline, lineWidth: 1)
+            }
+    }
+}
+
+extension View {
+    func commandFieldStyle() -> some View {
+        modifier(CommandFieldStyle())
+    }
+}
 
 struct HeroCard<Content: View>: View {
     let accent: Color

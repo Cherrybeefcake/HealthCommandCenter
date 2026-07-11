@@ -26,15 +26,22 @@ struct RitualView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: CommandDesign.stackSpacing) {
                     ScreenHeader(
-                        eyebrow: "Ritual",
-                        title: "Today's Ritual",
-                        subtitle: "Brian, this is the daily floor. Make it fit the readiness you actually have."
+                        eyebrow: "RECOVERY",
+                        title: "Protect the floor.",
+                        subtitle: "Brian, this is the recovery protocol for the day you actually have."
                     )
 
                     ritualSummary
                     dailyPlanPanel
-                    SleepPrepSection(status: appModel.todayRecoveryStatus(), phase: appModel.programPhase, accent: category.accent)
-                    NutritionLogSection(accent: category.accent)
+                    CommandSection(
+                        title: "Recovery protocol",
+                        subtitle: "Sleep, nutrition, and small anchors before anything fancy.",
+                        icon: "figure.mind.and.body",
+                        accent: category.accent
+                    ) {
+                        SleepPrepSection(status: appModel.todayRecoveryStatus(), phase: appModel.programPhase, accent: category.accent)
+                        NutritionLogSection(accent: category.accent)
+                    }
 
                     if completedCount == 0 {
                         EmptyStateCard(
@@ -61,7 +68,7 @@ struct RitualView: View {
     }
 
     private var ritualSummary: some View {
-        GlassPanel {
+        HeroCard(accent: category.accent) {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 5) {
@@ -70,7 +77,7 @@ struct RitualView: View {
                             .foregroundStyle(category.accent)
                         Text(RitualLibrary.coachingLine(for: category))
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(CommandDesign.secondaryText)
                             .lineSpacing(3)
                     }
                     Spacer()
@@ -85,7 +92,7 @@ struct RitualView: View {
 
                 Text(summaryLine)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(CommandDesign.secondaryText)
             }
         }
     }
@@ -94,7 +101,7 @@ struct RitualView: View {
         CommandCard {
             VStack(alignment: .leading, spacing: 14) {
                 SectionHeader(
-                    title: "Today's Ritual Plan",
+                    title: "Today’s recovery call",
                     subtitle: dailyPlan.ritualRecommendation,
                     icon: "moon.stars",
                     accent: category.accent
@@ -107,7 +114,7 @@ struct RitualView: View {
 
                 Text(dailyPlan.sleepPriority)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(CommandDesign.secondaryText)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -120,15 +127,15 @@ struct RitualView: View {
                 .foregroundStyle(category.accent)
             Text(title)
                 .font(.caption.weight(.semibold))
-            Text(value)
+                Text(value)
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(CommandDesign.secondaryText)
                 .lineLimit(4)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+        .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
     }
 
     private var summaryLine: String {
@@ -154,7 +161,7 @@ private struct RitualItemCard: View {
     }
 
     var body: some View {
-        GlassPanel {
+        CommandCard {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top, spacing: 12) {
                     Button {
@@ -202,10 +209,17 @@ private struct RitualItemCard: View {
 
                 if item.kind == .dailyWin {
                     VStack(alignment: .leading, spacing: 10) {
+                        Text("One sentence is enough. Name the win, then let it count.")
+                            .font(.caption)
+                            .foregroundStyle(CommandDesign.secondaryText)
                         TextField("What is today's win?", text: $dailyWinText, axis: .vertical)
                             .lineLimit(2...4)
                             .padding(12)
-                            .background(.black.opacity(0.28), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                            .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
+                                    .stroke(accent.opacity(0.20), lineWidth: 1)
+                            }
                             .onSubmit {
                                 appModel.saveDailyWinText(dailyWinText)
                             }
@@ -225,7 +239,7 @@ private struct RitualItemCard: View {
                         Text(item.detailTitle)
                             .font(.caption.weight(.semibold))
                             .textCase(.uppercase)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(CommandDesign.secondaryText)
 
                         ForEach(item.details, id: \.self) { detail in
                             HStack(alignment: .top, spacing: 8) {
@@ -235,13 +249,13 @@ private struct RitualItemCard: View {
                                     .padding(.top, 7)
                                 Text(detail)
                                     .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(CommandDesign.secondaryText)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
                     }
                     .padding(12)
-                    .background(.black.opacity(0.22), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                    .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
                 }
             }
         }

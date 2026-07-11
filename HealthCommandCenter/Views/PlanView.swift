@@ -39,9 +39,9 @@ struct PlanView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: CommandDesign.stackSpacing) {
                     ScreenHeader(
-                        eyebrow: "Workouts",
-                        title: "Train and log",
-                        subtitle: "Choose a starter full-body session or build a simple custom workout when the day changes."
+                        eyebrow: "TRAIN",
+                        title: "Train with the right dose.",
+                        subtitle: "Pick the session, log the work, and keep the next action obvious."
                     )
 
                     recommendationPanel(category: category, dailyPlan: dailyPlan)
@@ -91,27 +91,21 @@ struct PlanView: View {
     }
 
     private func recommendationPanel(category: ReadinessCategory, dailyPlan: DailyPlan) -> some View {
-        GlassPanel {
-            VStack(alignment: .leading, spacing: 14) {
-                SectionHeader(
-                    title: "Daily Plan Generator",
-                    subtitle: dailyPlan.title,
-                    icon: "sparkles",
-                    accent: category.accent
-                )
+        HeroCard(accent: category.accent) {
+            VStack(alignment: .leading, spacing: 16) {
+                StatusPill(title: "TODAY'S TRAINING CALL", icon: "sparkles", accent: category.accent)
 
                 Text(dailyPlan.workoutRecommendation)
-                    .font(.title2.weight(.bold))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundStyle(category.accent)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Text(dailyPlan.recommendedAction)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(CommandDesign.secondaryText)
                     .lineSpacing(4)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Divider()
-                    .overlay(.white.opacity(0.16))
+                CommandDivider()
 
                 VStack(alignment: .leading, spacing: 8) {
                     planVersionLine("Full", dailyPlan.fullVersionText, category.accent)
@@ -127,21 +121,19 @@ struct PlanView: View {
             StatusPill(title: title, accent: accent)
             Text(text)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(CommandDesign.secondaryText)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private func weeklyPlanSelector(category: ReadinessCategory) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(
+        CommandSection(
                 title: "Weekly structure",
-                subtitle: "Pick the session. The version still adapts from today's readiness.",
+                subtitle: "Starter full-body sessions. The version still adapts from today's readiness.",
                 icon: "calendar",
                 accent: category.accent
-            )
-
+        ) {
             ForEach(StarterWorkoutLibrary.workouts) { workout in
                 Button {
                     selectedWorkoutID = workout.id
@@ -149,27 +141,25 @@ struct PlanView: View {
                 } label: {
                     HStack(spacing: 14) {
                         VStack(alignment: .leading, spacing: 5) {
-                            Text(workout.weeklySlot)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
+                            StatusPill(title: workout.weeklySlot, accent: selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? category.accent : Color.gray)
                             Text(workout.title)
                                 .font(.headline)
                                 .foregroundStyle(.white)
                             Text(workout.focus)
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(CommandDesign.secondaryText)
                                 .lineLimit(2)
                         }
                         Spacer()
                         Image(systemName: selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? category.accent : .secondary)
+                            .foregroundStyle(selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? category.accent : CommandDesign.secondaryText)
                     }
                     .padding(16)
-                    .background(.white.opacity(selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? 0.11 : 0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
-                    .overlay(
+                    .background(selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? CommandDesign.elevatedSurface : CommandDesign.surface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                    .overlay {
                         RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
-                            .stroke(selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? category.accent.opacity(0.7) : .white.opacity(0.08), lineWidth: 1)
-                    )
+                            .stroke(selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? category.accent.opacity(0.45) : CommandDesign.hairline, lineWidth: 1)
+                    }
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Select \(workout.title)")
@@ -178,22 +168,24 @@ struct PlanView: View {
     }
 
     private func customWorkoutSection(category: ReadinessCategory) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                SectionHeader(
-                    title: "Custom workouts",
-                    subtitle: "For the days Brian changes the session but still wants the work logged in one place.",
-                    icon: "plus.square.on.square",
-                    accent: category.accent
-                )
+        CommandSection(
+            title: "Custom workouts",
+            subtitle: "Use this when Brian changes the workout but still wants the log in one place.",
+            icon: "plus.square.on.square",
+            accent: category.accent
+        ) {
+            HStack {
+                Text("Brian-built templates")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(CommandDesign.secondaryText)
                 Spacer()
                 Button {
                     showingCustomWorkoutSheet = true
                 } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title2)
+                    Label("Add", systemImage: "plus.circle.fill")
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(category.accent)
-                        .frame(width: 44, height: 44)
+                        .frame(minHeight: 44)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Add custom workout")
@@ -223,20 +215,18 @@ struct PlanView: View {
                 selectedCustomWorkoutID = workout.id
             } label: {
                 HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("Custom")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 6) {
+                        StatusPill(title: "Custom", icon: "wand.and.stars", accent: selectedCustomWorkoutID == workout.id ? category.accent : Color.gray)
                         Text(workout.name)
                             .font(.headline)
                             .foregroundStyle(.white)
                         Text("\(workout.exercises.count) exercises")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(CommandDesign.secondaryText)
                     }
                     Spacer()
                     Image(systemName: selectedCustomWorkoutID == workout.id ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(selectedCustomWorkoutID == workout.id ? category.accent : .secondary)
+                        .foregroundStyle(selectedCustomWorkoutID == workout.id ? category.accent : CommandDesign.secondaryText)
                 }
             }
             .buttonStyle(.plain)
@@ -254,15 +244,20 @@ struct PlanView: View {
             .accessibilityLabel("Delete \(workout.name)")
         }
         .padding(16)
-        .background(.white.opacity(selectedCustomWorkoutID == workout.id ? 0.11 : 0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
-        .overlay(
+        .background(selectedCustomWorkoutID == workout.id ? CommandDesign.elevatedSurface : CommandDesign.surface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+        .overlay {
             RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
-                .stroke(selectedCustomWorkoutID == workout.id ? category.accent.opacity(0.7) : .white.opacity(0.08), lineWidth: 1)
-        )
+                .stroke(selectedCustomWorkoutID == workout.id ? category.accent.opacity(0.45) : CommandDesign.hairline, lineWidth: 1)
+        }
     }
 
     private func workoutVersionPanel(category: ReadinessCategory) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        CommandSection(
+            title: "Selected session",
+            subtitle: "Log the work here. Today’s rows stay visible while Brian trains.",
+            icon: "figure.strengthtraining.traditional",
+            accent: category.accent
+        ) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(activeWorkout.title)
@@ -275,7 +270,7 @@ struct PlanView: View {
             }
 
             Text(selectedVersion.intention)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(CommandDesign.secondaryText)
                 .lineSpacing(4)
 
             WorkoutSessionSummary(
@@ -314,6 +309,7 @@ private struct ExercisePlanCard: View {
     let accent: Color
     @State private var isExpanded = false
     @State private var isProgressExpanded = false
+    @State private var isCoachExpanded = false
     @State private var isLogging = false
 
     var body: some View {
@@ -321,7 +317,7 @@ private struct ExercisePlanCard: View {
         let suggestion = appModel.progressionSuggestion(for: exercise, workout: workout)
         let progressSummary = appModel.exerciseProgressSummary(for: exercise)
 
-        GlassPanel {
+        CommandCard {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top, spacing: 12) {
                     VStack(alignment: .leading, spacing: 6) {
@@ -329,7 +325,7 @@ private struct ExercisePlanCard: View {
                             .font(.headline)
                         Text(exercise.equipment)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(CommandDesign.secondaryText)
                     }
                     Spacer()
                     Button {
@@ -349,17 +345,8 @@ private struct ExercisePlanCard: View {
 
                 Text(exercise.feel)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(CommandDesign.secondaryText)
                     .lineSpacing(3)
-
-                if exercise.isLoggable {
-                    CoachSuggestionPanel(suggestion: suggestion, accent: accent)
-                    ExerciseProgressSummaryPanel(
-                        summary: progressSummary,
-                        isExpanded: $isProgressExpanded,
-                        accent: accent
-                    )
-                }
 
                 if !todayLogs.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
@@ -371,7 +358,7 @@ private struct ExercisePlanCard: View {
                             Spacer()
                             Text("\(todayLogs.reduce(0) { $0 + $1.setsCompleted }) sets")
                                 .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(CommandDesign.secondaryText)
                         }
 
                         VStack(spacing: 8) {
@@ -387,7 +374,7 @@ private struct ExercisePlanCard: View {
                         }
                     }
                     .padding(12)
-                    .background(.black.opacity(0.22), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                    .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
                 } else if exercise.isLoggable {
                     HStack(alignment: .top, spacing: 10) {
                         Image(systemName: "square.and.pencil")
@@ -395,30 +382,33 @@ private struct ExercisePlanCard: View {
                             .frame(width: 20)
                         Text("No sets logged today. Log the first honest set and this card will keep today's work visible.")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(CommandDesign.secondaryText)
                             .lineSpacing(3)
                     }
                     .padding(12)
-                    .background(.black.opacity(0.18), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                    .background(CommandDesign.surface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
                 }
 
-                if let lastLog = appModel.lastExerciseLog(for: exercise.id, exerciseName: exercise.name) {
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .foregroundStyle(accent)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Last time")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            Text(lastLog.summary)
-                                .font(.subheadline)
-                            Text(lastLog.date.formatted(date: .abbreviated, time: .omitted))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                if exercise.isLoggable {
+                    DisclosureGroup(isExpanded: $isCoachExpanded) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            CoachSuggestionPanel(suggestion: suggestion, accent: accent)
+                            ExerciseProgressSummaryPanel(
+                                summary: progressSummary,
+                                isExpanded: $isProgressExpanded,
+                                accent: accent
+                            )
+                            if let lastLog = appModel.lastExerciseLog(for: exercise.id, exerciseName: exercise.name) {
+                                lastTimePanel(lastLog)
+                            }
                         }
+                        .padding(.top, 10)
+                    } label: {
+                        Label("Coach + history", systemImage: "sparkles")
+                            .font(.headline)
+                            .foregroundStyle(.white)
                     }
-                    .padding(12)
-                    .background(.black.opacity(0.22), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                    .tint(accent)
                 }
 
                 if isExpanded {
@@ -456,7 +446,27 @@ private struct ExercisePlanCard: View {
             .minimumScaleFactor(0.75)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
-            .background(.white.opacity(0.08), in: Capsule())
+            .background(CommandDesign.elevatedSurface, in: Capsule())
+            .overlay { Capsule().stroke(CommandDesign.hairline) }
+    }
+
+    private func lastTimePanel(_ lastLog: ExerciseLog) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "clock.arrow.circlepath")
+                .foregroundStyle(accent)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Last time")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(CommandDesign.secondaryText)
+                Text(lastLog.summary)
+                    .font(.subheadline)
+                Text(lastLog.date.formatted(date: .abbreviated, time: .omitted))
+                    .font(.caption)
+                    .foregroundStyle(CommandDesign.secondaryText)
+            }
+        }
+        .padding(12)
+        .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
     }
 
     private func detailList(_ title: String, _ values: [String]) -> some View {
@@ -769,7 +779,11 @@ private struct ExerciseLogSheet: View {
                             VStack(alignment: .leading, spacing: 18) {
                                 TextField("Weight used, lb", text: $weightText)
                                     .padding(14)
-                                    .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 14))
+                                    .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
+                                            .stroke(CommandDesign.hairline, lineWidth: 1)
+                                    }
 
                                 Stepper("Reps: \(reps)", value: $reps, in: 1...50)
                                 Stepper("Sets completed: \(setsCompleted)", value: $setsCompleted, in: 1...10)
@@ -790,7 +804,11 @@ private struct ExerciseLogSheet: View {
                                 TextField("Optional notes", text: $notes, axis: .vertical)
                                     .lineLimit(2...5)
                                     .padding(14)
-                                    .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 14))
+                                    .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
+                                            .stroke(CommandDesign.hairline, lineWidth: 1)
+                                    }
                             }
                         }
 
@@ -887,12 +905,10 @@ private struct CustomWorkoutSheet: View {
                 SectionHeader(title: "Workout details", icon: "square.and.pencil", accent: accent)
                 TextField("Workout name", text: $name)
                     .textInputAutocapitalization(.words)
-                    .padding(12)
-                    .background(.black.opacity(0.28), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                    .commandFieldStyle()
                 TextField("Notes or focus", text: $notes, axis: .vertical)
                     .lineLimit(2...4)
-                    .padding(12)
-                    .background(.black.opacity(0.28), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                    .commandFieldStyle()
             }
         }
     }
@@ -909,23 +925,26 @@ private struct CustomWorkoutSheet: View {
 
                 TextField("Exercise name", text: $exerciseName)
                     .textInputAutocapitalization(.words)
-                    .padding(12)
-                    .background(.black.opacity(0.28), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                    .commandFieldStyle()
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                     TextField("Category", text: $exerciseCategory)
                         .textInputAutocapitalization(.words)
+                        .commandFieldStyle()
                     TextField("Equipment", text: $exerciseEquipment)
                         .textInputAutocapitalization(.words)
+                        .commandFieldStyle()
                     TextField("Reps/time", text: $targetReps)
+                        .commandFieldStyle()
                     Stepper("Sets: \(targetSets)", value: $targetSets, in: 1...8)
+                        .padding(.horizontal, 10)
+                        .frame(minHeight: 46)
+                        .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
                 }
-                .textFieldStyle(.plain)
 
                 TextField("Exercise notes", text: $exerciseNotes, axis: .vertical)
                     .lineLimit(2...4)
-                    .padding(12)
-                    .background(.black.opacity(0.28), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                    .commandFieldStyle()
 
                 SecondaryActionButton(title: "Add Exercise", icon: "plus", accent: accent) {
                     addExercise()

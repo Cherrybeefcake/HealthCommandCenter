@@ -28,22 +28,22 @@ struct ProgressDashboardView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: CommandDesign.stackSpacing) {
                     ScreenHeader(
-                        eyebrow: "Progress",
-                        title: "Progress Overview",
-                        subtitle: coachingSummary
+                        eyebrow: "INSIGHTS",
+                        title: "Signals over time.",
+                        subtitle: "Local trends, recent sessions, and consistency context without turning the app into a scoreboard."
                     )
 
                     overviewSection
                     thisWeekSection
                     chartsSection
-                    recoveryProgressSection
-                    ouraProgressSection
+                    workoutHistorySection
                     consistencyStreaksSection
-                    exerciseProgressSection
+                    ritualHistorySection
+                    recoveryProgressSection
                     nutritionProgressSection
                     bodyMetricsProgressSection
-                    workoutHistorySection
-                    ritualHistorySection
+                    exerciseProgressSection
+                    ouraProgressSection
                     readinessHistorySection
                 }
                 .padding(CommandDesign.pagePadding)
@@ -58,11 +58,12 @@ struct ProgressDashboardView: View {
     }
 
     private var overviewSection: some View {
-        GlassPanel {
+        HeroCard(accent: category.accent) {
             VStack(alignment: .leading, spacing: 16) {
-                Text(appModel.hasCheckedInToday ? category.rawValue : "Start Check In")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(category.accent)
+                StatusPill(title: appModel.hasCheckedInToday ? category.rawValue : "CHECK-IN NEEDED", icon: "chart.xyaxis.line", accent: category.accent)
+                Text(coachingSummary)
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .fixedSize(horizontal: false, vertical: true)
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     overviewMetric("Check-ins", "\(weekCheckIns.count)", "This week")
@@ -77,8 +78,8 @@ struct ProgressDashboardView: View {
     private var thisWeekSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(
-                title: "This Week",
-                subtitle: "Small signals count: check-ins, sets, and ritual completions.",
+                title: "Weekly overview",
+                subtitle: "The useful signals for this week, grouped before the details.",
                 icon: "calendar.badge.clock",
                 accent: category.accent
             )
@@ -95,8 +96,8 @@ struct ProgressDashboardView: View {
     private var chartsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(
-                title: "Weekly Charts",
-                subtitle: "Small local signals for the current week. No pressure, just visibility.",
+                title: "Charts",
+                subtitle: "Simple local views. No pressure, just visibility.",
                 icon: "chart.bar",
                 accent: category.accent
             )
@@ -161,7 +162,7 @@ struct ProgressDashboardView: View {
     private var recoveryProgressSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(
-                title: "Recovery",
+                title: "Recovery context",
                 subtitle: "Recovery history from stored check-ins. Historical Apple/Oura sleep summaries can come later.",
                 icon: "bed.double",
                 accent: category.accent
@@ -236,7 +237,7 @@ struct ProgressDashboardView: View {
     private var workoutHistorySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(
-                title: "Workout Sessions",
+                title: "Training history",
                 subtitle: "Grouped by calendar day for now, using the logs already stored on this device.",
                 icon: "dumbbell",
                 accent: category.accent
@@ -293,7 +294,7 @@ struct ProgressDashboardView: View {
     private var exerciseProgressSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(
-                title: "Exercise Progress",
+                title: "Exercise progress",
                 subtitle: "Best-so-far summaries from local workout logs. No charts, no testing pressure.",
                 icon: "chart.line.uptrend.xyaxis",
                 accent: category.accent
@@ -326,7 +327,7 @@ struct ProgressDashboardView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(
                 title: "Nutrition",
-                subtitle: "HCC manual anchors plus Apple Health nutrition when another app writes samples there.",
+                subtitle: "Manual HCC anchors plus Apple Health nutrition when another app writes samples there.",
                 icon: "fork.knife",
                 accent: category.accent
             )
@@ -370,7 +371,7 @@ struct ProgressDashboardView: View {
         let recent = appModel.recentBodyMetricsEntries()
         return VStack(alignment: .leading, spacing: 12) {
             SectionHeader(
-                title: "Body Metrics",
+                title: "Body metrics",
                 subtitle: "Trend-focused recomposition notes. Smart-scale composition values are direction data.",
                 icon: "scalemass",
                 accent: category.accent
@@ -437,7 +438,7 @@ struct ProgressDashboardView: View {
     private var consistencyStreaksSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(
-                title: "Consistency Streaks",
+                title: "Recovery / ritual consistency",
                 subtitle: "Quiet momentum, not pressure. A streak just means the system has a recent signal.",
                 icon: "flame",
                 accent: category.accent
@@ -475,7 +476,7 @@ struct ProgressDashboardView: View {
     private var ritualHistorySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(
-                title: "Ritual Days",
+                title: "Ritual days",
                 subtitle: "Review the daily floor over time. One completed item counts as a ritual signal.",
                 icon: "moon.stars",
                 accent: category.accent
