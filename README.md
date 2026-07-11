@@ -30,9 +30,11 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Result screen with Today's Mission
 - Hidden-by-default "Why this category?" explanation on the result screen
 - Home Today Mission dashboard plus readiness-aware Workouts
-- Workouts include Full Body A, B, and C with full, short, bare-minimum, and recovery versions
+- Train includes a Starter Program, Workout Library, and Custom Workouts
+- Starter Program includes Full Body A, B, and C with full, short, bare-minimum, and recovery versions
+- Workout Library includes local built-in sessions for full-body strength, bands/bodyweight, dumbbells, work-shift quick sessions, recovery/mobility, conditioning, and bare-minimum days
 - Local on-device exercise logs with last-time recall for repeated exercises
-- Custom workout templates stored locally for changed workout days
+- Custom workout templates are stored locally for changed workout days and can be edited or deleted without removing existing logs
 - Ritual tab with daily readiness-aware routines and local completion logs
 - Progress tab with charts, workout sessions, ritual history, streaks, recovery, nutrition, exercise progress, and body metrics
 - Profile settings, storage/debug disclosure, reset controls, reminders, Oura foundation, body metrics, and MVP info
@@ -43,6 +45,14 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Premium redesign milestone 2 extends the same graphite/dark system, restrained readiness accents, clearer card hierarchy, and calmer coaching language across Train, Recovery, Insights, You, custom workout forms, and dense settings/debug sections.
 - Premium redesign milestone 3 adds subtle micro-interactions, inline action feedback, improved empty/loading/error states, and real-use polish for saves, refreshes, reminders, ritual toggles, and workout logging.
 - Real-device QA should be repeated after design changes, especially HealthKit refresh, local reminder testing, keyboard dismissal, and persistence after relaunch.
+
+## Train / Workout Library Notes
+
+- Train shows today's recommended workout first, using readiness, program phase, and workout timing to choose a conservative local option.
+- Starter Program remains the backbone: Full Body A, Full Body B, and Full Body C.
+- Workout Library adds deterministic, local-only options for short work-shift sessions, bands/bodyweight, dumbbell strength, recovery mobility, bike/stairs conditioning, and bare-minimum movement.
+- Built-in library workouts use the same local ExerciseLog flow as starter workouts, so Progress session detail and exercise summaries continue to work.
+- Custom Workouts are local templates in `custom_workouts.json`; editing a template does not rewrite past workout logs.
 
 ## Run
 

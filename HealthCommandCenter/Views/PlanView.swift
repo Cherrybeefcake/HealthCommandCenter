@@ -2,14 +2,16 @@ import SwiftUI
 
 struct PlanView: View {
     @EnvironmentObject private var appModel: AppViewModel
-    @State private var selectedWorkoutID = StarterWorkoutLibrary.workouts[0].id
+    @State private var selectedWorkoutID = WorkoutLibrary.starterProgram[0].id
     @State private var selectedCustomWorkoutID: String?
     @State private var showingCustomWorkoutSheet = false
+    @State private var customWorkoutToEdit: CustomWorkout?
     @State private var customWorkoutToDelete: CustomWorkout?
     @State private var customWorkoutFeedback: String?
+    @State private var expandedLibraryCategories: Set<WorkoutCategory> = [.workShiftQuick, .dumbbellStrength, .recoveryMobility, .bareMinimum]
 
-    private var selectedStarterWorkout: WorkoutPlan {
-        StarterWorkoutLibrary.workouts.first { $0.id == selectedWorkoutID } ?? StarterWorkoutLibrary.workouts[0]
+    private var selectedBuiltInWorkout: WorkoutPlan {
+        WorkoutLibrary.allBuiltInWorkouts.first { $0.id == selectedWorkoutID } ?? WorkoutLibrary.starterProgram[0]
     }
 
     private var selectedCustomWorkout: CustomWorkout? {
@@ -18,12 +20,20 @@ struct PlanView: View {
     }
 
     private var activeWorkout: WorkoutPlan {
-        selectedCustomWorkout?.asWorkoutPlan ?? selectedStarterWorkout
+        selectedCustomWorkout?.asWorkoutPlan ?? selectedBuiltInWorkout
     }
 
     private var recommendedVersionType: WorkoutVersionType {
         guard appModel.hasCheckedInToday else { return .bareMinimum }
         return StarterWorkoutLibrary.recommendedVersion(for: appModel.activeCategory)
+    }
+
+    private var recommendedLibraryWorkout: WorkoutPlan {
+        WorkoutLibrary.recommendedWorkout(
+            for: appModel.activeCategory,
+            phase: appModel.programPhase,
+            workoutTimePreference: appModel.workoutTimePreference
+        )
     }
 
     private var selectedVersion: WorkoutVersion {
@@ -60,6 +70,7 @@ struct PlanView: View {
                         )
                     }
                     weeklyPlanSelector(category: category)
+                    workoutLibrarySection(category: category)
                     customWorkoutSection(category: category)
                     if let customWorkoutFeedback {
                         CommandFeedbackPill(message: customWorkoutFeedback, accent: category.accent)
@@ -70,8 +81,11 @@ struct PlanView: View {
             }
         }
         .sheet(isPresented: $showingCustomWorkoutSheet) {
-            CustomWorkoutSheet(accent: category.accent)
+            CustomWorkoutSheet(workoutToEdit: customWorkoutToEdit, accent: category.accent)
                 .environmentObject(appModel)
+                .onDisappear {
+                    customWorkoutToEdit = nil
+                }
         }
         .alert("Delete custom workout?", isPresented: Binding(
             get: { customWorkoutToDelete != nil },
@@ -112,6 +126,36 @@ struct PlanView: View {
 
                 CommandDivider()
 
+                Button {
+                    selectedWorkoutID = recommendedLibraryWorkout.id
+                    selectedCustomWorkoutID = nil
+                } label: {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: recommendedLibraryWorkout.category.icon)
+                            .foregroundStyle(category.accent)
+                            .frame(width: 24)
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Recommended workout")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(CommandDesign.secondaryText)
+                                .textCase(.uppercase)
+                            Text(recommendedLibraryWorkout.title)
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                            Text("\(recommendedLibraryWorkout.estimatedDuration) · \(recommendedLibraryWorkout.intensity)")
+                                .font(.caption)
+                                .foregroundStyle(CommandDesign.secondaryText)
+                        }
+                        Spacer()
+                        Image(systemName: "arrow.right.circle.fill")
+                            .foregroundStyle(category.accent)
+                    }
+                    .padding(12)
+                    .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Select recommended workout \(recommendedLibraryWorkout.title)")
+
                 VStack(alignment: .leading, spacing: 8) {
                     planVersionLine("Full", dailyPlan.fullVersionText, category.accent)
                     planVersionLine("Short", dailyPlan.shortVersionText, category.accent)
@@ -134,42 +178,106 @@ struct PlanView: View {
 
     private func weeklyPlanSelector(category: ReadinessCategory) -> some View {
         CommandSection(
-                title: "Weekly structure",
-                subtitle: "Starter full-body sessions. The version still adapts from today's readiness.",
+                title: "Starter Program",
+                subtitle: "Full Body A, B, and C remain the weekly backbone. The version adapts from today’s readiness.",
                 icon: "calendar",
                 accent: category.accent
         ) {
-            ForEach(StarterWorkoutLibrary.workouts) { workout in
-                Button {
-                    selectedWorkoutID = workout.id
-                    selectedCustomWorkoutID = nil
-                } label: {
-                    HStack(spacing: 14) {
-                        VStack(alignment: .leading, spacing: 5) {
-                            StatusPill(title: workout.weeklySlot, accent: selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? category.accent : Color.gray)
-                            Text(workout.title)
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                            Text(workout.focus)
-                                .font(.caption)
-                                .foregroundStyle(CommandDesign.secondaryText)
-                                .lineLimit(2)
-                        }
-                        Spacer()
-                        Image(systemName: selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? category.accent : CommandDesign.secondaryText)
-                    }
-                    .padding(16)
-                    .background(selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? CommandDesign.elevatedSurface : CommandDesign.surface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
-                            .stroke(selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? category.accent.opacity(0.45) : CommandDesign.hairline, lineWidth: 1)
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Select \(workout.title)")
+            ForEach(WorkoutLibrary.starterProgram) { workout in
+                builtInWorkoutRow(workout, category: category)
             }
         }
+    }
+
+    private func workoutLibrarySection(category: ReadinessCategory) -> some View {
+        CommandSection(
+            title: "Workout Library",
+            subtitle: "Local built-in options for strength, shift days, recovery, conditioning, and minimum-dose movement.",
+            icon: "books.vertical",
+            accent: category.accent
+        ) {
+            ForEach(WorkoutCategory.allCases) { libraryCategory in
+                let workouts = WorkoutLibrary.workouts(in: libraryCategory)
+                if !workouts.isEmpty {
+                    DisclosureGroup(isExpanded: Binding(
+                        get: { expandedLibraryCategories.contains(libraryCategory) },
+                        set: { isExpanded in
+                            withAnimation(.easeInOut(duration: 0.18)) {
+                                if isExpanded {
+                                    expandedLibraryCategories.insert(libraryCategory)
+                                } else {
+                                    expandedLibraryCategories.remove(libraryCategory)
+                                }
+                            }
+                        }
+                    )) {
+                        VStack(spacing: 10) {
+                            ForEach(workouts) { workout in
+                                builtInWorkoutRow(workout, category: category)
+                            }
+                        }
+                        .padding(.top, 10)
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: libraryCategory.icon)
+                                .foregroundStyle(category.accent)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(libraryCategory.rawValue)
+                                    .font(.headline)
+                                Text("\(workouts.count) sessions")
+                                    .font(.caption)
+                                    .foregroundStyle(CommandDesign.secondaryText)
+                            }
+                        }
+                    }
+                    .tint(category.accent)
+                    .padding(14)
+                    .background(CommandDesign.surface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
+                            .stroke(CommandDesign.hairline, lineWidth: 1)
+                    }
+                }
+            }
+        }
+    }
+
+    private func builtInWorkoutRow(_ workout: WorkoutPlan, category: ReadinessCategory) -> some View {
+        Button {
+            selectedWorkoutID = workout.id
+            selectedCustomWorkoutID = nil
+        } label: {
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 7) {
+                    HStack(spacing: 8) {
+                        StatusPill(title: workout.weeklySlot, accent: selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? category.accent : Color.gray)
+                        StatusPill(title: workout.estimatedDuration, icon: "clock", accent: Color.gray)
+                    }
+                    Text(workout.title)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text(workout.focus)
+                        .font(.caption)
+                        .foregroundStyle(CommandDesign.secondaryText)
+                        .lineLimit(2)
+                    Text(workout.coachingNote)
+                        .font(.caption2)
+                        .foregroundStyle(CommandDesign.tertiaryText)
+                        .lineLimit(2)
+                }
+                Spacer()
+                Image(systemName: selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? category.accent : CommandDesign.secondaryText)
+            }
+            .padding(16)
+            .background(selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? CommandDesign.elevatedSurface : CommandDesign.surface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
+                    .stroke(selectedCustomWorkoutID == nil && selectedWorkoutID == workout.id ? category.accent.opacity(0.45) : CommandDesign.hairline, lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Select \(workout.title)")
     }
 
     private func customWorkoutSection(category: ReadinessCategory) -> some View {
@@ -185,6 +293,7 @@ struct PlanView: View {
                     .foregroundStyle(CommandDesign.secondaryText)
                 Spacer()
                 Button {
+                    customWorkoutToEdit = nil
                     showingCustomWorkoutSheet = true
                 } label: {
                     Label("Add", systemImage: "plus.circle.fill")
@@ -204,7 +313,10 @@ struct PlanView: View {
                     accent: category.accent,
                     actionTitle: "Add Custom Workout",
                     actionIcon: "plus",
-                    action: { showingCustomWorkoutSheet = true }
+                    action: {
+                        customWorkoutToEdit = nil
+                        showingCustomWorkoutSheet = true
+                    }
                 )
             } else {
                 ForEach(appModel.customWorkouts) { workout in
@@ -235,6 +347,19 @@ struct PlanView: View {
                 }
             }
             .buttonStyle(.plain)
+
+            Button {
+                customWorkoutToEdit = workout
+                showingCustomWorkoutSheet = true
+            } label: {
+                Image(systemName: "pencil")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(category.accent)
+                    .frame(width: 44, height: 44)
+                    .background(.white.opacity(0.06), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Edit \(workout.name)")
 
             Button(role: .destructive) {
                 customWorkoutToDelete = workout
@@ -274,9 +399,30 @@ struct PlanView: View {
                 Spacer()
             }
 
+            HStack(spacing: 8) {
+                StatusPill(title: activeWorkout.category.rawValue, icon: activeWorkout.category.icon, accent: category.accent)
+                StatusPill(title: activeWorkout.intensity, accent: Color.gray)
+            }
+
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "shippingbox")
+                    .foregroundStyle(category.accent)
+                    .frame(width: 20)
+                Text(activeWorkout.equipmentSummary)
+                    .font(.caption)
+                    .foregroundStyle(CommandDesign.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             Text(selectedVersion.intention)
                 .foregroundStyle(CommandDesign.secondaryText)
                 .lineSpacing(4)
+
+            Text(activeWorkout.coachingNote)
+                .font(.caption)
+                .foregroundStyle(CommandDesign.tertiaryText)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
 
             WorkoutSessionSummary(
                 workout: activeWorkout,
@@ -898,6 +1044,7 @@ private struct ExerciseLogSheet: View {
 private struct CustomWorkoutSheet: View {
     @EnvironmentObject private var appModel: AppViewModel
     @Environment(\.dismiss) private var dismiss
+    let workoutToEdit: CustomWorkout?
     let accent: Color
 
     @State private var name = ""
@@ -911,6 +1058,8 @@ private struct CustomWorkoutSheet: View {
     @State private var exercises: [CustomExercise] = []
     @State private var validationMessage: String?
 
+    private var isEditing: Bool { workoutToEdit != nil }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -920,15 +1069,15 @@ private struct CustomWorkoutSheet: View {
                     VStack(alignment: .leading, spacing: CommandDesign.stackSpacing) {
                         ScreenHeader(
                             eyebrow: "Custom Workout",
-                            title: "Build today's session",
-                            subtitle: "Use this when the planned workout changes. Keep it practical and loggable."
+                            title: isEditing ? "Edit custom session" : "Build today's session",
+                            subtitle: isEditing ? "Adjust the template. Existing workout logs stay in history." : "Use this when the planned workout changes. Keep it practical and loggable."
                         )
 
                         workoutDetailsCard
                         addExerciseCard
                         exercisePreview
 
-                        PrimaryActionButton(title: "Save Custom Workout", icon: "checkmark", accent: accent) {
+                        PrimaryActionButton(title: isEditing ? "Save Changes" : "Save Custom Workout", icon: "checkmark", accent: accent) {
                             save()
                         }
 
@@ -944,6 +1093,9 @@ private struct CustomWorkoutSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
+            }
+            .onAppear {
+                loadWorkoutIfNeeded()
             }
         }
     }
@@ -1089,12 +1241,21 @@ private struct CustomWorkoutSheet: View {
         }
         appModel.saveCustomWorkout(
             CustomWorkout(
+                id: workoutToEdit?.id ?? UUID().uuidString,
                 name: cleanName,
                 notes: notes.trimmingCharacters(in: .whitespacesAndNewlines),
+                createdAt: workoutToEdit?.createdAt ?? Date(),
                 exercises: exercises
             )
         )
         dismiss()
+    }
+
+    private func loadWorkoutIfNeeded() {
+        guard let workoutToEdit, name.isEmpty, exercises.isEmpty else { return }
+        name = workoutToEdit.name
+        notes = workoutToEdit.notes
+        exercises = workoutToEdit.exercises
     }
 
     private func showValidation(_ message: String) {

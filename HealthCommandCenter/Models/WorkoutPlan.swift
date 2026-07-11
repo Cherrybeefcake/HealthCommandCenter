@@ -16,6 +16,30 @@ enum WorkoutSectionKind: String, Codable {
     case recovery = "Recovery"
 }
 
+enum WorkoutCategory: String, Codable, CaseIterable, Identifiable, Hashable {
+    case fullBodyStrength = "Full Body Strength"
+    case bandsBodyweight = "Bands & Bodyweight"
+    case dumbbellStrength = "Dumbbell Strength"
+    case workShiftQuick = "Work Shift Quick Sessions"
+    case recoveryMobility = "Recovery / Mobility"
+    case conditioning = "Conditioning / Bike / Stairs"
+    case bareMinimum = "Bare-Minimum Sessions"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .fullBodyStrength: return "figure.strengthtraining.traditional"
+        case .bandsBodyweight: return "figure.core.training"
+        case .dumbbellStrength: return "dumbbell"
+        case .workShiftQuick: return "briefcase"
+        case .recoveryMobility: return "figure.mind.and.body"
+        case .conditioning: return "bicycle"
+        case .bareMinimum: return "leaf"
+        }
+    }
+}
+
 struct ExercisePlan: Codable, Identifiable, Hashable {
     let id: String
     let name: String
@@ -49,7 +73,39 @@ struct WorkoutPlan: Codable, Identifiable, Hashable {
     let title: String
     let weeklySlot: String
     let focus: String
+    let category: WorkoutCategory
+    let estimatedDuration: String
+    let intensity: String
+    let recommendedCategories: [ReadinessCategory]
+    let equipmentSummary: String
+    let coachingNote: String
     let versions: [WorkoutVersion]
+
+    init(
+        id: String,
+        title: String,
+        weeklySlot: String,
+        focus: String,
+        category: WorkoutCategory = .fullBodyStrength,
+        estimatedDuration: String = "Flexible",
+        intensity: String = "Beginner-friendly",
+        recommendedCategories: [ReadinessCategory] = [.pushDay, .normalTrainingDay, .lightTrainingDay],
+        equipmentSummary: String = "Dumbbells, bands, bench, mat",
+        coachingNote: String = "Keep reps clean and stop before the session gets noisy.",
+        versions: [WorkoutVersion]
+    ) {
+        self.id = id
+        self.title = title
+        self.weeklySlot = weeklySlot
+        self.focus = focus
+        self.category = category
+        self.estimatedDuration = estimatedDuration
+        self.intensity = intensity
+        self.recommendedCategories = recommendedCategories
+        self.equipmentSummary = equipmentSummary
+        self.coachingNote = coachingNote
+        self.versions = versions
+    }
 
     func version(_ type: WorkoutVersionType) -> WorkoutVersion {
         versions.first { $0.type == type } ?? versions[0]
@@ -237,6 +293,322 @@ struct StarterWorkoutLibrary {
         case .bareMinimumDay:
             return "Bare-Minimum Version."
         }
+    }
+}
+
+struct WorkoutLibrary {
+    static let starterProgram = StarterWorkoutLibrary.workouts
+
+    static let libraryWorkouts: [WorkoutPlan] = [
+        workShiftStrength,
+        bandsBodyweightTen,
+        dumbbellFullBodyTwenty,
+        bareMinimumMovement,
+        recoveryMobility,
+        bikeConditioning,
+        stairsWalkingConditioning,
+        shoulderFriendlyReset,
+        lowSleepRecovery
+    ]
+
+    static let allBuiltInWorkouts: [WorkoutPlan] = starterProgram + libraryWorkouts
+
+    static func workouts(in category: WorkoutCategory) -> [WorkoutPlan] {
+        if category == .fullBodyStrength {
+            return starterProgram
+        }
+        return libraryWorkouts.filter { $0.category == category }
+    }
+
+    static func recommendedWorkout(
+        for category: ReadinessCategory,
+        phase: ProgramPhase,
+        workoutTimePreference: WorkoutTimePreference
+    ) -> WorkoutPlan {
+        switch category {
+        case .pushDay:
+            return phase == .nightShift || phase == .newBaby ? dumbbellFullBodyTwenty : StarterWorkoutLibrary.workouts[0]
+        case .normalTrainingDay:
+            if phase == .nightShift || phase == .newBaby { return workShiftStrength }
+            return StarterWorkoutLibrary.workouts[1]
+        case .lightTrainingDay:
+            return phase == .nightShift || workoutTimePreference == .beginningOfShift ? workShiftStrength : bandsBodyweightTen
+        case .recoveryDay:
+            return lowSleepRecovery
+        case .bareMinimumDay:
+            return bareMinimumMovement
+        }
+    }
+}
+
+private extension WorkoutLibrary {
+    static let workShiftStrength = WorkoutPlan(
+        id: "work-shift-strength-15",
+        title: "15-Minute Work-Shift Strength",
+        weeklySlot: "Work quick",
+        focus: "Shift-friendly strength dose with no warmup drama",
+        category: .workShiftQuick,
+        estimatedDuration: "15 min",
+        intensity: "Moderate, contained",
+        recommendedCategories: [.normalTrainingDay, .lightTrainingDay],
+        equipmentSummary: "Work gym, dumbbells, bench, bands",
+        coachingNote: "Good for the beginning of shift: get the signal, avoid turning it into a whole event.",
+        versions: [
+            version("work-shift-strength-15-full", .full, "15 min", "A clean work-shift strength floor.", [
+                section("work-shift-warm", .warmup, "Warmup", [
+                    exercise("work-shift-walk", "Treadmill or Hall Walk", "Work gym or hallway", "3 min", "None", ["Easy pace", "Shoulders down"], ["Starting too fast"], ["Calves", "Hips"], "Warm, not tired", false)
+                ]),
+                section("work-shift-strength", .strength, "Strength", [
+                    exercise("db-goblet-squat", "Goblet Squat", "Dumbbell", "2 sets of 8-10", "60 sec", ["Tall chest", "Knees track toes", "Stop before grind"], ["Collapsing inward", "Rushing"], ["Quads", "Glutes", "Core"], "Strong and controlled", true),
+                    exercise("db-bench-press", "Dumbbell Bench Press", "Bench, dumbbells", "2 sets of 8-10", "60 sec", ["Shoulders packed", "Smooth lower"], ["Flaring hard", "Bouncing"], ["Chest", "Triceps"], "Clean effort", true),
+                    exercise("band-row", "Band Row", "Resistance band", "2 sets of 12", "45 sec", ["Pull elbows to ribs", "Pause briefly"], ["Shrugging"], ["Upper back", "Lats"], "Upper back awake", true)
+                ])
+            ]),
+            version("work-shift-strength-15-short", .short, "9-10 min", "Keep the promise with one pass.", [
+                section("work-shift-short", .strength, "Short Dose", [
+                    exercise("db-goblet-squat", "Goblet Squat", "Dumbbell", "1-2 sets of 8", "45 sec", ["Tall chest", "Smooth reps"], ["Forcing depth"], ["Quads", "Glutes"], "Easy strength", true),
+                    exercise("band-row", "Band Row", "Resistance band", "1-2 sets of 12", "45 sec", ["Shoulders low"], ["Leaning back"], ["Upper back"], "Posture reset", true)
+                ])
+            ]),
+            version("work-shift-strength-15-bare", .bareMinimum, "5 min", "One tiny shift-friendly dose.", [
+                section("work-shift-bare", .strength, "Minimum Dose", [
+                    exercise("incline-push-up", "Incline Push-Up", "Bench or counter", "1 set of 8", "None", ["Body straight", "Stop easy"], ["Sagging"], ["Chest", "Triceps"], "Clean and easy", true),
+                    exercise("easy-walk", "Easy Walk", "Hallway or treadmill", "3 min", "None", ["Relax shoulders"], ["Turning it into cardio"], ["Hips", "Heart"], "Clearer", false)
+                ])
+            ])
+        ]
+    )
+
+    static let bandsBodyweightTen = WorkoutPlan(
+        id: "bands-bodyweight-10",
+        title: "10-Minute Bands / Bodyweight",
+        weeklySlot: "Quick reset",
+        focus: "Bands, push, hinge, and posture",
+        category: .bandsBodyweight,
+        estimatedDuration: "10 min",
+        intensity: "Light to moderate",
+        recommendedCategories: [.lightTrainingDay, .normalTrainingDay],
+        equipmentSummary: "Resistance band, mat, bench/counter",
+        coachingNote: "Use this when consistency matters more than load.",
+        versions: [
+            version("bands-bodyweight-10-full", .full, "10 min", "A low-friction strength circuit.", [
+                section("bands-bodyweight-circuit", .strength, "Circuit", [
+                    exercise("band-good-morning", "Band Good Morning", "Resistance band", "2 rounds of 12", "30 sec", ["Hips back", "Soft knees"], ["Rounding"], ["Hamstrings", "Glutes"], "Light hinge", true),
+                    exercise("incline-push-up", "Incline Push-Up", "Bench or counter", "2 rounds of 8-10", "30 sec", ["Straight body", "Smooth lower"], ["Sagging"], ["Chest", "Triceps"], "Clean reps", true),
+                    exercise("band-pull-apart", "Band Pull-Apart", "Resistance band", "2 rounds of 12", "30 sec", ["Shoulders low", "Control out and back"], ["Snapping band"], ["Rear delts", "Upper back"], "Posture burn", true)
+                ])
+            ]),
+            version("bands-bodyweight-10-short", .short, "6 min", "One calm circuit.", [
+                section("bands-bodyweight-short", .strength, "Short Circuit", [
+                    exercise("band-good-morning", "Band Good Morning", "Resistance band", "1 round of 12", "30 sec", ["Hips back"], ["Rounding"], ["Hamstrings"], "Easy", true),
+                    exercise("band-pull-apart", "Band Pull-Apart", "Resistance band", "1 round of 12", "30 sec", ["Shoulders low"], ["Shrugging"], ["Upper back"], "Awake", true)
+                ])
+            ]),
+            version("bands-bodyweight-10-bare", .bareMinimum, "3-4 min", "A tiny posture and hinge reset.", [
+                section("bands-bodyweight-bare", .strength, "Minimum Dose", [
+                    exercise("band-pull-apart", "Band Pull-Apart", "Resistance band", "1 set of 12", "None", ["Smooth", "Shoulders low"], ["Rushing"], ["Upper back"], "Better posture", true),
+                    exercise("childs-pose-breath", "Child's Pose Breathing", "Mat", "1 min", "None", ["Long exhale"], ["Forcing"], ["Back", "Breathing"], "Settled", false)
+                ])
+            ])
+        ]
+    )
+
+    static let dumbbellFullBodyTwenty = WorkoutPlan(
+        id: "dumbbell-full-body-20",
+        title: "20-Minute Dumbbell Full-Body",
+        weeklySlot: "Dumbbell",
+        focus: "Dumbbell strength when the full starter session is too much",
+        category: .dumbbellStrength,
+        estimatedDuration: "20 min",
+        intensity: "Moderate",
+        recommendedCategories: [.pushDay, .normalTrainingDay, .lightTrainingDay],
+        equipmentSummary: "Adjustable dumbbells, incline bench, mat",
+        coachingNote: "A compact full-body option. Match clean reps before adding load.",
+        versions: [
+            version("db-full-body-20-full", .full, "18-22 min", "Compact full-body strength.", [
+                section("db20-warm", .warmup, "Warmup", [
+                    exercise("march-glute-bridge", "March + Glute Bridge", "Mat", "3 min", "None", ["Move slowly", "Breathe"], ["Rushing"], ["Hips", "Core"], "Ready", false)
+                ]),
+                section("db20-strength", .strength, "Strength", [
+                    exercise("db-rdl", "Dumbbell Romanian Deadlift", "Dumbbells", "2-3 sets of 8", "75 sec", ["Hips back", "Lats tight"], ["Rounding"], ["Hamstrings", "Glutes"], "Solid hinge", true),
+                    exercise("db-floor-press", "Dumbbell Floor Press", "Dumbbells, mat", "2-3 sets of 8-10", "75 sec", ["Elbows controlled", "Pause lightly"], ["Bouncing"], ["Chest", "Triceps"], "Controlled push", true),
+                    exercise("one-arm-db-row", "One-Arm Dumbbell Row", "Dumbbell, bench", "2-3 sets of 10 each", "60 sec", ["Pull to hip", "Back flat"], ["Twisting"], ["Lats", "Upper back"], "Back working", true)
+                ])
+            ]),
+            version("db-full-body-20-short", .short, "12 min", "Short dumbbell strength dose.", [
+                section("db20-short", .strength, "Short Strength", [
+                    exercise("db-rdl", "Dumbbell Romanian Deadlift", "Dumbbells", "2 sets of 8", "60 sec", ["Hips back"], ["Rounding"], ["Hamstrings"], "Moderate", true),
+                    exercise("db-floor-press", "Dumbbell Floor Press", "Dumbbells, mat", "2 sets of 8", "60 sec", ["Control lower"], ["Bouncing"], ["Chest"], "Clean", true)
+                ])
+            ]),
+            version("db-full-body-20-bare", .bareMinimum, "6 min", "One hinge, one push, done.", [
+                section("db20-bare", .strength, "Minimum Dose", [
+                    exercise("db-rdl", "Dumbbell Romanian Deadlift", "Dumbbells", "1 set of 8", "45 sec", ["Stop easy"], ["Rounding"], ["Hamstrings"], "Easy", true),
+                    exercise("db-floor-press", "Dumbbell Floor Press", "Dumbbells, mat", "1 set of 8", "45 sec", ["Smooth"], ["Bouncing"], ["Chest"], "Easy", true)
+                ])
+            ])
+        ]
+    )
+
+    static let bareMinimumMovement = WorkoutPlan(
+        id: "bare-minimum-movement-8",
+        title: "8-Minute Bare-Minimum Movement",
+        weeklySlot: "Minimum",
+        focus: "Protect the floor when life is loud",
+        category: .bareMinimum,
+        estimatedDuration: "8 min",
+        intensity: "Very light",
+        recommendedCategories: [.bareMinimumDay, .recoveryDay],
+        equipmentSummary: "Mat or open floor",
+        coachingNote: "This counts. Do the small thing and move on.",
+        versions: [mobilityVersion("bare-minimum-movement-8", .bareMinimum, "8 min", "Tiny movement floor", "Minimum Dose")]
+    )
+
+    static let recoveryMobility = WorkoutPlan(
+        id: "recovery-mobility-12",
+        title: "12-Minute Recovery Mobility",
+        weeklySlot: "Recovery",
+        focus: "Hips, t-spine, breathing, and downshift",
+        category: .recoveryMobility,
+        estimatedDuration: "12 min",
+        intensity: "Recovery",
+        recommendedCategories: [.recoveryDay, .lightTrainingDay],
+        equipmentSummary: "Mat",
+        coachingNote: "Leave the session feeling better than when you started.",
+        versions: [
+            mobilityVersion("recovery-mobility-12", .full, "12 min", "A calm recovery flow.", "Recovery Flow"),
+            mobilityVersion("recovery-mobility-12-short", .short, "7 min", "Short recovery flow.", "Short Flow"),
+            mobilityVersion("recovery-mobility-12-bare", .bareMinimum, "4 min", "Bare-minimum mobility.", "Minimum Flow")
+        ]
+    )
+
+    static let bikeConditioning = WorkoutPlan(
+        id: "bike-conditioning-15",
+        title: "15-Minute Bike Conditioning",
+        weeklySlot: "Conditioning",
+        focus: "Low-impact cardio without crushing recovery",
+        category: .conditioning,
+        estimatedDuration: "15 min",
+        intensity: "Easy to moderate",
+        recommendedCategories: [.pushDay, .normalTrainingDay, .lightTrainingDay],
+        equipmentSummary: "Bike",
+        coachingNote: "Keep it conversational unless the day is clearly a Push Day.",
+        versions: [
+            conditioningVersion("bike-conditioning-15", .full, "15 min", "Easy bike with a little structure.", "Bike"),
+            conditioningVersion("bike-conditioning-15-short", .short, "8 min", "Short bike flush.", "Bike"),
+            conditioningVersion("bike-conditioning-15-bare", .bareMinimum, "4 min", "Minimum bike spin.", "Bike")
+        ]
+    )
+
+    static let stairsWalkingConditioning = WorkoutPlan(
+        id: "stairs-walking-conditioning-10",
+        title: "10-Minute Stairs / Walking Conditioning",
+        weeklySlot: "Conditioning",
+        focus: "Shift-friendly conditioning with easy exits",
+        category: .conditioning,
+        estimatedDuration: "10 min",
+        intensity: "Light to moderate",
+        recommendedCategories: [.normalTrainingDay, .lightTrainingDay],
+        equipmentSummary: "Stairs, hallway, treadmill, or outside",
+        coachingNote: "If stress or sleep is poor, make this a walk instead of a push.",
+        versions: [
+            conditioningVersion("stairs-walking-conditioning-10", .full, "10 min", "Walk/stairs conditioning without drama.", "Stairs or walk"),
+            conditioningVersion("stairs-walking-conditioning-10-short", .short, "6 min", "Short walk/stairs dose.", "Stairs or walk"),
+            conditioningVersion("stairs-walking-conditioning-10-bare", .bareMinimum, "3 min", "Walk the floor.", "Walk")
+        ]
+    )
+
+    static let shoulderFriendlyReset = WorkoutPlan(
+        id: "shoulder-friendly-upper-reset",
+        title: "Shoulder-Friendly Upper Body Reset",
+        weeklySlot: "Upper reset",
+        focus: "Upper-back work and controlled pressing without aggressive overhead work",
+        category: .bandsBodyweight,
+        estimatedDuration: "12-15 min",
+        intensity: "Light to moderate",
+        recommendedCategories: [.lightTrainingDay, .normalTrainingDay],
+        equipmentSummary: "Bands, light dumbbells, bench",
+        coachingNote: "Stay in a pain-free range. This is a reset, not a test.",
+        versions: [
+            version("shoulder-reset-full", .full, "12-15 min", "Shoulder-friendly upper reset.", [
+                section("shoulder-reset", .strength, "Reset", [
+                    exercise("band-face-pull", "Band Face Pull", "Resistance band", "2 sets of 12", "45 sec", ["Elbows high but easy", "Shoulders down"], ["Cranking neck"], ["Rear delts", "Upper back"], "Clean upper-back work", true),
+                    exercise("incline-push-up", "Incline Push-Up", "Bench or counter", "2 sets of 8-10", "45 sec", ["Pain-free range", "Smooth lower"], ["Diving head"], ["Chest", "Triceps"], "Easy push", true),
+                    exercise("side-lying-open-book", "Side-Lying Open Book", "Mat", "5 reps each side", "None", ["Breathe out into rotation"], ["Forcing range"], ["T-spine", "Shoulders"], "Open", false)
+                ])
+            ]),
+            version("shoulder-reset-short", .short, "7 min", "Short shoulder reset.", [
+                section("shoulder-reset-short-section", .strength, "Short Reset", [
+                    exercise("band-face-pull", "Band Face Pull", "Resistance band", "1-2 sets of 12", "30 sec", ["Smooth"], ["Shrugging"], ["Upper back"], "Awake", true),
+                    exercise("side-lying-open-book", "Side-Lying Open Book", "Mat", "4 reps each side", "None", ["Easy range"], ["Forcing"], ["T-spine"], "Open", false)
+                ])
+            ]),
+            version("shoulder-reset-bare", .bareMinimum, "4 min", "Minimum shoulder reset.", [
+                section("shoulder-reset-bare-section", .recovery, "Minimum Reset", [
+                    exercise("band-pull-apart", "Band Pull-Apart", "Resistance band", "1 set of 12", "None", ["Shoulders low"], ["Snapping"], ["Upper back"], "Better posture", true)
+                ])
+            ])
+        ]
+    )
+
+    static let lowSleepRecovery = WorkoutPlan(
+        id: "low-sleep-recovery-session",
+        title: "Low-Sleep Recovery Session",
+        weeklySlot: "Low sleep",
+        focus: "Walking, breathing, and mobility when recovery is thin",
+        category: .recoveryMobility,
+        estimatedDuration: "10-15 min",
+        intensity: "Recovery",
+        recommendedCategories: [.recoveryDay, .bareMinimumDay],
+        equipmentSummary: "Mat, walking space",
+        coachingNote: "Low sleep is not a moral problem. Keep the floor low and protect tomorrow.",
+        versions: [
+            mobilityVersion("low-sleep-recovery-session", .recovery, "10-15 min", "Low-sleep recovery session.", "Low-Sleep Flow"),
+            mobilityVersion("low-sleep-recovery-session-bare", .bareMinimum, "5 min", "Tiny low-sleep floor.", "Minimum Flow")
+        ]
+    )
+
+    static func version(_ id: String, _ type: WorkoutVersionType, _ duration: String, _ intention: String, _ sections: [WorkoutSection]) -> WorkoutVersion {
+        WorkoutVersion(id: id, type: type, duration: duration, intention: intention, sections: sections)
+    }
+
+    static func section(_ id: String, _ kind: WorkoutSectionKind, _ title: String, _ exercises: [ExercisePlan]) -> WorkoutSection {
+        WorkoutSection(id: id, kind: kind, title: title, exercises: exercises)
+    }
+
+    static func exercise(
+        _ id: String,
+        _ name: String,
+        _ equipment: String,
+        _ prescription: String,
+        _ rest: String,
+        _ formCues: [String],
+        _ commonMistakes: [String],
+        _ musclesTargeted: [String],
+        _ feel: String,
+        _ isLoggable: Bool
+    ) -> ExercisePlan {
+        ExercisePlan(id: id, name: name, equipment: equipment, prescription: prescription, rest: rest, formCues: formCues, commonMistakes: commonMistakes, musclesTargeted: musclesTargeted, feel: feel, isLoggable: isLoggable)
+    }
+
+    static func mobilityVersion(_ baseID: String, _ type: WorkoutVersionType, _ duration: String, _ intention: String, _ title: String) -> WorkoutVersion {
+        version("\(baseID)-\(type.id)", type, duration, intention, [
+            section("\(baseID)-mobility", .recovery, title, [
+                exercise("\(baseID)-easy-walk", "Easy Walk", "None or treadmill", "3-6 min", "None", ["Relax shoulders", "Keep pace easy"], ["Turning it into cardio"], ["Calves", "Hips", "Heart"], "A little clearer", false),
+                exercise("\(baseID)-hip-flow", "Hip and T-Spine Flow", "Mat", "3-5 min", "None", ["Move slowly", "Stay comfortable"], ["Forcing positions"], ["Hips", "Mid-back"], "Looser", false),
+                exercise("\(baseID)-breathing", "Supine Breathing Reset", "Mat", "2 min", "None", ["Long exhale", "Jaw soft"], ["Trying too hard"], ["Breathing"], "Settled", false)
+            ])
+        ])
+    }
+
+    static func conditioningVersion(_ baseID: String, _ type: WorkoutVersionType, _ duration: String, _ intention: String, _ mode: String) -> WorkoutVersion {
+        version("\(baseID)-\(type.id)", type, duration, intention, [
+            section("\(baseID)-conditioning", .recovery, "Conditioning", [
+                exercise("\(baseID)-easy-start", "\(mode) Easy Start", mode, "3 min easy", "None", ["Start too easy", "Breathe steadily"], ["Opening too hard"], ["Heart", "Legs"], "Warm", false),
+                exercise("\(baseID)-steady", "\(mode) Steady Work", mode, type == .full ? "8-10 min steady" : "3-5 min steady", "None", ["Conversational pace", "Keep posture calm"], ["Chasing intensity"], ["Heart", "Legs"], "Worked but not crushed", false),
+                exercise("\(baseID)-cooldown", "\(mode) Cooldown", mode, "2 min easy", "None", ["Let breathing settle"], ["Stopping abruptly"], ["Heart", "Calves"], "Recovered", false)
+            ])
+        ])
     }
 }
 
