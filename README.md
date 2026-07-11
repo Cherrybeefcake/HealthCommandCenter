@@ -37,6 +37,7 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Custom workout templates are stored locally for changed workout days and can be edited or deleted without removing existing logs
 - Ritual tab with daily readiness-aware routines and local completion logs
 - Progress tab with charts, workout sessions, ritual history, streaks, recovery, nutrition, exercise progress, and body metrics
+- Weekly Coach Report in Insights with local rule-based wins, watchouts, next-week focus, and Daily Win review
 - Profile settings, storage/debug disclosure, reset controls, reminders, Oura foundation, body metrics, and MVP info
 
 ## Design / Polish Notes
@@ -53,6 +54,12 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Workout Library adds deterministic, local-only options for short work-shift sessions, bands/bodyweight, dumbbell strength, recovery mobility, bike/stairs conditioning, and bare-minimum movement.
 - Built-in library workouts use the same local ExerciseLog flow as starter workouts, so Progress session detail and exercise summaries continue to work.
 - Custom Workouts are local templates in `custom_workouts.json`; editing a template does not rewrite past workout logs.
+
+## Weekly Review Notes
+
+- Insights includes a local, rule-based Weekly Coach Report.
+- The report uses stored check-ins, workout logs, ritual logs, nutrition anchors, sleep from check-ins, body metrics, and Daily Win answers.
+- It is not AI yet and does not call external APIs; recommendations are deterministic coaching rules for next-week focus.
 
 ## Run
 

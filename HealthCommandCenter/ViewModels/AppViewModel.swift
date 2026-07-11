@@ -976,6 +976,90 @@ final class AppViewModel: ObservableObject {
         return counts.max { $0.value < $1.value }?.key
     }
 
+    func currentWeeklyReview() -> WeeklyReview {
+        let calendar = Calendar.current
+        let interval = calendar.dateInterval(of: .weekOfYear, for: Date())
+        let weekStart = interval?.start ?? Date()
+        let weekEnd = interval?.end.addingTimeInterval(-1) ?? Date()
+        let weekCheckIns = checkInsThisWeek()
+        let weekLogs = exerciseLogsThisWeek()
+        let weekRituals = ritualLogsThisWeek()
+        let weekNutrition = nutritionLogsThisWeek()
+        let ritualSummary = ritualCompletionSummaryThisWeek()
+        let workoutDays = Set(weekLogs.map { RitualLibrary.dateKey(for: $0.date) }).count
+        let totalSets = weekLogs.reduce(0) { $0 + $1.setsCompleted }
+        let ritualDays = weekRituals.filter { !$0.completedItemIDs.isEmpty }.count
+        let ritualPercent = ritualSummary.available > 0
+            ? Int((Double(ritualSummary.completed) / Double(ritualSummary.available) * 100).rounded())
+            : 0
+        let nutritionDays = weekNutrition.filter { $0.cronometerCompleted || $0.proteinGrams != nil || $0.waterOunces != nil || $0.caloriesLogged != nil }.count
+        let averageProtein = averageProteinThisWeek()
+        let averageWater = averageWaterThisWeek()
+        let averageSleep = averageSleepThisWeek()
+        let lowSleepDays = lowSleepDaysThisWeek()
+        let dailyWins = weekRituals
+            .map(\.dailyWinText)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let bodySummary = latestBodyMetricsSummary()
+        let bodyTrend = bodySummary.trendText
+        let readiness = mostCommonReadinessThisWeek()
+        let consistencyDays = consistencyDatesThisWeek().count
+        let consistencyScore = weeklyConsistencyText(days: consistencyDays)
+        let wins = weeklyWins(
+            checkIns: weekCheckIns.count,
+            workoutDays: workoutDays,
+            totalSets: totalSets,
+            ritualDays: ritualDays,
+            nutritionDays: nutritionDays,
+            dailyWins: dailyWins
+        )
+        let watchouts = weeklyWatchouts(
+            checkIns: weekCheckIns.count,
+            workoutDays: workoutDays,
+            ritualDays: ritualDays,
+            nutritionDays: nutritionDays,
+            averageProtein: averageProtein,
+            averageWater: averageWater,
+            averageSleep: averageSleep,
+            lowSleepDays: lowSleepDays
+        )
+        let focus = nextWeekFocus(
+            checkIns: weekCheckIns.count,
+            workoutDays: workoutDays,
+            ritualDays: ritualDays,
+            nutritionDays: nutritionDays,
+            averageProtein: averageProtein,
+            averageWater: averageWater,
+            averageSleep: averageSleep,
+            lowSleepDays: lowSleepDays,
+            hasBodyMetrics: bodySummary.latestEntry != nil || bodySummary.appleHealthWeightPounds != nil,
+            consistencyDays: consistencyDays
+        )
+
+        return WeeklyReview(
+            weekStartDate: weekStart,
+            weekEndDate: weekEnd,
+            checkInCount: weekCheckIns.count,
+            workoutDays: workoutDays,
+            totalSets: totalSets,
+            ritualDays: ritualDays,
+            ritualCompletionPercent: ritualPercent,
+            nutritionLoggedDays: nutritionDays,
+            averageProtein: averageProtein,
+            averageWater: averageWater,
+            averageSleep: averageSleep,
+            lowSleepDays: lowSleepDays,
+            bodyWeightTrendText: bodyTrend,
+            mostCommonReadiness: readiness,
+            consistencyScoreText: consistencyScore,
+            wins: wins,
+            watchouts: watchouts,
+            nextWeekFocus: focus,
+            coachSummary: weeklyCoachSummary(consistencyDays: consistencyDays, checkIns: weekCheckIns.count, workoutDays: workoutDays, ritualDays: ritualDays, lowSleepDays: lowSleepDays)
+        )
+    }
+
     func ritualCapacity(for log: DailyRitualLog) -> Int {
         let category = readinessCategory(for: log.dateKey) ?? activeCategory
         return RitualLibrary.items(for: category).count
@@ -1684,6 +1768,110 @@ final class AppViewModel: ObservableObject {
         scheduledReminderCount = status.scheduledReminderCount
         pendingHealthCommandNotificationCount = status.pendingHealthCommandCount
         isTestReminderPending = status.isTestReminderPending
+    }
+
+    private func weeklyConsistencyText(days: Int) -> String {
+        switch days {
+        case 0:
+            return "No week signal yet"
+        case 1...2:
+            return "Early signal"
+        case 3...4:
+            return "Building rhythm"
+        case 5...7:
+            return "Strong consistency"
+        default:
+            return "Building rhythm"
+        }
+    }
+
+    private func weeklyWins(checkIns: Int, workoutDays: Int, totalSets: Int, ritualDays: Int, nutritionDays: Int, dailyWins: [String]) -> [String] {
+        var wins: [String] = []
+        if checkIns >= 4 { wins.append("Check-ins showed up \(checkIns) days. That gives the app enough signal to coach the week.") }
+        if workoutDays >= 2 { wins.append("\(workoutDays) training days logged. Good consistency win.") }
+        if totalSets > 0 { wins.append("\(totalSets) total sets logged. The strength baseline is becoming visible.") }
+        if ritualDays >= 3 { wins.append("Recovery rituals showed up \(ritualDays) days. That is the floor doing its job.") }
+        if nutritionDays >= 3 { wins.append("Nutrition anchors were visible \(nutritionDays) days. Cronometer/protein/water signals are starting to matter.") }
+        dailyWins.prefix(2).forEach { wins.append("Daily Win: \($0)") }
+        if wins.isEmpty {
+            wins.append("The first useful win is simple: create one signal this week and let the system start learning.")
+        }
+        return wins
+    }
+
+    private func weeklyWatchouts(
+        checkIns: Int,
+        workoutDays: Int,
+        ritualDays: Int,
+        nutritionDays: Int,
+        averageProtein: Int?,
+        averageWater: Int?,
+        averageSleep: Double?,
+        lowSleepDays: Int
+    ) -> [String] {
+        var watchouts: [String] = []
+        if checkIns < 3 { watchouts.append("Low check-in count means the app has less context. Start there before adding complexity.") }
+        if workoutDays <= 1 { watchouts.append("Training signal is still thin. Keep next week’s target realistic: two strength touches is enough.") }
+        if ritualDays < 3 { watchouts.append("Recovery ritual is the easiest place to protect the floor when the week gets messy.") }
+        if nutritionDays < 3 { watchouts.append("Nutrition data is light. If Cronometer does not write to Apple Health, save the anchors manually in Recovery.") }
+        if let averageProtein, averageProtein < nutritionTargets.proteinGrams { watchouts.append("Protein averaged below the current target. Use one easy template before chasing precision.") }
+        if averageProtein == nil { watchouts.append("No protein average yet. One logged protein day will make the nutrition review more useful.") }
+        if let averageWater, averageWater < nutritionTargets.waterOunces { watchouts.append("Water averaged below the current target. Hydration is a low-friction anchor.") }
+        if averageWater == nil { watchouts.append("No water average yet. Add water once in Recovery to start the trend.") }
+        if let averageSleep, averageSleep < 6 { watchouts.append("Average sleep was under 6 hours. Keep training conservative until sleep rebounds.") }
+        if lowSleepDays >= 2 { watchouts.append("\(lowSleepDays) low-sleep days showed up. Treat recovery as part of the plan, not a bonus.") }
+        if watchouts.isEmpty {
+            watchouts.append("No major watchout from local data. Keep progress boring and avoid adding too much at once.")
+        }
+        return watchouts
+    }
+
+    private func nextWeekFocus(
+        checkIns: Int,
+        workoutDays: Int,
+        ritualDays: Int,
+        nutritionDays: Int,
+        averageProtein: Int?,
+        averageWater: Int?,
+        averageSleep: Double?,
+        lowSleepDays: Int,
+        hasBodyMetrics: Bool,
+        consistencyDays: Int
+    ) -> [String] {
+        var focus: [String] = []
+        if checkIns < 4 { focus.append("Start with daily Check In. Classification comes before intensity.") }
+        if workoutDays <= 1 { focus.append("Aim for two strength sessions next week, even if one is short.") }
+        if ritualDays < 3 { focus.append("Use the bare-minimum ritual on busy days: water, mobility, Daily Win.") }
+        if nutritionDays < 3 || averageProtein == nil || (averageProtein ?? nutritionTargets.proteinGrams) < nutritionTargets.proteinGrams {
+            focus.append("Use one protein anchor daily: shake, griddle meal, wrap, or chicken/rice bowl.")
+        }
+        if averageWater == nil || (averageWater ?? nutritionTargets.waterOunces) < nutritionTargets.waterOunces {
+            focus.append("Keep water visible. Hit the hydration anchor before the day gets away.")
+        }
+        if (averageSleep ?? 8) < 6 || lowSleepDays >= 2 {
+            focus.append("Protect sleep first. Low-sleep days get short workouts or recovery sessions.")
+        }
+        if !hasBodyMetrics { focus.append("Optional: log body metrics once. Trend data beats daily judgment.") }
+        if consistencyDays >= 5 {
+            focus.append("Consistency is strong. Progress slowly and do not overreach.")
+        }
+        return Array(focus.prefix(5))
+    }
+
+    private func weeklyCoachSummary(consistencyDays: Int, checkIns: Int, workoutDays: Int, ritualDays: Int, lowSleepDays: Int) -> String {
+        if consistencyDays == 0 {
+            return "Not enough week data yet. Start with Check In, one Train log, and one Recovery ritual."
+        }
+        if lowSleepDays >= 2 {
+            return "The week had useful signals, but recovery needs respect. Keep next week conservative and protect sleep."
+        }
+        if workoutDays >= 2 && ritualDays >= 3 && checkIns >= 4 {
+            return "Strong weekly rhythm. Keep the floor low, repeat the pattern, and progress slowly."
+        }
+        if workoutDays == 0 {
+            return "The system has started collecting signals. Next week’s cleanest move is one short strength session."
+        }
+        return "The week is taking shape. Build around the strongest signal and keep next week simple."
     }
 
     private func isInCurrentWeek(_ date: Date) -> Bool {

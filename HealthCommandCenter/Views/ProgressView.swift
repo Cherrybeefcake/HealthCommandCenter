@@ -35,6 +35,7 @@ struct ProgressDashboardView: View {
 
                     overviewSection
                     thisWeekSection
+                    weeklyCoachReportSection
                     chartsSection
                     workoutHistorySection
                     consistencyStreaksSection
@@ -89,6 +90,79 @@ struct ProgressDashboardView: View {
                 ProgressStatCard(title: "Ritual", value: ritualPercentText, detail: "\(weekRitualSummary.completed) of \(weekRitualSummary.available) items", icon: "moon.stars", accent: category.accent)
                 ProgressStatCard(title: "Readiness", value: appModel.mostCommonReadinessThisWeek()?.rawValue ?? "No data", detail: "Most common category", icon: "gauge.with.dots.needle.bottom.100percent", accent: category.accent)
                 ProgressStatCard(title: "Consistency", value: "\(appModel.consistencyDatesThisWeek().count) days", detail: "Check-in, workout, or ritual", icon: "checkmark.seal", accent: category.accent)
+            }
+        }
+    }
+
+    private var weeklyCoachReportSection: some View {
+        let review = appModel.currentWeeklyReview()
+        return CommandSection(
+            title: "Weekly Coach Report",
+            subtitle: "\(review.weekStartDate.formatted(date: .abbreviated, time: .omitted)) - \(review.weekEndDate.formatted(date: .abbreviated, time: .omitted))",
+            icon: "doc.text.magnifyingglass",
+            accent: category.accent
+        ) {
+            CommandCard {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(category.accent)
+                            .frame(width: 24)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Coach summary")
+                                .font(.caption.weight(.semibold))
+                                .textCase(.uppercase)
+                                .foregroundStyle(CommandDesign.secondaryText)
+                            Text(review.coachSummary)
+                                .font(.headline)
+                                .lineSpacing(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    if !review.hasUsefulData {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Label("Not enough week data yet", systemImage: "chart.bar.doc.horizontal")
+                                .font(.headline)
+                                .foregroundStyle(category.accent)
+                            Text("Start with Check In, one Train log, and one Recovery ritual. The report will become more useful as the week gets signals.")
+                                .font(.subheadline)
+                                .foregroundStyle(CommandDesign.secondaryText)
+                                .lineSpacing(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                            SecondaryActionButton(title: "Start Check In", icon: "slider.horizontal.3", accent: category.accent) {
+                                appModel.startNewCheckIn()
+                            }
+                        }
+                        .padding(12)
+                        .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                    }
+
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                        coachMetric("Check-ins", "\(review.checkInCount)", "This week")
+                        coachMetric("Workout days", "\(review.workoutDays)", "\(review.totalSets) sets")
+                        coachMetric("Ritual days", "\(review.ritualDays)", "\(review.ritualCompletionPercent)% complete")
+                        coachMetric("Nutrition", "\(review.nutritionLoggedDays)", "Logged days")
+                        coachMetric("Avg sleep", review.averageSleep.map { String(format: "%.1f hr", $0) } ?? "--", "\(review.lowSleepDays) low-sleep days")
+                        coachMetric("Protein / water", "\(review.averageProtein.map { "\($0)g" } ?? "--") / \(review.averageWater.map { "\($0) oz" } ?? "--")", "Averages")
+                    }
+
+                    coachList(title: "Wins this week", items: review.wins, icon: "checkmark.seal")
+                    coachList(title: "Watchouts", items: review.watchouts, icon: "exclamationmark.triangle")
+                    coachList(title: "Next week focus", items: review.nextWeekFocus, icon: "arrow.forward.circle")
+
+                    HStack(spacing: 8) {
+                        StatusPill(title: review.consistencyScoreText, icon: "checkmark.circle", accent: category.accent)
+                        if let readiness = review.mostCommonReadiness {
+                            StatusPill(title: readiness.rawValue, icon: "gauge.with.dots.needle.bottom.100percent", accent: readiness.accent)
+                        }
+                    }
+
+                    Text("Body trend: \(review.bodyWeightTrendText)")
+                        .font(.caption)
+                        .foregroundStyle(CommandDesign.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
@@ -594,6 +668,52 @@ struct ProgressDashboardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+    }
+
+    private func coachMetric(_ title: String, _ value: String, _ detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(value)
+                .font(.headline)
+                .lineLimit(2)
+                .minimumScaleFactor(0.75)
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(CommandDesign.secondaryText)
+            Text(detail)
+                .font(.caption2)
+                .foregroundStyle(CommandDesign.tertiaryText)
+                .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+    }
+
+    private func coachList(title: String, items: [String], icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(title, systemImage: icon)
+                .font(.caption.weight(.semibold))
+                .textCase(.uppercase)
+                .foregroundStyle(category.accent)
+
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(items, id: \.self) { item in
+                    HStack(alignment: .top, spacing: 8) {
+                        Circle()
+                            .fill(category.accent)
+                            .frame(width: 5, height: 5)
+                            .padding(.top, 7)
+                        Text(item)
+                            .font(.subheadline)
+                            .foregroundStyle(CommandDesign.secondaryText)
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .padding(12)
+            .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+        }
     }
 
     private var weeklySetCount: Int {
