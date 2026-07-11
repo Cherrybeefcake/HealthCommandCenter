@@ -577,12 +577,17 @@ struct ProfileView: View {
 
     private var aboutSection: some View {
         settingsSection("About MVP", icon: "info.circle") {
-            Text("This is Brian's private Health Command Center MVP: a local-first app for readiness, training, rituals, and weekly review.")
+            Text("This is Brian's private Health Command Center MVP: a local-first app for readiness, training, rituals, weekly review, and practical next actions.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineSpacing(3)
 
-            Text("Direction: Apple Health context, future Oura OAuth, and future Cronometer integration. This app is not medical diagnosis, treatment, or clinical decision support.")
+            Text("Data is stored locally on this device. Apple Health access is read-only. Oura OAuth and Cronometer API integration are not connected yet.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineSpacing(3)
+
+            Text("This app is coaching and personal organization software, not medical advice, diagnosis, treatment, or clinical decision support.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineSpacing(3)

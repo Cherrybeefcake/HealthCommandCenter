@@ -421,7 +421,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Health Command Center";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Command Center uses sleep, activity, heart, and body metrics to personalize Brian's daily readiness mission.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Command Center reads Apple Health sleep, activity, workouts, heart, body, and nutrition data to personalize Brian's daily readiness mission. The app does not write Health data.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -452,7 +452,7 @@
 				DEVELOPMENT_TEAM = 43V4UB543R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Health Command Center";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Command Center uses sleep, activity, heart, and body metrics to personalize Brian's daily readiness mission.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Health Command Center reads Apple Health sleep, activity, workouts, heart, body, and nutrition data to personalize Brian's daily readiness mission. The app does not write Health data.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
