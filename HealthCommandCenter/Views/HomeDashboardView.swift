@@ -10,22 +10,22 @@ struct HomeDashboardView: View {
                 .tag(AppViewModel.AppTab.today)
 
             PlanView()
-                .tabItem { Label("Workouts", systemImage: "dumbbell") }
+                .tabItem { Label("Train", systemImage: "dumbbell.fill") }
                 .tag(AppViewModel.AppTab.plan)
 
             RitualView()
-                .tabItem { Label("Ritual", systemImage: "moon.stars") }
+                .tabItem { Label("Recovery", systemImage: "figure.mind.and.body") }
                 .tag(AppViewModel.AppTab.ritual)
 
             ProgressDashboardView()
-                .tabItem { Label("Progress", systemImage: "chart.line.uptrend.xyaxis") }
+                .tabItem { Label("Insights", systemImage: "chart.xyaxis.line") }
                 .tag(AppViewModel.AppTab.progress)
 
             ProfileView()
-                .tabItem { Label("Profile", systemImage: "person.crop.circle") }
+                .tabItem { Label("You", systemImage: "person.crop.circle.fill") }
                 .tag(AppViewModel.AppTab.profile)
         }
-        .tint(appModel.activeCategory.accent)
+        .tint(CommandPalette.brand)
     }
 }
 
@@ -44,35 +44,55 @@ private struct TodayDashboard: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: CommandDesign.stackSpacing) {
-                        ScreenHeader(
-                            eyebrow: greeting,
-                            title: appModel.hasCheckedInToday ? dailyPlan.readinessCategory.rawValue : "Start Check In",
-                            subtitle: mission.coachingMessage
-                        )
-
-                        GlassPanel {
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text("Today's Mission")
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(greeting)
                                     .font(.caption.weight(.semibold))
-                                    .textCase(.uppercase)
-                                    .foregroundStyle(.secondary)
-
-                                Text(dailyPlan.primaryFocus)
+                                    .foregroundStyle(CommandDesign.secondaryText)
+                                Text(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()))
                                     .font(.title2.weight(.bold))
-                                    .foregroundStyle(category.accent)
-                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Spacer()
+                            Button {
+                                appModel.selectedTab = .profile
+                            } label: {
+                                Image(systemName: "person.crop.circle.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(.white.opacity(0.82))
+                                    .frame(width: 44, height: 44)
+                                    .background(CommandDesign.elevatedSurface, in: Circle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Open profile")
+                        }
 
-                                Text(dailyPlan.todaysMission)
-                                    .font(.headline)
-                                    .lineSpacing(3)
-                                    .fixedSize(horizontal: false, vertical: true)
+                        HeroCard(accent: category.accent) {
+                            VStack(alignment: .leading, spacing: 18) {
+                                StatusPill(
+                                    title: appModel.hasCheckedInToday ? dailyPlan.readinessCategory.rawValue : "CHECK-IN NEEDED",
+                                    icon: appModel.hasCheckedInToday ? "bolt.heart.fill" : "waveform.path.ecg",
+                                    accent: category.accent
+                                )
 
-                                VStack(alignment: .leading, spacing: 10) {
-                                    missionLine("Ritual", mission.ritualProgressText, "moon.stars", category.accent)
-                                    if mission.totalSetsLogged > 0 {
-                                        missionLine("Workout", "\(mission.totalSetsLogged) sets logged today", "checklist", category.accent)
-                                    } else {
-                                        missionLine("Workout", dailyPlan.workoutRecommendation, "figure.strengthtraining.traditional", category.accent)
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text(appModel.hasCheckedInToday ? dailyPlan.primaryFocus : "Build the right plan for today.")
+                                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                                        .lineSpacing(2)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    Text(mission.coachingMessage)
+                                        .font(.body)
+                                        .foregroundStyle(CommandDesign.secondaryText)
+                                        .lineSpacing(4)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+
+                                if appModel.hasCheckedInToday {
+                                    HStack(alignment: .top, spacing: 11) {
+                                        Image(systemName: "scope")
+                                            .foregroundStyle(category.accent)
+                                        Text(dailyPlan.todaysMission)
+                                            .font(.subheadline.weight(.semibold))
+                                            .fixedSize(horizontal: false, vertical: true)
                                     }
                                 }
 
@@ -82,11 +102,54 @@ private struct TodayDashboard: View {
                             }
                         }
 
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                            MissionStatusCard(title: "Workouts", value: mission.planStatusValue, detail: mission.planStatusDetail, icon: "dumbbell", accent: category.accent)
-                            MissionStatusCard(title: "Ritual", value: mission.ritualStatusValue, detail: mission.ritualStatusDetail, icon: "moon.stars", accent: category.accent)
-                            MissionStatusCard(title: "Recovery", value: mission.recoveryStatus.recoveryCategory.rawValue, detail: mission.recoveryStatus.sleepDurationText, icon: "bed.double", accent: category.accent)
-                            MissionStatusCard(title: "Nutrition", value: mission.nutritionStatusValue, detail: mission.nutritionStatusDetail, icon: "fork.knife", accent: category.accent)
+                        VStack(alignment: .leading, spacing: 12) {
+                            SectionHeader(
+                                title: "Today at a glance",
+                                subtitle: "Four signals. One next action.",
+                                icon: "square.grid.2x2",
+                                accent: category.accent
+                            )
+
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                                MissionStatusCard(title: "Training", value: mission.planStatusValue, detail: mission.planStatusDetail, icon: "dumbbell", accent: category.accent)
+                                MissionStatusCard(title: "Recovery", value: mission.recoveryStatus.sleepDurationText, detail: mission.recoveryStatus.trainingAdjustmentText, icon: "bed.double.fill", accent: category.accent)
+                                MissionStatusCard(title: "Nutrition", value: mission.nutritionStatusValue, detail: mission.nutritionStatusDetail, icon: "fork.knife", accent: category.accent)
+                                MissionStatusCard(title: "Daily essentials", value: mission.ritualStatusValue, detail: mission.ritualStatusDetail, icon: "checkmark.circle", accent: category.accent)
+                            }
+                        }
+
+                        CommandCard {
+                            VStack(alignment: .leading, spacing: 15) {
+                                SectionHeader(
+                                    title: "Health context",
+                                    subtitle: "Supporting evidence, not the final authority.",
+                                    icon: "heart.text.square.fill",
+                                    accent: category.accent
+                                )
+                                HStack(spacing: 10) {
+                                    healthMini("Sleep", snapshot.sleepHours.map { String(format: "%.1f hr", $0) } ?? "—")
+                                    healthMini("Steps", snapshot.steps.map { "\($0)" } ?? "—")
+                                    healthMini("HRV", snapshot.hrvSDNN.map { String(format: "%.0f ms", $0) } ?? "—")
+                                }
+                                HStack {
+                                    Text(appModel.healthAuthorizationSummary)
+                                        .font(.caption)
+                                        .foregroundStyle(CommandDesign.secondaryText)
+                                    Spacer()
+                                    Text(appModel.lastHealthRefreshText)
+                                        .font(.caption2)
+                                        .foregroundStyle(CommandDesign.secondaryText)
+                                }
+                                Button {
+                                    Task { await appModel.refreshHealthData() }
+                                } label: {
+                                    Label(appModel.isLoadingHealth ? "Refreshing" : "Refresh health data", systemImage: "arrow.clockwise")
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(category.accent)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(appModel.isLoadingHealth)
+                            }
                         }
 
                         SleepRecoveryHomeCard(status: mission.recoveryStatus, accent: category.accent) {
@@ -96,82 +159,37 @@ private struct TodayDashboard: View {
                         BodyMetricsHomeCard(summary: appModel.latestBodyMetricsSummary(), accent: category.accent) {
                             appModel.selectedTab = .profile
                         }
-
-                        GlassPanel {
-                            VStack(alignment: .leading, spacing: 12) {
-                                SectionHeader(
-                                    title: "Health context",
-                                    subtitle: "\(appModel.healthAuthorizationSummary). Last refresh: \(appModel.lastHealthRefreshText).",
-                                    icon: "heart.text.square",
-                                    accent: category.accent
-                                )
-                                HStack(spacing: 12) {
-                                    healthMini("Sleep", snapshot.sleepHours.map { String(format: "%.1f hr", $0) } ?? "No data")
-                                    healthMini("Steps", snapshot.steps.map { "\($0)" } ?? "No data")
-                                    healthMini("HRV", snapshot.hrvSDNN.map { String(format: "%.0f ms", $0) } ?? "No data")
-                                }
-                                Text("Missing values may be timing, no sample, or permissions. Sleep uses the latest available sleep summary; steps and active energy can be empty just after midnight.")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .lineSpacing(3)
-                                    .fixedSize(horizontal: false, vertical: true)
-
-                                SecondaryActionButton(
-                                    title: appModel.isLoadingHealth ? "Refreshing Health Data" : "Refresh Health Data",
-                                    icon: "arrow.clockwise",
-                                    accent: category.accent
-                                ) {
-                                    Task { await appModel.refreshHealthData() }
-                                }
-                                .disabled(appModel.isLoadingHealth)
-                            }
-                        }
                     }
                     .padding(CommandDesign.pagePadding)
+                    .padding(.bottom, 14)
                 }
+                .refreshable { await appModel.refreshHealthData() }
             }
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
-        if hour < 12 { return "Good morning, Brian" }
-        if hour < 18 { return "Good afternoon, Brian" }
-        return "Good evening, Brian"
-    }
-
-    private func missionLine(_ label: String, _ text: String, _ icon: String, _ accent: Color) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: icon)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(accent)
-                .frame(width: 18)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Text(text)
-                    .font(.subheadline)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
+        if hour < 12 { return "GOOD MORNING, BRIAN" }
+        if hour < 18 { return "GOOD AFTERNOON, BRIAN" }
+        return "GOOD EVENING, BRIAN"
     }
 
     private func healthMini(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 5) {
             Text(value)
-                .font(.subheadline.weight(.semibold))
+                .font(.headline)
                 .lineLimit(1)
-                .minimumScaleFactor(0.75)
+                .minimumScaleFactor(0.7)
             Text(title)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(CommandDesign.secondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+        .padding(12)
+        .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
     }
-
 }
 
 private struct BodyMetricsHomeCard: View {

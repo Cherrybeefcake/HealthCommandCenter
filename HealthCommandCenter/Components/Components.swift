@@ -4,10 +4,21 @@ import UIKit
 #endif
 
 enum CommandDesign {
-    static let pagePadding: CGFloat = 24
-    static let stackSpacing: CGFloat = 22
-    static let cardRadius: CGFloat = 22
-    static let innerRadius: CGFloat = 14
+    static let pagePadding: CGFloat = 20
+    static let stackSpacing: CGFloat = 18
+    static let cardRadius: CGFloat = 24
+    static let innerRadius: CGFloat = 16
+    static let compactRadius: CGFloat = 12
+    static let hairline = Color.white.opacity(0.09)
+    static let surface = Color.white.opacity(0.055)
+    static let elevatedSurface = Color.white.opacity(0.085)
+    static let secondaryText = Color.white.opacity(0.62)
+}
+
+enum CommandPalette {
+    static let background = Color(red: 0.025, green: 0.03, blue: 0.045)
+    static let backgroundRaised = Color(red: 0.045, green: 0.052, blue: 0.072)
+    static let brand = Color(red: 0.58, green: 0.86, blue: 0.98)
 }
 
 #if canImport(UIKit)
@@ -23,41 +34,38 @@ private struct CommandKeyboardDismissalModifier: ViewModifier {
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
-                    Button("Done") {
-                        dismissCommandKeyboard()
-                    }
+                    Button("Done") { dismissCommandKeyboard() }
                 }
             }
     }
 }
 
 extension View {
-    func commandKeyboardDismissal() -> some View {
-        modifier(CommandKeyboardDismissalModifier())
-    }
+    func commandKeyboardDismissal() -> some View { modifier(CommandKeyboardDismissalModifier()) }
 }
 #else
-@MainActor
-func dismissCommandKeyboard() {}
-
-extension View {
-    func commandKeyboardDismissal() -> some View { self }
-}
+@MainActor func dismissCommandKeyboard() {}
+extension View { func commandKeyboardDismissal() -> some View { self } }
 #endif
 
 struct CommandBackground: View {
     let category: ReadinessCategory
 
     var body: some View {
-        LinearGradient(
-            colors: [
-                Color(red: 0.03, green: 0.04, blue: 0.06),
-                category.accent.opacity(0.22),
-                Color(red: 0.02, green: 0.02, blue: 0.03)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+        ZStack {
+            CommandPalette.background
+            RadialGradient(
+                colors: [category.accent.opacity(0.16), .clear],
+                center: .topTrailing,
+                startRadius: 20,
+                endRadius: 460
+            )
+            LinearGradient(
+                colors: [.clear, Color.black.opacity(0.28)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
         .ignoresSafeArea()
     }
 }
@@ -68,19 +76,19 @@ struct ScreenHeader: View {
     let subtitle: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 7) {
             Text(eyebrow)
                 .font(.caption.weight(.semibold))
-                .textCase(.uppercase)
-                .foregroundStyle(.secondary)
+                .tracking(0.6)
+                .foregroundStyle(CommandDesign.secondaryText)
             Text(title)
-                .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                .lineSpacing(2)
-                .minimumScaleFactor(0.82)
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .lineSpacing(1)
+                .minimumScaleFactor(0.78)
                 .fixedSize(horizontal: false, vertical: true)
             Text(subtitle)
-                .font(.body)
-                .foregroundStyle(.secondary)
+                .font(.subheadline)
+                .foregroundStyle(CommandDesign.secondaryText)
                 .lineSpacing(4)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -95,19 +103,18 @@ struct SectionHeader: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 8) {
+            HStack(spacing: 9) {
                 if let icon {
                     Image(systemName: icon)
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(accent)
                 }
-                Text(title)
-                    .font(.headline)
+                Text(title).font(.headline)
             }
-
             if let subtitle {
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(CommandDesign.secondaryText)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -123,16 +130,19 @@ struct PrimaryActionButton: View {
 
     var body: some View {
         Button(action: action) {
-            Label(title, systemImage: icon)
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: 56)
-                .padding(.horizontal, 12)
-                .background(accent)
-                .foregroundStyle(.black)
-                .clipShape(RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+            HStack(spacing: 9) {
+                Text(title)
+                Image(systemName: icon)
+            }
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 56)
+            .padding(.horizontal, 16)
+            .background(accent, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+            .foregroundStyle(Color.black.opacity(0.84))
         }
         .buttonStyle(.plain)
+        .sensoryFeedback(.impact(weight: .medium), trigger: title)
         .accessibilityLabel(title)
     }
 }
@@ -146,15 +156,15 @@ struct SecondaryActionButton: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: icon)
-                .font(.headline)
+                .font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity)
-                .frame(minHeight: 52)
-                .padding(.horizontal, 12)
-                .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
-                .overlay(
+                .frame(minHeight: 50)
+                .padding(.horizontal, 14)
+                .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                .overlay {
                     RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
-                        .stroke(accent.opacity(0.45), lineWidth: 1)
-                )
+                        .stroke(accent.opacity(0.24), lineWidth: 1)
+                }
                 .foregroundStyle(accent)
         }
         .buttonStyle(.plain)
@@ -167,16 +177,43 @@ struct CommandCard<Content: View>: View {
 
     var body: some View {
         content
-            .padding(20)
-            .background(.white.opacity(0.075), in: RoundedRectangle(cornerRadius: CommandDesign.cardRadius, style: .continuous))
-            .overlay(
+            .padding(18)
+            .background(CommandDesign.surface, in: RoundedRectangle(cornerRadius: CommandDesign.cardRadius, style: .continuous))
+            .overlay {
                 RoundedRectangle(cornerRadius: CommandDesign.cardRadius, style: .continuous)
-                    .stroke(.white.opacity(0.12), lineWidth: 1)
-            )
+                    .stroke(CommandDesign.hairline, lineWidth: 1)
+            }
     }
 }
 
 typealias GlassPanel = CommandCard
+
+struct HeroCard<Content: View>: View {
+    let accent: Color
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        content
+            .padding(22)
+            .background {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(CommandPalette.backgroundRaised)
+                    .overlay(alignment: .topTrailing) {
+                        Circle()
+                            .fill(accent.opacity(0.19))
+                            .frame(width: 180, height: 180)
+                            .blur(radius: 30)
+                            .offset(x: 60, y: -75)
+                            .clipped()
+                    }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(accent.opacity(0.18), lineWidth: 1)
+            }
+    }
+}
 
 struct StatusPill: View {
     let title: String
@@ -185,25 +222,16 @@ struct StatusPill: View {
 
     var body: some View {
         Label {
-            Text(title)
-                .lineLimit(1)
-                .minimumScaleFactor(0.78)
+            Text(title).lineLimit(1).minimumScaleFactor(0.78)
         } icon: {
-            if let icon {
-                Image(systemName: icon)
-            } else {
-                EmptyView()
-            }
+            if let icon { Image(systemName: icon) }
         }
         .font(.caption.weight(.semibold))
         .foregroundStyle(accent)
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 11)
         .padding(.vertical, 7)
-        .background(accent.opacity(0.14), in: Capsule())
-        .overlay(
-            Capsule()
-                .stroke(accent.opacity(0.25), lineWidth: 1)
-        )
+        .background(accent.opacity(0.12), in: Capsule())
+        .overlay { Capsule().stroke(accent.opacity(0.22), lineWidth: 1) }
     }
 }
 
@@ -219,20 +247,11 @@ struct EmptyStateCard: View {
     var body: some View {
         CommandCard {
             VStack(alignment: .leading, spacing: 14) {
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundStyle(accent)
-
+                Image(systemName: icon).font(.title3).foregroundStyle(accent)
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(title)
-                        .font(.headline)
-                    Text(message)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineSpacing(3)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Text(title).font(.headline)
+                    Text(message).font(.subheadline).foregroundStyle(CommandDesign.secondaryText).lineSpacing(3)
                 }
-
                 if let actionTitle, let action {
                     SecondaryActionButton(title: actionTitle, icon: actionIcon, accent: accent, action: action)
                 }
@@ -248,29 +267,78 @@ struct CheckInSliderRow: View {
     @Binding var value: Int
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(title)
-                    .font(.headline)
+                Text(title).font(.headline)
                 Spacer()
-                Text("\(value)")
-                    .font(.title3.weight(.semibold))
-                    .monospacedDigit()
+                Text("\(value)").font(.title3.weight(.bold)).monospacedDigit().foregroundStyle(.white)
             }
-
-            Slider(value: Binding(
-                get: { Double(value) },
-                set: { value = Int($0.rounded()) }
-            ), in: 1...10, step: 1)
-
+            Slider(value: Binding(get: { Double(value) }, set: { value = Int($0.rounded()) }), in: 1...10, step: 1)
             HStack {
                 Text(lowLabel)
                 Spacer()
                 Text(highLabel)
             }
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(CommandDesign.secondaryText)
         }
+    }
+}
+
+struct RatingSelector: View {
+    let title: String
+    let lowLabel: String
+    let highLabel: String
+    @Binding var value: Int
+    var accent: Color = CommandPalette.brand
+
+    private let options = [2, 4, 6, 8, 10]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(title).font(.headline)
+                Spacer()
+                Text(label).font(.subheadline.weight(.semibold)).foregroundStyle(accent)
+            }
+            HStack(spacing: 8) {
+                ForEach(options, id: \.self) { option in
+                    Button {
+                        value = option
+                    } label: {
+                        Text("\(option)")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 42)
+                            .background(selectedOption == option ? accent : CommandDesign.elevatedSurface)
+                            .foregroundStyle(selectedOption == option ? Color.black.opacity(0.82) : .white)
+                            .clipShape(RoundedRectangle(cornerRadius: CommandDesign.compactRadius, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            HStack {
+                Text(lowLabel)
+                Spacer()
+                Text(highLabel)
+            }
+            .font(.caption2)
+            .foregroundStyle(CommandDesign.secondaryText)
+        }
+    }
+
+    private var label: String {
+        switch value {
+        case ...2: return lowLabel
+        case ...4: return "Low"
+        case ...6: return "Okay"
+        case ...8: return "Good"
+        default: return highLabel
+        }
+    }
+
+    private var selectedOption: Int {
+        options.min { abs($0 - value) < abs($1 - value) } ?? value
     }
 }
 
@@ -282,29 +350,19 @@ struct MetricTile: View {
     let accent: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(accent)
-            Text(value)
-                .font(.title3.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 11) {
+            Image(systemName: icon).font(.title3).foregroundStyle(accent)
+            Text(value).font(.title3.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.72)
+            Text(title).font(.caption).foregroundStyle(CommandDesign.secondaryText)
             if let status {
-                Text(status)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary.opacity(0.8))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                Text(status).font(.caption2).foregroundStyle(CommandDesign.secondaryText).lineLimit(1)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(minHeight: 116, alignment: .topLeading)
         .padding(14)
-        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+        .background(CommandDesign.surface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+        .overlay { RoundedRectangle(cornerRadius: CommandDesign.innerRadius).stroke(CommandDesign.hairline) }
     }
 }
 
@@ -315,7 +373,7 @@ struct HealthStatusPanel: View {
     let refresh: () -> Void
 
     var body: some View {
-        GlassPanel {
+        CommandCard {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top, spacing: 12) {
                     Image(systemName: iconName)
@@ -323,19 +381,12 @@ struct HealthStatusPanel: View {
                         .foregroundStyle(accent)
                         .frame(width: 28)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(state.title)
-                            .font(.headline)
-                        Text(state.detail)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .lineSpacing(3)
+                        Text(state.title).font(.headline)
+                        Text(state.detail).font(.subheadline).foregroundStyle(CommandDesign.secondaryText).lineSpacing(3)
                     }
                     Spacer(minLength: 8)
-                    if isLoading {
-                        ProgressView()
-                    }
+                    if isLoading { ProgressView() }
                 }
-
                 SecondaryActionButton(title: buttonTitle, icon: "arrow.clockwise", accent: accent, action: refresh)
             }
         }
@@ -343,25 +394,13 @@ struct HealthStatusPanel: View {
 
     private var iconName: String {
         switch state {
-        case .ready:
-            return "checkmark.seal"
-        case .loading:
-            return "heart.text.square"
-        case .empty:
-            return "tray"
-        case .unavailable:
-            return "exclamationmark.triangle"
-        case .notRequested:
-            return "heart.text.square"
+        case .ready: return "checkmark.seal.fill"
+        case .loading: return "heart.text.square"
+        case .empty: return "tray"
+        case .unavailable: return "exclamationmark.triangle"
+        case .notRequested: return "heart.text.square"
         }
     }
 
-    private var buttonTitle: String {
-        switch state {
-        case .notRequested:
-            return "Connect Apple Health"
-        default:
-            return "Refresh Apple Health"
-        }
-    }
+    private var buttonTitle: String { state == .notRequested ? "Connect Apple Health" : "Refresh Apple Health" }
 }
