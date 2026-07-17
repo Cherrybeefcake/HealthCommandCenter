@@ -685,6 +685,7 @@ struct PlanView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Edit \(workout.name)")
+            .accessibilityHint("Opens the custom workout editor.")
 
             Button(role: .destructive) {
                 customWorkoutToDelete = workout
@@ -696,7 +697,8 @@ struct PlanView: View {
                     .background(.white.opacity(0.06), in: Circle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Delete \(workout.name)")
+            .accessibilityLabel("\(AppStrings.Accessibility.deleteCustomWorkout): \(workout.name)")
+            .accessibilityHint("Requires confirmation before deleting.")
         }
         .padding(16)
         .background(isSelected ? CommandDesign.elevatedSurface : CommandDesign.surface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
@@ -791,6 +793,7 @@ struct PlanView: View {
 
 private struct ExercisePlanCard: View {
     @EnvironmentObject private var appModel: AppViewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let workout: WorkoutPlan
     let version: WorkoutVersion
     let exercise: ExercisePlan
@@ -818,7 +821,7 @@ private struct ExercisePlanCard: View {
                     }
                     Spacer()
                     Button {
-                        withAnimation(.easeInOut(duration: 0.18)) {
+                        CommandMotion.animate(reduceMotion, animation: .easeInOut(duration: 0.18)) {
                             isExpanded.toggle()
                         }
                     } label: {
@@ -827,6 +830,7 @@ private struct ExercisePlanCard: View {
                             .foregroundStyle(accent)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(isExpanded ? "Collapse exercise details for \(exercise.name)" : "Expand exercise details for \(exercise.name)")
                 }
 
                 HStack(spacing: 10) {
@@ -859,7 +863,7 @@ private struct ExercisePlanCard: View {
                                     log: log,
                                     accent: accent
                                 ) {
-                                    withAnimation(.easeOut(duration: 0.18)) {
+                                    CommandMotion.animate(reduceMotion, animation: .easeOut(duration: 0.18)) {
                                         appModel.deleteExerciseLog(log)
                                     }
                                     showActionFeedback("Set deleted")
@@ -903,7 +907,7 @@ private struct ExercisePlanCard: View {
                             .foregroundStyle(.white)
                     }
                     .tint(accent)
-                    .animation(.easeInOut(duration: 0.18), value: isCoachExpanded)
+                    .animation(CommandMotion.standard(reduceMotion), value: isCoachExpanded)
                 }
 
                 if isExpanded {
@@ -929,8 +933,8 @@ private struct ExercisePlanCard: View {
                 }
             }
         }
-        .animation(.easeInOut(duration: 0.18), value: isExpanded)
-        .animation(.spring(response: 0.24, dampingFraction: 0.86), value: todayLogs.count)
+        .animation(CommandMotion.standard(reduceMotion), value: isExpanded)
+        .animation(CommandMotion.spring(reduceMotion), value: todayLogs.count)
         .sheet(isPresented: $isLogging) {
             ExerciseLogSheet(
                 workout: workout,
@@ -944,12 +948,12 @@ private struct ExercisePlanCard: View {
     }
 
     private func showActionFeedback(_ message: String) {
-        withAnimation(.easeOut(duration: 0.16)) {
+        CommandMotion.animate(reduceMotion, animation: .easeOut(duration: 0.16)) {
             actionFeedback = message
         }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(2))
-            withAnimation(.easeOut(duration: 0.18)) {
+            CommandMotion.animate(reduceMotion, animation: .easeOut(duration: 0.18)) {
                 actionFeedback = nil
             }
         }
@@ -1686,6 +1690,7 @@ private struct CustomWorkoutSheet: View {
                                 .background(.white.opacity(0.06), in: Circle())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Delete custom exercise \(exercise.name)")
                     }
                     .padding(14)
                     .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))

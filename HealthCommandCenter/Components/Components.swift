@@ -22,6 +22,28 @@ enum CommandPalette {
     static let brand = Color(red: 0.58, green: 0.86, blue: 0.98)
 }
 
+enum CommandMotion {
+    static func quick(_ reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : .easeOut(duration: 0.16)
+    }
+
+    static func standard(_ reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : .easeInOut(duration: 0.18)
+    }
+
+    static func spring(_ reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : .spring(response: 0.24, dampingFraction: 0.86)
+    }
+
+    static func animate(_ reduceMotion: Bool, animation: Animation = .easeOut(duration: 0.16), updates: () -> Void) {
+        if reduceMotion {
+            updates()
+        } else {
+            withAnimation(animation, updates)
+        }
+    }
+}
+
 #if canImport(UIKit)
 @MainActor
 func dismissCommandKeyboard() {
@@ -397,6 +419,8 @@ struct RatingSelector: View {
     @Binding var value: Int
     var accent: Color = CommandPalette.brand
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private let options = [2, 4, 6, 8, 10]
 
     var body: some View {
@@ -409,7 +433,7 @@ struct RatingSelector: View {
             HStack(spacing: 8) {
                 ForEach(options, id: \.self) { option in
                     Button {
-                        withAnimation(.easeOut(duration: 0.16)) {
+                        CommandMotion.animate(reduceMotion, animation: .easeOut(duration: 0.16)) {
                             value = option
                         }
                     } label: {
@@ -423,6 +447,8 @@ struct RatingSelector: View {
                     }
                     .buttonStyle(.plain)
                     .sensoryFeedback(.selection, trigger: value)
+                    .accessibilityLabel("\(title) \(option)")
+                    .accessibilityValue(selectedOption == option ? "Selected" : "Not selected")
                 }
             }
             HStack {
@@ -433,6 +459,7 @@ struct RatingSelector: View {
             .font(.caption2)
             .foregroundStyle(CommandDesign.secondaryText)
         }
+        .accessibilityElement(children: .contain)
     }
 
     private var label: String {

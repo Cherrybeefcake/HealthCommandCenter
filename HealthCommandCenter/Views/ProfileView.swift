@@ -165,7 +165,8 @@ struct ProfileView: View {
                 }
             }
             .disabled(appModel.isLoadingHealth)
-            .accessibilityLabel("Refresh health data")
+            .accessibilityLabel(AppStrings.Action.refreshHealthData)
+            .accessibilityHint("Reads available Apple Health data without writing to Apple Health.")
 
             if appModel.isLoadingHealth {
                 CommandFeedbackPill(message: "Refreshing Apple Health", icon: "arrow.clockwise", accent: appModel.activeCategory.accent)
@@ -468,7 +469,8 @@ struct ProfileView: View {
                     showProfileFeedback(appModel.reminderTestStatus)
                 }
             }
-            .accessibilityLabel("Schedule test reminder")
+            .accessibilityLabel(AppStrings.Action.scheduleTestReminder)
+            .accessibilityHint("Schedules a one-time local notification in ten seconds if permission allows it.")
 
             Text(appModel.reminderTestStatus)
                 .font(.caption)
@@ -565,6 +567,7 @@ struct ProfileView: View {
             PrimaryActionButton(title: "Save Today's Body Metrics", icon: "square.and.arrow.down", accent: appModel.activeCategory.accent) {
                 saveBodyMetricsEntry()
             }
+            .accessibilityLabel(AppStrings.Action.saveBodyMetrics)
         }
     }
 

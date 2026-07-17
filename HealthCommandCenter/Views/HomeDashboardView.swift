@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeDashboardView: View {
     @EnvironmentObject private var appModel: AppViewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         TabView(selection: $appModel.selectedTab) {
@@ -26,7 +27,7 @@ struct HomeDashboardView: View {
                 .tag(AppViewModel.AppTab.profile)
         }
         .tint(CommandPalette.brand)
-        .animation(.easeInOut(duration: 0.18), value: appModel.selectedTab)
+        .animation(CommandMotion.standard(reduceMotion), value: appModel.selectedTab)
     }
 }
 
@@ -104,7 +105,8 @@ private struct TodayDashboard: View {
                                 }
                                 .buttonStyle(.plain)
                                 .disabled(appModel.isLoadingHealth)
-                                .accessibilityLabel("Refresh health data")
+                                .accessibilityLabel(AppStrings.Action.refreshHealthData)
+                                .accessibilityHint("Reads available Apple Health data without writing to Apple Health.")
 
                                 if appModel.isLoadingHealth {
                                     CommandFeedbackPill(message: "Refreshing Apple Health", icon: "arrow.clockwise", accent: category.accent)
@@ -160,7 +162,7 @@ private struct TodayDashboard: View {
                     .background(CommandDesign.elevatedSurface, in: Circle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Open profile")
+            .accessibilityLabel(AppStrings.Accessibility.openProfile)
         }
     }
 

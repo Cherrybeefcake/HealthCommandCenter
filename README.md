@@ -65,6 +65,7 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Cloud-ready architecture is documented in `Docs/CLOUD_READY_ARCHITECTURE.md`. Repository protocols now wrap the current local JSON/UserDefaults storage without enabling sync, accounts, or cloud upload.
 - Coach engine architecture is documented in `Docs/COACH_ENGINE.md`. The current engine is deterministic and local-only, unifying Today, recovery, nutrition, workout, and weekly review wording behind conservative safety rules.
 - Release quality testing is documented in `Docs/RELEASE_QUALITY_TESTING.md`. A hosted XCTest target covers key deterministic rules and backward-compatible decoding without touching Brian's real device data.
+- Accessibility and localization readiness is documented in `Docs/ACCESSIBILITY_LOCALIZATION_READINESS.md`. The app now has Reduce Motion guards for common micro-interactions, clearer icon-button labels, and a lightweight `AppStrings` namespace for repeated user-facing strings.
 - Built-in library workouts use the same local ExerciseLog flow as starter workouts, so Progress session detail and exercise summaries continue to work.
 - Custom Workouts are local templates in `custom_workouts.json`; editing a template does not rewrite past workout logs.
 

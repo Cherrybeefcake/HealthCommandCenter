@@ -50,6 +50,7 @@
 		01A000000000000000000129 /* OuraIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002C /* OuraIntegration.swift */; };
 		01A00000000000000000012A /* NutritionProviders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002D /* NutritionProviders.swift */; };
 		01A00000000000000000012B /* CoachEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002E /* CoachEngine.swift */; };
+		01A00000000000000000012C /* AppStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002F /* AppStrings.swift */; };
 		01B000000000000000000101 /* ReleaseQualityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B000000000000000000001 /* ReleaseQualityTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -109,6 +110,7 @@
 		01A00000000000000000002C /* OuraIntegration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OuraIntegration.swift; sourceTree = "<group>"; };
 		01A00000000000000000002D /* NutritionProviders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionProviders.swift; sourceTree = "<group>"; };
 		01A00000000000000000002E /* CoachEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachEngine.swift; sourceTree = "<group>"; };
+		01A00000000000000000002F /* AppStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStrings.swift; sourceTree = "<group>"; };
 		01B000000000000000000001 /* ReleaseQualityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseQualityTests.swift; sourceTree = "<group>"; };
 		01B000000000000000000002 /* HealthCommandCenterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HealthCommandCenterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -220,6 +222,7 @@
 			isa = PBXGroup;
 			children = (
 				01A00000000000000000000D /* Components.swift */,
+				01A00000000000000000002F /* AppStrings.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -410,6 +413,7 @@
 				01A000000000000000000129 /* OuraIntegration.swift in Sources */,
 				01A00000000000000000012A /* NutritionProviders.swift in Sources */,
 				01A00000000000000000012B /* CoachEngine.swift in Sources */,
+				01A00000000000000000012C /* AppStrings.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

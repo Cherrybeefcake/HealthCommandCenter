@@ -151,6 +151,7 @@ struct RitualView: View {
 
 private struct RitualItemCard: View {
     @EnvironmentObject private var appModel: AppViewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let item: RitualItem
     let accent: Color
     @State private var isExpanded = false
@@ -166,7 +167,7 @@ private struct RitualItemCard: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top, spacing: 12) {
                     Button {
-                        withAnimation(.spring(response: 0.22, dampingFraction: 0.82)) {
+                        CommandMotion.animate(reduceMotion, animation: .spring(response: 0.22, dampingFraction: 0.82)) {
                             appModel.setRitualItem(item.id, completed: !isComplete)
                         }
                     } label: {
@@ -176,7 +177,8 @@ private struct RitualItemCard: View {
                             .frame(width: 32, height: 32)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(isComplete ? "Mark incomplete" : "Mark complete")
+                    .accessibilityLabel(isComplete ? AppStrings.Accessibility.markRitualIncomplete : AppStrings.Accessibility.markRitualComplete)
+                    .accessibilityValue(item.title)
 
                     VStack(alignment: .leading, spacing: 7) {
                         HStack(spacing: 8) {
@@ -196,7 +198,7 @@ private struct RitualItemCard: View {
                     Spacer(minLength: 6)
 
                     Button {
-                        withAnimation(.easeInOut(duration: 0.18)) {
+                        CommandMotion.animate(reduceMotion, animation: .easeInOut(duration: 0.18)) {
                             isExpanded.toggle()
                         }
                     } label: {
@@ -205,6 +207,7 @@ private struct RitualItemCard: View {
                             .foregroundStyle(accent)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(isExpanded ? "Collapse \(item.title) details" : "Expand \(item.title) details")
                 }
 
                 Text(item.recommendation)
@@ -270,17 +273,17 @@ private struct RitualItemCard: View {
                 }
             }
         }
-        .animation(.easeInOut(duration: 0.18), value: isExpanded)
-        .animation(.spring(response: 0.22, dampingFraction: 0.82), value: isComplete)
+        .animation(CommandMotion.standard(reduceMotion), value: isExpanded)
+        .animation(CommandMotion.spring(reduceMotion), value: isComplete)
     }
 
     private func showDailyWinFeedback(_ message: String) {
-        withAnimation(.easeOut(duration: 0.16)) {
+        CommandMotion.animate(reduceMotion, animation: .easeOut(duration: 0.16)) {
             dailyWinFeedback = message
         }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(2))
-            withAnimation(.easeOut(duration: 0.18)) {
+            CommandMotion.animate(reduceMotion, animation: .easeOut(duration: 0.18)) {
                 dailyWinFeedback = nil
             }
         }
@@ -413,7 +416,7 @@ private struct NutritionLogSection: View {
                 SecondaryActionButton(title: "Save Nutrition Summary", icon: "checkmark", accent: accent) {
                     save()
                 }
-                .accessibilityLabel("Save nutrition summary")
+                .accessibilityLabel(AppStrings.Action.saveNutrition)
 
                 if let saveFeedback {
                     CommandFeedbackPill(message: saveFeedback, accent: accent)

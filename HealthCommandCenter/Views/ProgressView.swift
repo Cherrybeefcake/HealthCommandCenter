@@ -755,7 +755,9 @@ struct ProgressDashboardView: View {
                         .background(.white.opacity(0.06), in: Circle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Delete progress photo")
+                .accessibilityLabel(AppStrings.Accessibility.deleteProgressPhoto)
+                .accessibilityValue("\(entry.angle.rawValue), \(entry.date.formatted(date: .abbreviated, time: .omitted))")
+                .accessibilityHint("Requires confirmation before deleting the local copy.")
             }
         }
     }
