@@ -55,6 +55,7 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Workout Library adds deterministic, local-only options for short work-shift sessions, bands/bodyweight, dumbbell strength, recovery mobility, bike/stairs conditioning, and bare-minimum movement.
 - Exercise Library adds local movement definitions with setup, execution steps, cues, caution guidance, equipment filters, and substitutions. Custom workouts can prefill exercises from the library while still allowing manual entries.
 - Dynamic Workout Generator creates a local, rule-based workout option from readiness, recovery, sleep/stress/soreness context, available time, program phase, location, equipment, recent logs, and the DailyPlan. Generated workouts are selectable in Train and can be copied into Custom Workouts before logging.
+- Adaptive Program Scheduler shows a local weekly structure with three full-body strength sessions and optional recovery/conditioning days. Readiness and recovery can downgrade today's session, and manual reschedules are stored locally without marking skipped days as failure.
 - Built-in library workouts use the same local ExerciseLog flow as starter workouts, so Progress session detail and exercise summaries continue to work.
 - Custom Workouts are local templates in `custom_workouts.json`; editing a template does not rewrite past workout logs.
 
@@ -432,6 +433,7 @@ Repo-local git identity is configured for Brian Cady.
   - `personalizationSettings`: onboarding baseline, goal, equipment confirmation, avoidances, and nutrition anchors.
   - `reminderSettings`: optional local reminder toggles and daily reminder times.
   - `ouraConnectionSettings`: Oura foundation mode and preferred recovery source.
+  - `programScheduleOverrides`: local manual program reschedules.
 - Profile -> Reset Controls -> `Reset opening screen only` clears only `hasSeenGreeting`; saved personalization and logs remain available as setup defaults.
 
 ## Validation

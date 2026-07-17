@@ -72,6 +72,7 @@ final class AppViewModel: ObservableObject {
     @Published var ouraManualSnapshots: [OuraManualSnapshot] = []
     @Published var bodyMetricsEntries: [BodyMetricsEntry] = []
     @Published var customWorkouts: [CustomWorkout] = []
+    @Published var programScheduleOverrides: [ProgramScheduleOverride] = []
     @Published var todayRitualDateKey: String = RitualLibrary.dateKey()
     @Published var programPhase: ProgramPhase
     @Published var trainingLocation: TrainingLocation
@@ -117,6 +118,7 @@ final class AppViewModel: ObservableObject {
         self.personalizationSettings = storage.personalizationSettings
         self.reminderSettings = storage.reminderSettings
         self.ouraConnectionSettings = storage.ouraConnectionSettings
+        self.programScheduleOverrides = storage.programScheduleOverrides
     }
 
     func bootstrap() async {
@@ -129,6 +131,7 @@ final class AppViewModel: ObservableObject {
         ouraManualSnapshots = storage.loadOuraManualSnapshots().sorted { $0.updatedAt > $1.updatedAt }
         bodyMetricsEntries = storage.loadBodyMetricsEntries().sorted { $0.updatedAt > $1.updatedAt }
         customWorkouts = storage.loadCustomWorkouts().sorted { $0.updatedAt > $1.updatedAt }
+        programScheduleOverrides = storage.programScheduleOverrides
         prepareTodayStateIfNeeded()
         latestCheckIn = checkIns.first
         await refreshNotificationStatus()
@@ -903,6 +906,7 @@ final class AppViewModel: ObservableObject {
         ouraManualSnapshots = []
         bodyMetricsEntries = []
         customWorkouts = []
+        programScheduleOverrides = []
         debugLog = []
         todaySnapshot = .empty
         lastHealthRefreshAt = nil
@@ -929,6 +933,39 @@ final class AppViewModel: ObservableObject {
 
     func workoutSessionsThisWeek() -> [WorkoutSession] {
         workoutSessions(from: exerciseLogsThisWeek())
+    }
+
+    func currentProgramWeek() -> ProgramWeek {
+        AdaptiveProgramScheduler.currentWeek(
+            readiness: hasCheckedInToday ? activeCategory : nil,
+            recoveryStatus: todayRecoveryStatus(),
+            programPhase: programPhase,
+            workoutTimePreference: workoutTimePreference,
+            exerciseLogs: exerciseLogs,
+            overrides: programScheduleOverrides
+        )
+    }
+
+    func todaysPlannedSession() -> PlannedSession? {
+        let todayKey = RitualLibrary.dateKey()
+        let week = currentProgramWeek()
+        return week.sessions.first { $0.dateKey == todayKey && !$0.isOptional }
+            ?? week.sessions.first { $0.dateKey == todayKey }
+    }
+
+    func reschedulePlannedSession(_ session: PlannedSession, to date: Date) {
+        let dateKey = RitualLibrary.dateKey(for: date)
+        programScheduleOverrides.removeAll { $0.sessionID == session.id }
+        programScheduleOverrides.append(
+            ProgramScheduleOverride(
+                sessionID: session.id,
+                dateKey: dateKey,
+                reason: .manualReschedule
+            )
+        )
+        programScheduleOverrides.sort { $0.updatedAt > $1.updatedAt }
+        storage.programScheduleOverrides = programScheduleOverrides
+        appendDebug("Rescheduled \(session.workoutTitle) to \(dateKey)")
     }
 
     func ritualLogsThisWeek() -> [DailyRitualLog] {

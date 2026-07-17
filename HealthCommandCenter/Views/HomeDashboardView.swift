@@ -435,6 +435,7 @@ private struct TodayMission {
     var recoveryStatus: RecoveryStatus { appModel.todayRecoveryStatus() }
     var todayLogs: [ExerciseLog] { appModel.todayExerciseLogs() }
     var dailyPlan: DailyPlan { appModel.todayDailyPlan }
+    var plannedSession: PlannedSession? { appModel.todaysPlannedSession() }
     var totalSetsLogged: Int { todayLogs.reduce(0) { $0 + $1.setsCompleted } }
     var hasWorkoutProgress: Bool { !todayLogs.isEmpty }
     var hasRitualProgress: Bool { ritualCompleted > 0 }
@@ -569,6 +570,9 @@ private struct TodayMission {
         if totalSetsLogged > 0 {
             return "\(totalSetsLogged) sets logged"
         }
+        if let plannedSession {
+            return plannedSession.recommendedVersion.rawValue
+        }
         return StarterWorkoutLibrary.recommendedVersion(for: category).rawValue
     }
 
@@ -576,6 +580,9 @@ private struct TodayMission {
         if totalSetsLogged > 0 {
             let exercises = Set(todayLogs.map(\.exerciseID)).count
             return "\(exercises) exercises touched today."
+        }
+        if let plannedSession {
+            return "\(plannedSession.workoutTitle): \(plannedSession.note)"
         }
         return dailyPlan.workoutRecommendation
     }

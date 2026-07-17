@@ -77,7 +77,8 @@ struct ProgressDashboardView: View {
     }
 
     private var thisWeekSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let programWeek = appModel.currentProgramWeek()
+        return VStack(alignment: .leading, spacing: 12) {
             SectionHeader(
                 title: "Weekly overview",
                 subtitle: "The useful signals for this week, grouped before the details.",
@@ -87,9 +88,36 @@ struct ProgressDashboardView: View {
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 ProgressStatCard(title: "Workouts", value: "\(workoutSessionsThisWeekCount) sessions", detail: "\(weeklySetCount) sets logged", icon: "figure.strengthtraining.traditional", accent: category.accent)
+                ProgressStatCard(title: "Program", value: programWeek.summaryText, detail: "Planned vs completed", icon: "calendar.badge.clock", accent: category.accent)
                 ProgressStatCard(title: "Ritual", value: ritualPercentText, detail: "\(weekRitualSummary.completed) of \(weekRitualSummary.available) items", icon: "moon.stars", accent: category.accent)
                 ProgressStatCard(title: "Readiness", value: appModel.mostCommonReadinessThisWeek()?.rawValue ?? "No data", detail: "Most common category", icon: "gauge.with.dots.needle.bottom.100percent", accent: category.accent)
                 ProgressStatCard(title: "Consistency", value: "\(appModel.consistencyDatesThisWeek().count) days", detail: "Check-in, workout, or ritual", icon: "checkmark.seal", accent: category.accent)
+            }
+
+            CommandCard {
+                VStack(alignment: .leading, spacing: 10) {
+                    SectionHeader(
+                        title: "Program schedule",
+                        subtitle: "Moved or downgraded sessions are treated as adjustments, not misses.",
+                        icon: "calendar",
+                        accent: category.accent
+                    )
+                    ForEach(programWeek.sessions.prefix(5)) { session in
+                        HStack(alignment: .top, spacing: 10) {
+                            StatusPill(title: session.status.rawValue, accent: session.status == .completed ? Color.green : category.accent)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("\(session.dateKey) · \(session.workoutTitle)")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.white)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text(session.note)
+                                    .font(.caption)
+                                    .foregroundStyle(CommandDesign.secondaryText)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                }
             }
         }
     }

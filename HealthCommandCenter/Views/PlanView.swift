@@ -82,6 +82,7 @@ struct PlanView: View {
                         )
                     }
                     generatedWorkoutSection(category: category)
+                    programScheduleSection(category: category)
                     weeklyPlanSelector(category: category)
                     workoutLibrarySection(category: category)
                     exerciseLibrarySection(category: category)
@@ -260,6 +261,95 @@ struct PlanView: View {
                 }
             }
         }
+    }
+
+    private func programScheduleSection(category: ReadinessCategory) -> some View {
+        let week = appModel.currentProgramWeek()
+        return CommandSection(
+            title: "This Week's Program",
+            subtitle: "\(week.program.name): \(week.summaryText). Sessions can move without turning into failure.",
+            icon: "calendar.badge.clock",
+            accent: category.accent
+        ) {
+            CommandCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(week.program.description)
+                        .font(.subheadline)
+                        .foregroundStyle(CommandDesign.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    ForEach(week.sessions) { session in
+                        plannedSessionRow(session, accent: category.accent)
+                    }
+                }
+            }
+        }
+    }
+
+    private func plannedSessionRow(_ session: PlannedSession, accent: Color) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: session.category.icon)
+                .foregroundStyle(session.status == .completed ? Color.green : accent)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 7) {
+                    StatusPill(title: session.status.rawValue, accent: session.status == .completed ? Color.green : accent)
+                    if let reason = session.adjustmentReason {
+                        StatusPill(title: reason.rawValue, accent: Color.gray)
+                    }
+                }
+                Text("\(displayDate(for: session.dateKey)) · \(session.workoutTitle)")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("\(session.recommendedVersion.rawValue) · \(session.note)")
+                    .font(.caption)
+                    .foregroundStyle(CommandDesign.secondaryText)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer()
+
+            Menu {
+                Button("Move to today") {
+                    appModel.reschedulePlannedSession(session, to: Date())
+                }
+                Button("Move to tomorrow") {
+                    let date = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+                    appModel.reschedulePlannedSession(session, to: date)
+                }
+                Button("Move two days out") {
+                    let date = Calendar.current.date(byAdding: .day, value: 2, to: Date()) ?? Date()
+                    appModel.reschedulePlannedSession(session, to: date)
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.title3)
+                    .foregroundStyle(accent)
+                    .frame(width: 44, height: 44)
+                    .background(CommandDesign.elevatedSurface, in: Circle())
+            }
+            .accessibilityLabel("Reschedule \(session.workoutTitle)")
+        }
+        .padding(12)
+        .background(CommandDesign.surface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
+                .stroke(CommandDesign.hairline, lineWidth: 1)
+        }
+    }
+
+    private func displayDate(for dateKey: String) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar.current
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: dateKey) else { return dateKey }
+        if Calendar.current.isDateInToday(date) { return "Today" }
+        if Calendar.current.isDateInTomorrow(date) { return "Tomorrow" }
+        return date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
     }
 
     private func planVersionLine(_ title: String, _ text: String, _ accent: Color) -> some View {
