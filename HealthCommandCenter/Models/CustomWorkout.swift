@@ -34,6 +34,7 @@ struct CustomExercise: Codable, Identifiable, Hashable {
     var targetReps: String
     var notes: String
     var isLoggable: Bool
+    var libraryExerciseID: String?
 
     init(
         id: String = UUID().uuidString,
@@ -43,7 +44,8 @@ struct CustomExercise: Codable, Identifiable, Hashable {
         targetSets: Int = 2,
         targetReps: String = "8-12",
         notes: String = "",
-        isLoggable: Bool = true
+        isLoggable: Bool = true,
+        libraryExerciseID: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -53,29 +55,31 @@ struct CustomExercise: Codable, Identifiable, Hashable {
         self.targetReps = targetReps
         self.notes = notes
         self.isLoggable = isLoggable
+        self.libraryExerciseID = libraryExerciseID
     }
 }
 
 extension CustomWorkout {
     var asWorkoutPlan: WorkoutPlan {
         let customExercises = exercises.map { exercise in
-            ExercisePlan(
+            let definition = ExerciseLibrary.definition(for: exercise.libraryExerciseID)
+            return ExercisePlan(
                 id: exercise.id,
                 name: exercise.name,
                 equipment: exercise.equipment,
                 prescription: "\(max(exercise.targetSets, 1)) sets x \(exercise.targetReps)",
                 rest: "60-90 sec",
-                formCues: [
+                formCues: definition?.executionSteps ?? [
                     "Move with control.",
                     "Leave one clean rep in reserve.",
                     exercise.notes.isEmpty ? "Use a range that feels honest today." : exercise.notes
                 ],
-                commonMistakes: [
+                commonMistakes: definition?.commonMistakes ?? [
                     "Rushing reps to finish faster.",
                     "Chasing load before form feels steady."
                 ],
-                musclesTargeted: [exercise.category],
-                feel: "Challenging but controlled. Stop before form gets noisy.",
+                musclesTargeted: definition?.primaryMuscles.map(\.rawValue) ?? [exercise.category],
+                feel: definition?.howItShouldFeel ?? "Challenging but controlled. Stop before form gets noisy.",
                 isLoggable: exercise.isLoggable
             )
         }

@@ -39,6 +39,7 @@
 		01A00000000000000000011E /* CustomWorkout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000021 /* CustomWorkout.swift */; };
 		01A00000000000000000011F /* WeeklyReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000022 /* WeeklyReview.swift */; };
 		01A000000000000000000120 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000023 /* Assets.xcassets */; };
+		01A000000000000000000121 /* ExerciseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000024 /* ExerciseLibrary.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -76,6 +77,7 @@
 		01A000000000000000000021 /* CustomWorkout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWorkout.swift; sourceTree = "<group>"; };
 		01A000000000000000000022 /* WeeklyReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyReview.swift; sourceTree = "<group>"; };
 		01A000000000000000000023 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		01A000000000000000000024 /* ExerciseLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibrary.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -136,6 +138,7 @@
 				01A00000000000000000001F /* BodyMetrics.swift */,
 				01A000000000000000000021 /* CustomWorkout.swift */,
 				01A000000000000000000022 /* WeeklyReview.swift */,
+				01A000000000000000000024 /* ExerciseLibrary.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -306,6 +309,7 @@
 				01A00000000000000000011D /* BodyMetrics.swift in Sources */,
 				01A00000000000000000011E /* CustomWorkout.swift in Sources */,
 				01A00000000000000000011F /* WeeklyReview.swift in Sources */,
+				01A000000000000000000121 /* ExerciseLibrary.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

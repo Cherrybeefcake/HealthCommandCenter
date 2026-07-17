@@ -9,6 +9,11 @@ struct PlanView: View {
     @State private var customWorkoutToDelete: CustomWorkout?
     @State private var customWorkoutFeedback: String?
     @State private var expandedLibraryCategories: Set<WorkoutCategory> = [.workShiftQuick, .dumbbellStrength, .recoveryMobility, .bareMinimum]
+    @State private var exerciseSearchText = ""
+    @State private var exerciseCategoryFilter: ExerciseCategory?
+    @State private var exerciseEquipmentFilter: EquipmentType?
+    @State private var exerciseMuscleFilter: MuscleGroup?
+    @State private var selectedExerciseDefinition: ExerciseDefinition?
 
     private var selectedBuiltInWorkout: WorkoutPlan {
         WorkoutLibrary.allBuiltInWorkouts.first { $0.id == selectedWorkoutID } ?? WorkoutLibrary.starterProgram[0]
@@ -71,6 +76,7 @@ struct PlanView: View {
                     }
                     weeklyPlanSelector(category: category)
                     workoutLibrarySection(category: category)
+                    exerciseLibrarySection(category: category)
                     customWorkoutSection(category: category)
                     if let customWorkoutFeedback {
                         CommandFeedbackPill(message: customWorkoutFeedback, accent: category.accent)
@@ -86,6 +92,9 @@ struct PlanView: View {
                 .onDisappear {
                     customWorkoutToEdit = nil
                 }
+        }
+        .sheet(item: $selectedExerciseDefinition) { definition in
+            ExerciseDetailView(definition: definition, accent: category.accent)
         }
         .alert("Delete custom workout?", isPresented: Binding(
             get: { customWorkoutToDelete != nil },
@@ -240,6 +249,140 @@ struct PlanView: View {
                 }
             }
         }
+    }
+
+    private func exerciseLibrarySection(category: ReadinessCategory) -> some View {
+        let definitions = ExerciseLibrary.search(
+            query: exerciseSearchText,
+            category: exerciseCategoryFilter,
+            equipment: exerciseEquipmentFilter,
+            muscle: exerciseMuscleFilter,
+            location: appModel.trainingLocation
+        )
+
+        return CommandSection(
+            title: "Exercise Library",
+            subtitle: "Search movements, see form details, and find safer substitutions for custom or changed workouts.",
+            icon: "magnifyingglass.circle",
+            accent: category.accent
+        ) {
+            CommandCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    TextField("Search exercises", text: $exerciseSearchText)
+                        .textInputAutocapitalization(.words)
+                        .commandFieldStyle()
+
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                        libraryPicker("Category", selection: $exerciseCategoryFilter, cases: ExerciseCategory.allCases, accent: category.accent)
+                        libraryPicker("Equipment", selection: $exerciseEquipmentFilter, cases: EquipmentType.allCases, accent: category.accent)
+                        libraryPicker("Muscle", selection: $exerciseMuscleFilter, cases: MuscleGroup.allCases, accent: category.accent)
+                        Button {
+                            withAnimation(.easeOut(duration: 0.18)) {
+                                exerciseSearchText = ""
+                                exerciseCategoryFilter = nil
+                                exerciseEquipmentFilter = nil
+                                exerciseMuscleFilter = nil
+                            }
+                        } label: {
+                            Label("Clear filters", systemImage: "xmark.circle")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(category.accent)
+                                .frame(maxWidth: .infinity, minHeight: 46)
+                                .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Clear exercise library filters")
+                    }
+
+                    Text("Filtered for \(appModel.trainingLocation.rawValue). Change training location in You if today’s context changes.")
+                        .font(.caption)
+                        .foregroundStyle(CommandDesign.secondaryText)
+
+                    if definitions.isEmpty {
+                        EmptyStateCard(
+                            title: "No matching exercises",
+                            message: "Clear a filter or search a broader movement pattern like squat, row, carry, bike, or mobility.",
+                            icon: "magnifyingglass",
+                            accent: category.accent
+                        )
+                    } else {
+                        ForEach(definitions.prefix(8)) { definition in
+                            exerciseDefinitionRow(definition, accent: category.accent)
+                        }
+
+                        if definitions.count > 8 {
+                            Text("\(definitions.count - 8) more matches. Narrow the search to keep this screen calm.")
+                                .font(.caption)
+                                .foregroundStyle(CommandDesign.secondaryText)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func libraryPicker<Value: RawRepresentable & CaseIterable & Identifiable & Hashable>(
+        _ title: String,
+        selection: Binding<Value?>,
+        cases: Value.AllCases,
+        accent: Color
+    ) -> some View where Value.RawValue == String, Value.AllCases: RandomAccessCollection {
+        Picker(title, selection: selection) {
+            Text("All \(title)").tag(nil as Value?)
+            ForEach(cases) { value in
+                Text(value.rawValue).tag(Optional(value))
+            }
+        }
+        .pickerStyle(.menu)
+        .tint(accent)
+        .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
+        .padding(.horizontal, 12)
+        .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+    }
+
+    private func exerciseDefinitionRow(_ definition: ExerciseDefinition, accent: Color) -> some View {
+        Button {
+            selectedExerciseDefinition = definition
+        } label: {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(definition.name)
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                        Text("\(definition.category.rawValue) · \(definition.difficulty.rawValue)")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(accent)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(CommandDesign.secondaryText)
+                }
+
+                Text(definition.primaryMuscles.map(\.rawValue).joined(separator: ", "))
+                    .font(.caption)
+                    .foregroundStyle(CommandDesign.secondaryText)
+                    .lineLimit(2)
+
+                HStack(spacing: 7) {
+                    if definition.isShoulderFriendly {
+                        StatusPill(title: "Shoulder-aware", icon: "checkmark", accent: accent)
+                    }
+                    if definition.isLowBackFriendly {
+                        StatusPill(title: "Back-friendly", icon: "checkmark", accent: Color.gray)
+                    }
+                }
+            }
+            .padding(14)
+            .background(CommandDesign.surface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous)
+                    .stroke(CommandDesign.hairline, lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open exercise details for \(definition.name)")
     }
 
     private func builtInWorkoutRow(_ workout: WorkoutPlan, category: ReadinessCategory) -> some View {
@@ -586,6 +729,9 @@ private struct ExercisePlanCard: View {
                         detailList("Form cues", exercise.formCues)
                         detailList("Common mistakes", exercise.commonMistakes)
                         detailList("Muscles targeted", exercise.musclesTargeted)
+                        if let definition = ExerciseLibrary.definition(matching: exercise) {
+                            libraryBackedDetails(definition)
+                        }
                     }
                     .padding(.top, 2)
                 }
@@ -678,6 +824,28 @@ private struct ExercisePlanCard: View {
                 }
             }
         }
+    }
+
+    private func libraryBackedDetails(_ definition: ExerciseDefinition) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Library context")
+                .font(.caption.weight(.semibold))
+                .textCase(.uppercase)
+                .foregroundStyle(.secondary)
+            Text(definition.painCautionGuidance)
+                .font(.caption)
+                .foregroundStyle(CommandDesign.secondaryText)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+            ForEach(definition.substitutions.prefix(2)) { substitution in
+                Label("\(substitution.name): \(substitution.reason)", systemImage: "arrow.triangle.branch")
+                    .font(.caption)
+                    .foregroundStyle(CommandDesign.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(12)
+        .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
     }
 }
 
@@ -1041,6 +1209,102 @@ private struct ExerciseLogSheet: View {
     }
 }
 
+private struct ExerciseDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    let definition: ExerciseDefinition
+    let accent: Color
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                CommandBackground(category: .normalTrainingDay)
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: CommandDesign.stackSpacing) {
+                        ScreenHeader(
+                            eyebrow: definition.category.rawValue.uppercased(),
+                            title: definition.name,
+                            subtitle: "\(definition.difficulty.rawValue) · \(definition.equipment.map(\.rawValue).joined(separator: ", "))"
+                        )
+
+                        CommandCard {
+                            VStack(alignment: .leading, spacing: 14) {
+                                SectionHeader(title: "How to do it", subtitle: definition.setup, icon: "figure.strengthtraining.traditional", accent: accent)
+                                ForEach(Array(definition.executionSteps.enumerated()), id: \.offset) { index, step in
+                                    Label("\(index + 1). \(step)", systemImage: "checkmark.circle")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.white.opacity(0.9))
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                CommandDivider()
+                                detailLine("Breathing", definition.breathingCue)
+                                detailLine("How it should feel", definition.howItShouldFeel)
+                                detailLine("Pain / caution", definition.painCautionGuidance)
+                            }
+                        }
+
+                        CommandCard {
+                            VStack(alignment: .leading, spacing: 14) {
+                                SectionHeader(title: "Targets", icon: "scope", accent: accent)
+                                detailLine("Primary", definition.primaryMuscles.map(\.rawValue).joined(separator: ", "))
+                                detailLine("Secondary", definition.secondaryMuscles.map(\.rawValue).joined(separator: ", "))
+                                HStack(spacing: 8) {
+                                    StatusPill(title: definition.isShoulderFriendly ? "Shoulder-friendly" : "Shoulder caution", icon: definition.isShoulderFriendly ? "checkmark" : "exclamationmark.triangle", accent: accent)
+                                    StatusPill(title: definition.isLowBackFriendly ? "Back-friendly" : "Back caution", icon: definition.isLowBackFriendly ? "checkmark" : "exclamationmark.triangle", accent: Color.gray)
+                                }
+                            }
+                        }
+
+                        CommandCard {
+                            VStack(alignment: .leading, spacing: 14) {
+                                SectionHeader(title: "Common mistakes", icon: "exclamationmark.triangle", accent: accent)
+                                ForEach(definition.commonMistakes, id: \.self) { mistake in
+                                    Text("• \(mistake)")
+                                        .font(.subheadline)
+                                        .foregroundStyle(CommandDesign.secondaryText)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+
+                        CommandCard {
+                            VStack(alignment: .leading, spacing: 14) {
+                                SectionHeader(title: "Variations & substitutions", subtitle: "Use these when equipment, readiness, or joints change the plan.", icon: "arrow.triangle.branch", accent: accent)
+                                ForEach(definition.variations) { variation in
+                                    detailLine(variation.name, variation.note)
+                                }
+                                ForEach(definition.substitutions) { substitution in
+                                    detailLine(substitution.name, substitution.reason)
+                                }
+                            }
+                        }
+                    }
+                    .padding(CommandDesign.pagePadding)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func detailLine(_ title: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .textCase(.uppercase)
+                .foregroundStyle(CommandDesign.tertiaryText)
+            Text(value)
+                .font(.subheadline)
+                .foregroundStyle(CommandDesign.secondaryText)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
 private struct CustomWorkoutSheet: View {
     @EnvironmentObject private var appModel: AppViewModel
     @Environment(\.dismiss) private var dismiss
@@ -1055,10 +1319,20 @@ private struct CustomWorkoutSheet: View {
     @State private var targetSets = 2
     @State private var targetReps = "8-12"
     @State private var exerciseNotes = ""
+    @State private var selectedLibraryExerciseID: String?
     @State private var exercises: [CustomExercise] = []
     @State private var validationMessage: String?
 
     private var isEditing: Bool { workoutToEdit != nil }
+    private var librarySuggestions: [ExerciseDefinition] {
+        Array(ExerciseLibrary.search(
+            query: exerciseName,
+            category: nil,
+            equipment: nil,
+            muscle: nil,
+            location: appModel.trainingLocation
+        ).prefix(5))
+    }
 
     var body: some View {
         NavigationStack {
@@ -1127,6 +1401,39 @@ private struct CustomWorkoutSheet: View {
                 TextField("Exercise name", text: $exerciseName)
                     .textInputAutocapitalization(.words)
                     .commandFieldStyle()
+
+                if !librarySuggestions.isEmpty {
+                    VStack(alignment: .leading, spacing: 9) {
+                        Text("Library suggestions")
+                            .font(.caption.weight(.semibold))
+                            .textCase(.uppercase)
+                            .foregroundStyle(CommandDesign.secondaryText)
+                        ForEach(librarySuggestions) { definition in
+                            Button {
+                                applyLibraryExercise(definition)
+                            } label: {
+                                HStack(alignment: .top, spacing: 10) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(definition.name)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(.white)
+                                        Text("\(definition.category.rawValue) · \(definition.equipment.map(\.rawValue).joined(separator: ", "))")
+                                            .font(.caption2)
+                                            .foregroundStyle(CommandDesign.secondaryText)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                    Spacer()
+                                    Image(systemName: selectedLibraryExerciseID == definition.id ? "checkmark.circle.fill" : "plus.circle")
+                                        .foregroundStyle(accent)
+                                }
+                                .padding(10)
+                                .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Use \(definition.name) from exercise library")
+                        }
+                    }
+                }
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                     TextField("Category", text: $exerciseCategory)
@@ -1217,15 +1524,26 @@ private struct CustomWorkoutSheet: View {
                     equipment: exerciseEquipment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Available equipment" : exerciseEquipment.trimmingCharacters(in: .whitespacesAndNewlines),
                     targetSets: targetSets,
                     targetReps: targetReps.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "8-12" : targetReps.trimmingCharacters(in: .whitespacesAndNewlines),
-                    notes: exerciseNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+                    notes: exerciseNotes.trimmingCharacters(in: .whitespacesAndNewlines),
+                    libraryExerciseID: selectedLibraryExerciseID
                 )
             )
         }
         showValidation("Exercise added")
         exerciseName = ""
         exerciseNotes = ""
+        selectedLibraryExerciseID = nil
         targetSets = 2
         targetReps = "8-12"
+    }
+
+    private func applyLibraryExercise(_ definition: ExerciseDefinition) {
+        exerciseName = definition.name
+        exerciseCategory = definition.category.rawValue
+        exerciseEquipment = definition.equipment.map(\.rawValue).joined(separator: " / ")
+        exerciseNotes = definition.painCautionGuidance
+        selectedLibraryExerciseID = definition.id
+        showValidation("Loaded \(definition.name) from library")
     }
 
     private func save() {
