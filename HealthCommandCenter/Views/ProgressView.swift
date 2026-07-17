@@ -1,9 +1,17 @@
 import SwiftUI
+import PhotosUI
+import UIKit
 
 struct ProgressDashboardView: View {
     @EnvironmentObject private var appModel: AppViewModel
     @State private var selectedWorkoutSession: WorkoutSession?
     @State private var selectedRitualDay: RitualDaySummary?
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedPhotoData: Data?
+    @State private var progressPhotoAngle: ProgressPhotoAngle = .front
+    @State private var progressPhotoNotes = ""
+    @State private var progressPhotoFeedback: String?
+    @State private var photoToDelete: ProgressPhotoEntry?
 
     private var category: ReadinessCategory {
         appModel.activeCategory
@@ -44,6 +52,7 @@ struct ProgressDashboardView: View {
                     recoveryProgressSection
                     nutritionProgressSection
                     bodyMetricsProgressSection
+                    progressPhotosSection
                     exerciseProgressSection
                     ouraProgressSection
                     readinessHistorySection
@@ -56,6 +65,27 @@ struct ProgressDashboardView: View {
         }
         .sheet(item: $selectedRitualDay) { day in
             RitualDayDetailView(day: day, accent: category.accent)
+        }
+        .alert("Delete progress photo?", isPresented: Binding(
+            get: { photoToDelete != nil },
+            set: { if !$0 { photoToDelete = nil } }
+        )) {
+            Button("Delete", role: .destructive) {
+                if let photoToDelete {
+                    appModel.deleteProgressPhoto(photoToDelete)
+                    progressPhotoFeedback = "Progress photo deleted"
+                }
+                photoToDelete = nil
+            }
+            Button("Cancel", role: .cancel) {
+                photoToDelete = nil
+            }
+        } message: {
+            Text("This deletes the local copy stored by Health Command Center. It does not delete anything from Photos.")
+        }
+        .task(id: selectedPhotoItem) {
+            guard let selectedPhotoItem else { return }
+            selectedPhotoData = try? await selectedPhotoItem.loadTransferable(type: Data.self)
         }
     }
 
@@ -593,6 +623,139 @@ struct ProgressDashboardView: View {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private var progressPhotosSection: some View {
+        CommandSection(
+            title: "Progress Photos",
+            subtitle: "Optional local photos for front, side, and back comparisons. Private on device.",
+            icon: "photo.on.rectangle",
+            accent: category.accent
+        ) {
+            CommandCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Use photos as quiet context, not judgment. Nothing uploads; the app stores a local copy only after you tap Save.")
+                        .font(.caption)
+                        .foregroundStyle(CommandDesign.secondaryText)
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Picker("Angle", selection: $progressPhotoAngle) {
+                        ForEach(ProgressPhotoAngle.allCases) { angle in
+                            Text(angle.rawValue).tag(angle)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                        Label(selectedPhotoData == nil ? "Choose Photo" : "Photo Selected", systemImage: "photo")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                            .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                            .foregroundStyle(category.accent)
+                    }
+                    .accessibilityLabel("Choose progress photo")
+
+                    TextField("Optional notes", text: $progressPhotoNotes, axis: .vertical)
+                        .lineLimit(2...4)
+                        .commandFieldStyle()
+
+                    PrimaryActionButton(title: "Save Progress Photo", icon: "square.and.arrow.down", accent: category.accent) {
+                        guard let selectedPhotoData else {
+                            progressPhotoFeedback = "Choose a photo first"
+                            return
+                        }
+                        appModel.saveProgressPhoto(angle: progressPhotoAngle, notes: progressPhotoNotes, imageData: selectedPhotoData)
+                        self.selectedPhotoData = nil
+                        selectedPhotoItem = nil
+                        progressPhotoNotes = ""
+                        progressPhotoFeedback = "Progress photo saved locally"
+                    }
+
+                    if let progressPhotoFeedback {
+                        CommandFeedbackPill(message: progressPhotoFeedback, icon: "info.circle", accent: category.accent)
+                    }
+                }
+            }
+
+            if appModel.progressPhotos.isEmpty {
+                EmptyStateCard(
+                    title: "No progress photos yet",
+                    message: "Add one front, side, or back photo when it feels useful. This is optional and local-only.",
+                    icon: "photo",
+                    accent: category.accent
+                )
+            } else {
+                progressPhotoCompareCard
+                ForEach(appModel.progressPhotos.prefix(6)) { entry in
+                    progressPhotoRow(entry)
+                }
+            }
+        }
+    }
+
+    private var progressPhotoCompareCard: some View {
+        let photos = Array(appModel.progressPhotos.prefix(2))
+        return CommandCard {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionHeader(title: "Compare latest", subtitle: photos.count >= 2 ? "Two most recent local photos." : "Add a second photo to compare.", icon: "rectangle.split.2x1", accent: category.accent)
+                if photos.count >= 2 {
+                    HStack(spacing: 10) {
+                        ForEach(photos) { photo in
+                            VStack(alignment: .leading, spacing: 6) {
+                                ProgressPhotoImageView(url: appModel.progressPhotoImageURL(for: photo))
+                                    .frame(height: 170)
+                                    .clipShape(RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                                Text("\(photo.angle.rawValue) · \(photo.date.formatted(date: .abbreviated, time: .omitted))")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(CommandDesign.secondaryText)
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+                } else {
+                    Text("One photo saved. Add another later for a side-by-side check.")
+                        .font(.caption)
+                        .foregroundStyle(CommandDesign.secondaryText)
+                }
+            }
+        }
+    }
+
+    private func progressPhotoRow(_ entry: ProgressPhotoEntry) -> some View {
+        CommandCard {
+            HStack(alignment: .top, spacing: 12) {
+                ProgressPhotoImageView(url: appModel.progressPhotoImageURL(for: entry))
+                    .frame(width: 76, height: 96)
+                    .clipShape(RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 7) {
+                        StatusPill(title: entry.angle.rawValue, accent: category.accent)
+                        Text(entry.date.formatted(date: .abbreviated, time: .omitted))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(CommandDesign.secondaryText)
+                    }
+                    Text(entry.notes.isEmpty ? "No notes" : entry.notes)
+                        .font(.caption)
+                        .foregroundStyle(CommandDesign.secondaryText)
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Button(role: .destructive) {
+                    photoToDelete = entry
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.red.opacity(0.9))
+                        .frame(width: 44, height: 44)
+                        .background(.white.opacity(0.06), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Delete progress photo")
             }
         }
     }
@@ -1195,6 +1358,28 @@ private struct WorkoutSessionCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
         .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+    }
+}
+
+private struct ProgressPhotoImageView: View {
+    let url: URL
+
+    var body: some View {
+        if let data = try? Data(contentsOf: url),
+           let image = UIImage(data: data) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .accessibilityLabel("Local progress photo")
+        } else {
+            ZStack {
+                CommandDesign.elevatedSurface
+                Image(systemName: "photo")
+                    .font(.title2)
+                    .foregroundStyle(CommandDesign.secondaryText)
+            }
+            .accessibilityLabel("Missing local progress photo")
+        }
     }
 }
 

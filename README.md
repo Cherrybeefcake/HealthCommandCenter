@@ -57,6 +57,7 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Dynamic Workout Generator creates a local, rule-based workout option from readiness, recovery, sleep/stress/soreness context, available time, program phase, location, equipment, recent logs, and the DailyPlan. Generated workouts are selectable in Train and can be copied into Custom Workouts before logging.
 - Adaptive Program Scheduler shows a local weekly structure with three full-body strength sessions and optional recovery/conditioning days. Readiness and recovery can downgrade today's session, and manual reschedules are stored locally without marking skipped days as failure.
 - Goals & Targets add editable local guardrails for recomposition, strength, workout frequency, protein, hydration, sleep, meditation, mobility, and consistency. These targets shape Today, DailyPlan nutrition guidance, Insights, and Weekly Coach Report copy without aggressive weight-loss prescriptions.
+- Progress Photos are optional and local-only. The app copies selected front/side/back photos into its sandbox for simple recent comparison; photos are not uploaded and can be deleted from Insights.
 - Built-in library workouts use the same local ExerciseLog flow as starter workouts, so Progress session detail and exercise summaries continue to work.
 - Custom Workouts are local templates in `custom_workouts.json`; editing a template does not rewrite past workout logs.
 
@@ -425,6 +426,8 @@ Repo-local git identity is configured for Brian Cady.
   - `oura_manual_snapshots.json`: Manual/mock Oura recovery test snapshots.
   - `body_metrics_entries.json`: Manual body metrics and smart-scale trend entries.
   - `custom_workouts.json`: Brian-built custom workout templates.
+  - `progress_photos.json`: Local progress photo metadata.
+  - `ProgressPhotos/`: Local copied progress photo images.
 - UserDefaults keys:
   - `hasSeenGreeting`: controls whether the opening/greeting screen appears on launch.
   - `userName`: Brian's display name.

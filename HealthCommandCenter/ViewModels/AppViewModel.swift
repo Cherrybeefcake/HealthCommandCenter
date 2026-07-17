@@ -74,6 +74,7 @@ final class AppViewModel: ObservableObject {
     @Published var customWorkouts: [CustomWorkout] = []
     @Published var programScheduleOverrides: [ProgramScheduleOverride] = []
     @Published var goalSettings: GoalSettings
+    @Published var progressPhotos: [ProgressPhotoEntry] = []
     @Published var todayRitualDateKey: String = RitualLibrary.dateKey()
     @Published var programPhase: ProgramPhase
     @Published var trainingLocation: TrainingLocation
@@ -133,6 +134,7 @@ final class AppViewModel: ObservableObject {
         ouraManualSnapshots = storage.loadOuraManualSnapshots().sorted { $0.updatedAt > $1.updatedAt }
         bodyMetricsEntries = storage.loadBodyMetricsEntries().sorted { $0.updatedAt > $1.updatedAt }
         customWorkouts = storage.loadCustomWorkouts().sorted { $0.updatedAt > $1.updatedAt }
+        progressPhotos = storage.loadProgressPhotos().sorted { $0.date > $1.date }
         programScheduleOverrides = storage.programScheduleOverrides
         goalSettings = storage.goalSettings
         prepareTodayStateIfNeeded()
@@ -420,6 +422,38 @@ final class AppViewModel: ObservableObject {
         customWorkouts.removeAll { $0.id == workout.id }
         storage.saveCustomWorkouts(customWorkouts)
         appendDebug("Custom workout deleted: \(workout.name)")
+    }
+
+    func saveProgressPhoto(angle: ProgressPhotoAngle, notes: String, imageData: Data) {
+        let id = UUID()
+        let fileName = "\(id.uuidString).jpg"
+        do {
+            try storage.saveProgressPhotoImage(imageData, fileName: fileName)
+            let entry = ProgressPhotoEntry(
+                id: id,
+                date: Date(),
+                angle: angle,
+                notes: notes.trimmingCharacters(in: .whitespacesAndNewlines),
+                imageFileName: fileName
+            )
+            progressPhotos.insert(entry, at: 0)
+            progressPhotos.sort { $0.date > $1.date }
+            storage.saveProgressPhotos(progressPhotos)
+            appendDebug("Progress photo saved: \(angle.rawValue)")
+        } catch {
+            appendDebug("Progress photo save failed: \(error.localizedDescription)")
+        }
+    }
+
+    func deleteProgressPhoto(_ entry: ProgressPhotoEntry) {
+        progressPhotos.removeAll { $0.id == entry.id }
+        storage.saveProgressPhotos(progressPhotos)
+        storage.deleteProgressPhotoImage(fileName: entry.imageFileName)
+        appendDebug("Progress photo deleted: \(entry.angle.rawValue)")
+    }
+
+    func progressPhotoImageURL(for entry: ProgressPhotoEntry) -> URL {
+        storage.progressPhotoImageURL(fileName: entry.imageFileName)
     }
 
     func recentBodyMetricsEntries(limit: Int = 8) -> [BodyMetricsEntry] {
@@ -920,6 +954,7 @@ final class AppViewModel: ObservableObject {
         customWorkouts = []
         programScheduleOverrides = []
         goalSettings = storage.goalSettings
+        progressPhotos = []
         debugLog = []
         todaySnapshot = .empty
         lastHealthRefreshAt = nil

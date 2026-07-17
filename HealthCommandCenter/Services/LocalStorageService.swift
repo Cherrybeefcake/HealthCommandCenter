@@ -9,6 +9,8 @@ final class LocalStorageService {
     private let ouraManualSnapshotsURL: URL
     private let bodyMetricsEntriesURL: URL
     private let customWorkoutsURL: URL
+    private let progressPhotosURL: URL
+    private let progressPhotosDirectoryURL: URL
 
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
@@ -20,6 +22,8 @@ final class LocalStorageService {
         self.ouraManualSnapshotsURL = documentsURL.appendingPathComponent("oura_manual_snapshots.json")
         self.bodyMetricsEntriesURL = documentsURL.appendingPathComponent("body_metrics_entries.json")
         self.customWorkoutsURL = documentsURL.appendingPathComponent("custom_workouts.json")
+        self.progressPhotosURL = documentsURL.appendingPathComponent("progress_photos.json")
+        self.progressPhotosDirectoryURL = documentsURL.appendingPathComponent("ProgressPhotos", isDirectory: true)
     }
 
     var userName: String {
@@ -203,6 +207,29 @@ final class LocalStorageService {
         try? data.write(to: customWorkoutsURL, options: [.atomic])
     }
 
+    func loadProgressPhotos() -> [ProgressPhotoEntry] {
+        guard let data = try? Data(contentsOf: progressPhotosURL) else { return [] }
+        return (try? JSONDecoder.healthCommand.decode([ProgressPhotoEntry].self, from: data)) ?? []
+    }
+
+    func saveProgressPhotos(_ photos: [ProgressPhotoEntry]) {
+        guard let data = try? JSONEncoder.healthCommand.encode(photos) else { return }
+        try? data.write(to: progressPhotosURL, options: [.atomic])
+    }
+
+    func saveProgressPhotoImage(_ data: Data, fileName: String) throws {
+        try FileManager.default.createDirectory(at: progressPhotosDirectoryURL, withIntermediateDirectories: true)
+        try data.write(to: progressPhotosDirectoryURL.appendingPathComponent(fileName), options: [.atomic])
+    }
+
+    func progressPhotoImageURL(fileName: String) -> URL {
+        progressPhotosDirectoryURL.appendingPathComponent(fileName)
+    }
+
+    func deleteProgressPhotoImage(fileName: String) {
+        try? FileManager.default.removeItem(at: progressPhotosDirectoryURL.appendingPathComponent(fileName))
+    }
+
     func resetTodaysRitual(dateKey: String) {
         var logs = loadRitualLogs()
         if let index = logs.firstIndex(where: { $0.dateKey == dateKey }) {
@@ -225,6 +252,8 @@ final class LocalStorageService {
         try? FileManager.default.removeItem(at: ouraManualSnapshotsURL)
         try? FileManager.default.removeItem(at: bodyMetricsEntriesURL)
         try? FileManager.default.removeItem(at: customWorkoutsURL)
+        try? FileManager.default.removeItem(at: progressPhotosURL)
+        try? FileManager.default.removeItem(at: progressPhotosDirectoryURL)
         ["userName", "hasSeenGreeting", "programPhase", "trainingLocation", "workoutTimePreference", "personalizationSettings", "reminderSettings", "ouraConnectionSettings", "programScheduleOverrides", "goalSettings"].forEach {
             userDefaults.removeObject(forKey: $0)
         }
