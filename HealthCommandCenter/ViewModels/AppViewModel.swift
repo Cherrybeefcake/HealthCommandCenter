@@ -567,30 +567,16 @@ final class AppViewModel: ObservableObject {
     }
 
     func todayNutritionDisplay() -> (log: DailyNutritionLog, source: String, detail: String) {
-        let manual = todayNutritionLog()
-        let hasManual = manual.caloriesLogged != nil
-            || manual.proteinGrams != nil
-            || manual.waterOunces != nil
-            || manual.fiberGrams != nil
-            || manual.cronometerCompleted
-        if hasManual {
-            return (manual, "HCC manual", nutritionDetailLine(for: manual))
-        }
-        if let nutrition = todaySnapshot.nutrition {
-            let log = DailyNutritionLog(
-                dateKey: RitualLibrary.dateKey(),
-                caloriesLogged: nutrition.calories.map { Int($0.rounded()) },
-                proteinGrams: nutrition.proteinGrams.map { Int($0.rounded()) },
-                waterOunces: nutrition.waterOunces.map { Int($0.rounded()) },
-                fiberGrams: nutrition.fiberGrams.map { Int($0.rounded()) },
-                cronometerCompleted: false,
-                proteinTargetHit: (nutrition.proteinGrams ?? 0) >= Double(nutritionTargets.proteinGrams),
-                waterTargetHit: (nutrition.waterOunces ?? 0) >= Double(nutritionTargets.waterOunces),
-                notes: "Apple Health nutrition summary"
-            )
-            return (log, "Apple Health", nutritionDetailLine(for: log))
-        }
-        return (manual, "No nutrition source", "No Apple Health nutrition samples found. Save anchors manually in Ritual.")
+        let dateKey = RitualLibrary.dateKey()
+        let decision = NutritionSourceResolver.resolve(
+            manual: ManualNutritionProvider(logs: nutritionLogs),
+            appleHealth: AppleHealthNutritionProvider(summary: todaySnapshot.nutrition),
+            external: PlaceholderExternalNutritionProvider(providerName: "External nutrition provider"),
+            dateKey: dateKey,
+            targets: nutritionTargets,
+            detailBuilder: { nutritionDetailLine(for: $0) }
+        )
+        return (decision.log, decision.sourceLabel, decision.detail)
     }
 
     func nutritionStatusLine(for log: DailyNutritionLog? = nil) -> String {

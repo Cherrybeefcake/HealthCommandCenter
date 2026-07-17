@@ -498,6 +498,11 @@ struct ProfileView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineSpacing(3)
+            Text("Source logic: manual HCC entry wins when Brian saves it today; otherwise HCC reads Apple Health nutrition if another app writes samples there. Direct Cronometer API access is not implemented.")
+                .font(.caption)
+                .foregroundStyle(CommandDesign.secondaryText)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
 
             DisclosureGroup {
                 VStack(alignment: .leading, spacing: 10) {

@@ -48,6 +48,7 @@
 		01A000000000000000000127 /* ShortcutIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002A /* ShortcutIntents.swift */; };
 		01A000000000000000000128 /* DataRepositories.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002B /* DataRepositories.swift */; };
 		01A000000000000000000129 /* OuraIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002C /* OuraIntegration.swift */; };
+		01A00000000000000000012A /* NutritionProviders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002D /* NutritionProviders.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -94,6 +95,7 @@
 		01A00000000000000000002A /* ShortcutIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutIntents.swift; sourceTree = "<group>"; };
 		01A00000000000000000002B /* DataRepositories.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataRepositories.swift; sourceTree = "<group>"; };
 		01A00000000000000000002C /* OuraIntegration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OuraIntegration.swift; sourceTree = "<group>"; };
+		01A00000000000000000002D /* NutritionProviders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionProviders.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -176,6 +178,7 @@
 				01A00000000000000000001E /* LocalNotificationService.swift */,
 				01A00000000000000000002B /* DataRepositories.swift */,
 				01A00000000000000000002C /* OuraIntegration.swift */,
+				01A00000000000000000002D /* NutritionProviders.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -342,6 +345,7 @@
 				01A000000000000000000127 /* ShortcutIntents.swift in Sources */,
 				01A000000000000000000128 /* DataRepositories.swift in Sources */,
 				01A000000000000000000129 /* OuraIntegration.swift in Sources */,
+				01A00000000000000000012A /* NutritionProviders.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -418,6 +418,7 @@ Repo-local git identity is configured for Brian Cady.
 - Notifications: optional local reminders can be scheduled for Check In, Recovery/Ritual, Sleep Prep, and Nutrition/Cronometer.
 - Local storage: current MVP data is stored in local JSON files and UserDefaults in the app sandbox.
 - Oura/Cronometer: Oura OAuth and Cronometer API are not connected yet; no real Oura tokens are stored.
+- Nutrition provider architecture is documented in `Docs/NUTRITION_INTEGRATION_ARCHITECTURE.md`. Manual HCC entries can override today's display, Apple Health nutrition is automatic when samples exist, and external provider access remains a placeholder until supported vendor access exists.
 - Cloud/backend: no account login, backend, cloud sync, or server upload exists in this MVP.
 - Medical posture: the app provides personal coaching organization and is not medical advice, diagnosis, treatment, or clinical decision support.
 
