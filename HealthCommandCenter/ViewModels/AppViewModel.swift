@@ -95,6 +95,7 @@ final class AppViewModel: ObservableObject {
     private let ouraService: OuraService
     private let classifier: ReadinessClassifier
     private let notificationService: LocalNotificationService
+    private let ouraTokenStore: OuraTokenStoring
     private var didBootstrap = false
     private var didRequestHealth = false
     private let dailyWinItemID = RitualItemKind.dailyWin.rawValue
@@ -107,13 +108,15 @@ final class AppViewModel: ObservableObject {
         healthService: HealthDataProviding,
         ouraService: OuraService,
         classifier: ReadinessClassifier,
-        notificationService: LocalNotificationService = LocalNotificationService()
+        notificationService: LocalNotificationService = LocalNotificationService(),
+        ouraTokenStore: OuraTokenStoring = KeychainOuraTokenStore()
     ) {
         self.storage = storage
         self.healthService = healthService
         self.ouraService = ouraService
         self.classifier = classifier
         self.notificationService = notificationService
+        self.ouraTokenStore = ouraTokenStore
         self.userName = storage.userName
         self.programPhase = storage.programPhase
         self.trainingLocation = storage.trainingLocation
@@ -921,6 +924,10 @@ final class AppViewModel: ObservableObject {
         ouraConnectionSettings = settings
         storage.ouraConnectionSettings = settings
         appendDebug("Oura manual/mock snapshot saved: \(updated.dateKey)")
+    }
+
+    func ouraCredentialStateText() -> String {
+        ouraTokenStore.credentialState().rawValue
     }
 
     func saveReminderSettings(_ settings: ReminderSettings) async {

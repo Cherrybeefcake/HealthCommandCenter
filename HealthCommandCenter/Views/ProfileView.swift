@@ -241,7 +241,7 @@ struct ProfileView: View {
 
     private var ouraFoundationSection: some View {
         settingsSection("Oura", icon: "ring") {
-            Text("Oura OAuth is not connected yet. Automatic uses Apple Health as the primary source for overlapping metrics and Oura as supplemental recovery context. Manual/mock mode helps test that behavior without storing real tokens.")
+            Text("Oura OAuth is not connected yet. The app now has secure interfaces and Keychain token storage ready for a future real connection, but no client ID, secret, redirect URI, access token, or network call is active. Apple Health remains primary for overlapping metrics.")
                 .font(.caption)
                 .foregroundStyle(CommandDesign.secondaryText)
                 .lineSpacing(3)
@@ -261,10 +261,17 @@ struct ProfileView: View {
             let latest = appModel.latestOuraManualSnapshot()
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 storageMetric("Status", appModel.ouraConnectionSettings.connectionMode.rawValue)
+                storageMetric("Credential state", appModel.ouraCredentialStateText())
                 storageMetric("Snapshots", "\(appModel.ouraManualSnapshots.count)")
                 storageMetric("Readiness", latest?.readinessScore.map(String.init) ?? "--")
                 storageMetric("Sleep", latest?.sleepDurationHours.map { String(format: "%.1f hr", $0) } ?? "--")
             }
+
+            CommandFeedbackPill(
+                message: "Future OAuth requires an Oura developer app, approved redirect URI, secure client configuration, callback handling, and updated privacy copy.",
+                icon: "lock.shield",
+                accent: appModel.activeCategory.accent
+            )
 
             DisclosureGroup {
                 VStack(alignment: .leading, spacing: 12) {
