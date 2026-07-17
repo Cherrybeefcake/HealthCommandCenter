@@ -36,6 +36,7 @@ struct ProgressDashboardView: View {
                     overviewSection
                     thisWeekSection
                     weeklyCoachReportSection
+                    goalsProgressSection
                     chartsSection
                     workoutHistorySection
                     consistencyStreaksSection
@@ -258,6 +259,65 @@ struct ProgressDashboardView: View {
                 emptyMessage: "Complete Check In with sleep data available, or connect Apple Health.",
                 accent: category.accent
             )
+        }
+    }
+
+    private var goalsProgressSection: some View {
+        let goals = appModel.currentGoalProgress()
+        return CommandSection(
+            title: "Goals & Targets",
+            subtitle: "Simple targets for recomposition, strength, recovery, and consistency. Trend, not judgment.",
+            icon: "target",
+            accent: category.accent
+        ) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                ForEach(goals.prefix(6)) { goal in
+                    goalProgressCard(goal)
+                }
+            }
+            DisclosureGroup {
+                VStack(spacing: 10) {
+                    ForEach(goals.dropFirst(6)) { goal in
+                        goalProgressCard(goal)
+                    }
+                }
+                .padding(.top, 8)
+            } label: {
+                Label("Body and trend targets", systemImage: "scalemass")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+            }
+            .tint(category.accent)
+        }
+    }
+
+    private func goalProgressCard(_ goal: GoalProgress) -> some View {
+        CommandCard {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(goal.title)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Spacer()
+                    StatusPill(title: goal.statusText, accent: goal.status == .onTrack ? Color.green : category.accent)
+                }
+                Text(goal.currentText)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(category.accent)
+                Text("Target: \(goal.targetText)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(CommandDesign.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let fraction = goal.progressFraction {
+                    ProgressView(value: fraction)
+                        .tint(category.accent)
+                }
+                Text(goal.coachingLine)
+                    .font(.caption)
+                    .foregroundStyle(CommandDesign.secondaryText)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 

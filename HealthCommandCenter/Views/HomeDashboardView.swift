@@ -69,6 +69,8 @@ private struct TodayDashboard: View {
                                 MissionStatusCard(title: "Nutrition", value: mission.nutritionStatusValue, detail: mission.nutritionStatusDetail, icon: "fork.knife", accent: category.accent)
                                 MissionStatusCard(title: "Daily essentials", value: mission.ritualStatusValue, detail: mission.ritualStatusDetail, icon: "checkmark.circle", accent: category.accent)
                             }
+
+                            CommandFeedbackPill(message: mission.goalFocusText, icon: "target", accent: category.accent)
                         }
 
                         CommandCard {
@@ -435,6 +437,7 @@ private struct TodayMission {
     var recoveryStatus: RecoveryStatus { appModel.todayRecoveryStatus() }
     var todayLogs: [ExerciseLog] { appModel.todayExerciseLogs() }
     var dailyPlan: DailyPlan { appModel.todayDailyPlan }
+    var goals: [GoalProgress] { appModel.currentGoalProgress() }
     var plannedSession: PlannedSession? { appModel.todaysPlannedSession() }
     var totalSetsLogged: Int { todayLogs.reduce(0) { $0 + $1.setsCompleted } }
     var hasWorkoutProgress: Bool { !todayLogs.isEmpty }
@@ -532,6 +535,13 @@ private struct TodayMission {
         case .recovery:
             return "Walk, mobility, and breathing."
         }
+    }
+
+    var goalFocusText: String {
+        if let goal = goals.first(where: { $0.status == .building || $0.status == .noData }) {
+            return "Goal focus: \(goal.title). \(goal.coachingLine)"
+        }
+        return "Goal focus: keep the rhythm steady. Progress slowly and protect recovery."
     }
 
     var ritualProgressText: String {

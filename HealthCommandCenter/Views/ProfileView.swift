@@ -39,6 +39,7 @@ struct ProfileView: View {
                     programPhaseSection
                     trainingPreferencesSection
                     nutritionPreferencesSection
+                    goalsTargetsSection
                     profileGroupHeader("Data Sources", "Apple Health is primary where available; Oura stays supplemental until OAuth exists.", "externaldrive.connected.to.line.below")
                     healthKitStatusSection
                     ouraFoundationSection
@@ -189,6 +190,38 @@ struct ProfileView: View {
                     .font(.headline)
             }
             .tint(appModel.activeCategory.accent)
+        }
+    }
+
+    private var goalsTargetsSection: some View {
+        settingsSection("Goals & Targets", icon: "target") {
+            Text("Targets are guardrails for coaching language, not pressure. Keep the floor low and adjust as real life changes.")
+                .font(.caption)
+                .foregroundStyle(CommandDesign.secondaryText)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Toggle("Body recomposition focus", isOn: goalToggle(\.bodyRecompositionEnabled))
+                .tint(appModel.activeCategory.accent)
+            Toggle("Strength focus", isOn: goalToggle(\.strengthEnabled))
+                .tint(appModel.activeCategory.accent)
+
+            goalStepper("Workout days", value: goalInt(\.workoutFrequencyPerWeek), range: 1...6, suffix: "/week")
+            goalStepper("Consistency days", value: goalInt(\.consistencyDaysPerWeek), range: 1...7, suffix: "/week")
+            goalStepper("Protein", value: goalInt(\.proteinTargetGrams), range: 80...240, suffix: "g/day")
+            goalStepper("Water", value: goalInt(\.hydrationTargetOunces), range: 40...180, suffix: "oz/day")
+            goalDoubleStepper("Sleep", value: goalDouble(\.sleepTargetHours), range: 5.0...9.5, step: 0.5, suffix: "hr/night")
+            goalStepper("Meditation", value: goalInt(\.meditationDaysPerWeek), range: 0...7, suffix: "/week")
+            goalStepper("Mobility", value: goalInt(\.mobilityDaysPerWeek), range: 0...7, suffix: "/week")
+
+            Text("Weight trend: \(appModel.goalSettings.weightTrendGoalText)")
+                .font(.caption)
+                .foregroundStyle(CommandDesign.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Waist trend: \(appModel.goalSettings.waistTrendGoalText)")
+                .font(.caption)
+                .foregroundStyle(CommandDesign.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -627,6 +660,74 @@ struct ProfileView: View {
             .pickerStyle(.menu)
             .tint(appModel.activeCategory.accent)
         }
+    }
+
+    private func goalToggle(_ keyPath: WritableKeyPath<GoalSettings, Bool>) -> Binding<Bool> {
+        Binding(
+            get: { appModel.goalSettings[keyPath: keyPath] },
+            set: { newValue in
+                var settings = appModel.goalSettings
+                settings[keyPath: keyPath] = newValue
+                appModel.saveGoalSettings(settings)
+                showProfileFeedback("Goal targets saved")
+            }
+        )
+    }
+
+    private func goalInt(_ keyPath: WritableKeyPath<GoalSettings, Int>) -> Binding<Int> {
+        Binding(
+            get: { appModel.goalSettings[keyPath: keyPath] },
+            set: { newValue in
+                var settings = appModel.goalSettings
+                settings[keyPath: keyPath] = newValue
+                appModel.saveGoalSettings(settings)
+                showProfileFeedback("Goal targets saved")
+            }
+        )
+    }
+
+    private func goalDouble(_ keyPath: WritableKeyPath<GoalSettings, Double>) -> Binding<Double> {
+        Binding(
+            get: { appModel.goalSettings[keyPath: keyPath] },
+            set: { newValue in
+                var settings = appModel.goalSettings
+                settings[keyPath: keyPath] = newValue
+                appModel.saveGoalSettings(settings)
+                showProfileFeedback("Goal targets saved")
+            }
+        )
+    }
+
+    private func goalStepper(_ title: String, value: Binding<Int>, range: ClosedRange<Int>, suffix: String) -> some View {
+        Stepper(value: value, in: range) {
+            HStack {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                Text("\(value.wrappedValue)\(suffix)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(appModel.activeCategory.accent)
+            }
+        }
+        .frame(minHeight: 48)
+        .padding(.horizontal, 12)
+        .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+    }
+
+    private func goalDoubleStepper(_ title: String, value: Binding<Double>, range: ClosedRange<Double>, step: Double, suffix: String) -> some View {
+        Stepper(value: value, in: range, step: step) {
+            HStack {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                Text(String(format: "%.1f%@", value.wrappedValue, suffix))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(appModel.activeCategory.accent)
+            }
+        }
+        .frame(minHeight: 48)
+        .padding(.horizontal, 12)
+        .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
     }
 
     private func reminderRow(

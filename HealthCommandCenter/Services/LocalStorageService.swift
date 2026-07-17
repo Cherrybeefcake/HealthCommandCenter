@@ -119,6 +119,20 @@ final class LocalStorageService {
         }
     }
 
+    var goalSettings: GoalSettings {
+        get {
+            guard let data = userDefaults.data(forKey: "goalSettings"),
+                  let settings = try? JSONDecoder.healthCommand.decode(GoalSettings.self, from: data) else {
+                return .brianDefault
+            }
+            return settings
+        }
+        set {
+            guard let data = try? JSONEncoder.healthCommand.encode(newValue) else { return }
+            userDefaults.set(data, forKey: "goalSettings")
+        }
+    }
+
     func loadCheckIns() -> [CheckIn] {
         guard let data = try? Data(contentsOf: checkInsURL) else { return [] }
         return (try? JSONDecoder.healthCommand.decode([CheckIn].self, from: data)) ?? []
@@ -211,7 +225,7 @@ final class LocalStorageService {
         try? FileManager.default.removeItem(at: ouraManualSnapshotsURL)
         try? FileManager.default.removeItem(at: bodyMetricsEntriesURL)
         try? FileManager.default.removeItem(at: customWorkoutsURL)
-        ["userName", "hasSeenGreeting", "programPhase", "trainingLocation", "workoutTimePreference", "personalizationSettings", "reminderSettings", "ouraConnectionSettings", "programScheduleOverrides"].forEach {
+        ["userName", "hasSeenGreeting", "programPhase", "trainingLocation", "workoutTimePreference", "personalizationSettings", "reminderSettings", "ouraConnectionSettings", "programScheduleOverrides", "goalSettings"].forEach {
             userDefaults.removeObject(forKey: $0)
         }
     }

@@ -42,6 +42,7 @@
 		01A000000000000000000121 /* ExerciseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000024 /* ExerciseLibrary.swift */; };
 		01A000000000000000000122 /* DynamicWorkoutGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000025 /* DynamicWorkoutGenerator.swift */; };
 		01A000000000000000000123 /* ProgramSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000026 /* ProgramSchedule.swift */; };
+		01A000000000000000000124 /* Goals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000027 /* Goals.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -82,6 +83,7 @@
 		01A000000000000000000024 /* ExerciseLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibrary.swift; sourceTree = "<group>"; };
 		01A000000000000000000025 /* DynamicWorkoutGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicWorkoutGenerator.swift; sourceTree = "<group>"; };
 		01A000000000000000000026 /* ProgramSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramSchedule.swift; sourceTree = "<group>"; };
+		01A000000000000000000027 /* Goals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Goals.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -145,6 +147,7 @@
 				01A000000000000000000024 /* ExerciseLibrary.swift */,
 				01A000000000000000000025 /* DynamicWorkoutGenerator.swift */,
 				01A000000000000000000026 /* ProgramSchedule.swift */,
+				01A000000000000000000027 /* Goals.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -318,6 +321,7 @@
 				01A000000000000000000121 /* ExerciseLibrary.swift in Sources */,
 				01A000000000000000000122 /* DynamicWorkoutGenerator.swift in Sources */,
 				01A000000000000000000123 /* ProgramSchedule.swift in Sources */,
+				01A000000000000000000124 /* Goals.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

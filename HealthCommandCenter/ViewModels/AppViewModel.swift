@@ -73,6 +73,7 @@ final class AppViewModel: ObservableObject {
     @Published var bodyMetricsEntries: [BodyMetricsEntry] = []
     @Published var customWorkouts: [CustomWorkout] = []
     @Published var programScheduleOverrides: [ProgramScheduleOverride] = []
+    @Published var goalSettings: GoalSettings
     @Published var todayRitualDateKey: String = RitualLibrary.dateKey()
     @Published var programPhase: ProgramPhase
     @Published var trainingLocation: TrainingLocation
@@ -119,6 +120,7 @@ final class AppViewModel: ObservableObject {
         self.reminderSettings = storage.reminderSettings
         self.ouraConnectionSettings = storage.ouraConnectionSettings
         self.programScheduleOverrides = storage.programScheduleOverrides
+        self.goalSettings = storage.goalSettings
     }
 
     func bootstrap() async {
@@ -132,6 +134,7 @@ final class AppViewModel: ObservableObject {
         bodyMetricsEntries = storage.loadBodyMetricsEntries().sorted { $0.updatedAt > $1.updatedAt }
         customWorkouts = storage.loadCustomWorkouts().sorted { $0.updatedAt > $1.updatedAt }
         programScheduleOverrides = storage.programScheduleOverrides
+        goalSettings = storage.goalSettings
         prepareTodayStateIfNeeded()
         latestCheckIn = checkIns.first
         await refreshNotificationStatus()
@@ -165,7 +168,16 @@ final class AppViewModel: ObservableObject {
     }
 
     var nutritionTargets: NutritionTargets {
-        NutritionTargets.from(personalizationSettings)
+        let profileTargets = NutritionTargets.from(personalizationSettings)
+        return NutritionTargets(
+            goal: profileTargets.goal,
+            proteinGrams: goalSettings.proteinTargetGrams,
+            waterOunces: goalSettings.hydrationTargetOunces,
+            fiberGuidance: profileTargets.fiberGuidance,
+            avoids: profileTargets.avoids,
+            proteinPowder: profileTargets.proteinPowder,
+            creatine: profileTargets.creatine
+        )
     }
 
     func generatedWorkoutRecommendation() -> GeneratedWorkoutRecommendation {
@@ -907,6 +919,7 @@ final class AppViewModel: ObservableObject {
         bodyMetricsEntries = []
         customWorkouts = []
         programScheduleOverrides = []
+        goalSettings = storage.goalSettings
         debugLog = []
         todaySnapshot = .empty
         lastHealthRefreshAt = nil
@@ -966,6 +979,102 @@ final class AppViewModel: ObservableObject {
         programScheduleOverrides.sort { $0.updatedAt > $1.updatedAt }
         storage.programScheduleOverrides = programScheduleOverrides
         appendDebug("Rescheduled \(session.workoutTitle) to \(dateKey)")
+    }
+
+    func saveGoalSettings(_ settings: GoalSettings) {
+        goalSettings = settings
+        storage.goalSettings = settings
+        appendDebug("Goal settings saved")
+    }
+
+    func currentGoalProgress() -> [GoalProgress] {
+        let workoutDays = Set(exerciseLogsThisWeek().map { RitualLibrary.dateKey(for: $0.date) }).count
+        let consistencyDays = consistencyDatesThisWeek().count
+        let proteinAverage = averageProteinThisWeek()
+        let waterAverage = averageWaterThisWeek()
+        let sleepAverage = averageSleepThisWeek()
+        let ritualLogs = ritualLogsThisWeek()
+        let meditationDays = ritualLogs.filter { log in
+            log.completedItemIDs.contains { $0.contains("meditation") || $0.contains("mental") }
+        }.count
+        let mobilityDays = ritualLogs.filter { log in
+            log.completedItemIDs.contains { $0.contains("mobility") || $0.contains("stretch") }
+        }.count
+        let bodySummary = latestBodyMetricsSummary()
+
+        return [
+            goalProgress(
+                id: "workout-frequency",
+                title: "Workout frequency",
+                current: workoutDays,
+                target: goalSettings.workoutFrequencyPerWeek,
+                currentText: "\(workoutDays) days",
+                targetText: "\(goalSettings.workoutFrequencyPerWeek)/week",
+                coaching: "Two or three honest sessions beats one heroic one."
+            ),
+            goalProgress(
+                id: "consistency",
+                title: "Consistency",
+                current: consistencyDays,
+                target: goalSettings.consistencyDaysPerWeek,
+                currentText: "\(consistencyDays) days",
+                targetText: "\(goalSettings.consistencyDaysPerWeek)/week",
+                coaching: "Check In, one ritual item, or one logged set all count as a signal."
+            ),
+            optionalAverageProgress(
+                id: "protein",
+                title: "Protein",
+                average: proteinAverage,
+                target: goalSettings.proteinTargetGrams,
+                unit: "g",
+                coaching: "Protein consistency supports recomposition without needing a rigid meal plan."
+            ),
+            optionalAverageProgress(
+                id: "hydration",
+                title: "Hydration",
+                average: waterAverage,
+                target: goalSettings.hydrationTargetOunces,
+                unit: "oz",
+                coaching: "Water early makes training, hunger, and recovery easier to steer."
+            ),
+            optionalSleepProgress(average: sleepAverage),
+            goalProgress(
+                id: "meditation",
+                title: "Meditation",
+                current: meditationDays,
+                target: goalSettings.meditationDaysPerWeek,
+                currentText: "\(meditationDays) days",
+                targetText: "\(goalSettings.meditationDaysPerWeek)/week",
+                coaching: "Use the short reset when the day is moving fast."
+            ),
+            goalProgress(
+                id: "mobility",
+                title: "Mobility",
+                current: mobilityDays,
+                target: goalSettings.mobilityDaysPerWeek,
+                currentText: "\(mobilityDays) days",
+                targetText: "\(goalSettings.mobilityDaysPerWeek)/week",
+                coaching: "Small mobility keeps the next training day more available."
+            ),
+            GoalProgress(
+                id: "body-recomposition",
+                title: "Body recomposition",
+                currentText: bodySummary.latestWeightText,
+                targetText: goalSettings.weightTrendGoalText,
+                status: bodySummary.latestEntry == nil && bodySummary.appleHealthEntry == nil ? .noData : .steady,
+                coachingLine: "Use trend direction, strength logs, protein, and waist context together. No daily judgment.",
+                progressFraction: nil
+            ),
+            GoalProgress(
+                id: "waist-trend",
+                title: "Waist trend",
+                currentText: bodySummary.waistTrendText ?? "No waist trend yet",
+                targetText: goalSettings.waistTrendGoalText,
+                status: bodySummary.waistTrendText == nil ? .noData : .steady,
+                coachingLine: "Waist is a slow trend signal. Log occasionally, then move on.",
+                progressFraction: nil
+            )
+        ]
     }
 
     func ritualLogsThisWeek() -> [DailyRitualLog] {
@@ -1867,6 +1976,90 @@ final class AppViewModel: ObservableObject {
             wins.append("The first useful win is simple: create one signal this week and let the system start learning.")
         }
         return wins
+    }
+
+    private func goalProgress(
+        id: String,
+        title: String,
+        current: Int,
+        target: Int,
+        currentText: String,
+        targetText: String,
+        coaching: String
+    ) -> GoalProgress {
+        let safeTarget = max(target, 1)
+        let fraction = min(Double(current) / Double(safeTarget), 1)
+        let status: GoalStatus
+        if current == 0 {
+            status = .noData
+        } else if current >= safeTarget {
+            status = .onTrack
+        } else {
+            status = .building
+        }
+        return GoalProgress(
+            id: id,
+            title: title,
+            currentText: currentText,
+            targetText: targetText,
+            status: status,
+            coachingLine: coaching,
+            progressFraction: fraction
+        )
+    }
+
+    private func optionalAverageProgress(
+        id: String,
+        title: String,
+        average: Int?,
+        target: Int,
+        unit: String,
+        coaching: String
+    ) -> GoalProgress {
+        guard let average else {
+            return GoalProgress(
+                id: id,
+                title: title,
+                currentText: "No logged average",
+                targetText: "\(target) \(unit)/day",
+                status: .noData,
+                coachingLine: coaching,
+                progressFraction: nil
+            )
+        }
+        return goalProgress(
+            id: id,
+            title: title,
+            current: average,
+            target: target,
+            currentText: "\(average) \(unit)",
+            targetText: "\(target) \(unit)/day",
+            coaching: coaching
+        )
+    }
+
+    private func optionalSleepProgress(average: Double?) -> GoalProgress {
+        guard let average else {
+            return GoalProgress(
+                id: "sleep",
+                title: "Sleep",
+                currentText: "No sleep average",
+                targetText: String(format: "%.1f hr/night", goalSettings.sleepTargetHours),
+                status: .noData,
+                coachingLine: "Sleep is a recovery target, not a perfection test.",
+                progressFraction: nil
+            )
+        }
+        let fraction = min(average / max(goalSettings.sleepTargetHours, 1), 1)
+        return GoalProgress(
+            id: "sleep",
+            title: "Sleep",
+            currentText: String(format: "%.1f hr", average),
+            targetText: String(format: "%.1f hr/night", goalSettings.sleepTargetHours),
+            status: average >= goalSettings.sleepTargetHours ? .onTrack : .building,
+            coachingLine: "Protect the sleep window before adding more training stress.",
+            progressFraction: fraction
+        )
     }
 
     private func weeklyWatchouts(
