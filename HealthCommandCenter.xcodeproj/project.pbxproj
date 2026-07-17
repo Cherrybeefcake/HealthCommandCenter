@@ -50,7 +50,18 @@
 		01A000000000000000000129 /* OuraIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002C /* OuraIntegration.swift */; };
 		01A00000000000000000012A /* NutritionProviders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002D /* NutritionProviders.swift */; };
 		01A00000000000000000012B /* CoachEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002E /* CoachEngine.swift */; };
+		01B000000000000000000101 /* ReleaseQualityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B000000000000000000001 /* ReleaseQualityTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		01B000000000000000000080 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 01A000000000000000000071 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 01A000000000000000000070;
+			remoteInfo = HealthCommandCenter;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		01A000000000000000000001 /* HealthCommandCenterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCommandCenterApp.swift; sourceTree = "<group>"; };
@@ -98,6 +109,8 @@
 		01A00000000000000000002C /* OuraIntegration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OuraIntegration.swift; sourceTree = "<group>"; };
 		01A00000000000000000002D /* NutritionProviders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionProviders.swift; sourceTree = "<group>"; };
 		01A00000000000000000002E /* CoachEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachEngine.swift; sourceTree = "<group>"; };
+		01B000000000000000000001 /* ReleaseQualityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseQualityTests.swift; sourceTree = "<group>"; };
+		01B000000000000000000002 /* HealthCommandCenterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HealthCommandCenterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -109,6 +122,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		01B000000000000000000020 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -116,6 +136,7 @@
 			isa = PBXGroup;
 			children = (
 				01A000000000000000000040 /* HealthCommandCenter */,
+				01B000000000000000000030 /* HealthCommandCenterTests */,
 				01A000000000000000000050 /* Frameworks */,
 				01A000000000000000000060 /* Products */,
 			);
@@ -231,8 +252,17 @@
 			isa = PBXGroup;
 			children = (
 				01A000000000000000000015 /* HealthCommandCenter.app */,
+				01B000000000000000000002 /* HealthCommandCenterTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		01B000000000000000000030 /* HealthCommandCenterTests */ = {
+			isa = PBXGroup;
+			children = (
+				01B000000000000000000001 /* ReleaseQualityTests.swift */,
+			);
+			path = HealthCommandCenterTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -255,6 +285,24 @@
 			productReference = 01A000000000000000000015 /* HealthCommandCenter.app */;
 			productType = "com.apple.product-type.application";
 		};
+		01B000000000000000000070 /* HealthCommandCenterTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 01B000000000000000000090 /* Build configuration list for PBXNativeTarget "HealthCommandCenterTests" */;
+			buildPhases = (
+				01B000000000000000000081 /* Sources */,
+				01B000000000000000000082 /* Resources */,
+				01B000000000000000000020 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				01B000000000000000000083 /* PBXTargetDependency */,
+			);
+			name = HealthCommandCenterTests;
+			productName = HealthCommandCenterTests;
+			productReference = 01B000000000000000000002 /* HealthCommandCenterTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -273,6 +321,10 @@
 							};
 						};
 					};
+					01B000000000000000000070 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 01A000000000000000000070;
+					};
 				};
 			};
 			buildConfigurationList = 01A000000000000000000091 /* Build configuration list for PBXProject "HealthCommandCenter" */;
@@ -289,6 +341,7 @@
 			projectRoot = "";
 			targets = (
 				01A000000000000000000070 /* HealthCommandCenter */,
+				01B000000000000000000070 /* HealthCommandCenterTests */,
 			);
 		};
 /* End PBXProject section */
@@ -299,6 +352,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				01A000000000000000000120 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		01B000000000000000000082 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -353,7 +413,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		01B000000000000000000081 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				01B000000000000000000101 /* ReleaseQualityTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		01B000000000000000000083 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 01A000000000000000000070 /* HealthCommandCenter */;
+			targetProxy = 01B000000000000000000080 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		01A000000000000000000092 /* Debug */ = {
@@ -537,6 +613,57 @@
 			};
 			name = Release;
 		};
+		01B000000000000000000092 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 43V4UB543R;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.brian.healthcommandcenter.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HealthCommandCenter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/HealthCommandCenter";
+			};
+			name = Debug;
+		};
+		01B000000000000000000093 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 43V4UB543R;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.brian.healthcommandcenter.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HealthCommandCenter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/HealthCommandCenter";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -554,6 +681,15 @@
 			buildConfigurations = (
 				01A000000000000000000092 /* Debug */,
 				01A000000000000000000093 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		01B000000000000000000090 /* Build configuration list for PBXNativeTarget "HealthCommandCenterTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				01B000000000000000000092 /* Debug */,
+				01B000000000000000000093 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
