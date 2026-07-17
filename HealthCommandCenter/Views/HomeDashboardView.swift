@@ -37,7 +37,6 @@ private struct TodayDashboard: View {
         let category = appModel.activeCategory
         let snapshot = appModel.latestCheckIn?.healthSnapshot ?? appModel.todaySnapshot
         let mission = TodayMission(appModel: appModel)
-        let dailyPlan = appModel.todayDailyPlan
 
         NavigationStack {
             ZStack {
@@ -45,63 +44,16 @@ private struct TodayDashboard: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: CommandDesign.stackSpacing) {
-                        HStack(alignment: .top) {
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text(greeting)
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(CommandDesign.secondaryText)
-                                Text(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()))
-                                    .font(.title2.weight(.bold))
-                            }
-                            Spacer()
-                            Button {
-                                appModel.selectedTab = .profile
-                            } label: {
-                                Image(systemName: "person.crop.circle.fill")
-                                    .font(.title2)
-                                    .foregroundStyle(.white.opacity(0.82))
-                                    .frame(width: 44, height: 44)
-                                    .background(CommandDesign.elevatedSurface, in: Circle())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Open profile")
-                        }
+                        briefHeader
 
-                        HeroCard(accent: category.accent) {
-                            VStack(alignment: .leading, spacing: 18) {
-                                StatusPill(
-                                    title: appModel.hasCheckedInToday ? dailyPlan.readinessCategory.rawValue : "CHECK-IN NEEDED",
-                                    icon: appModel.hasCheckedInToday ? "bolt.heart.fill" : "waveform.path.ecg",
-                                    accent: category.accent
-                                )
-
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(appModel.hasCheckedInToday ? dailyPlan.primaryFocus : "Build the right plan for today.")
-                                        .font(.system(size: 30, weight: .bold, design: .rounded))
-                                        .lineSpacing(2)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                    Text(mission.coachingMessage)
-                                        .font(.body)
-                                        .foregroundStyle(CommandDesign.secondaryText)
-                                        .lineSpacing(4)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-
-                                if appModel.hasCheckedInToday {
-                                    HStack(alignment: .top, spacing: 11) {
-                                        Image(systemName: "scope")
-                                            .foregroundStyle(category.accent)
-                                        Text(dailyPlan.todaysMission)
-                                            .font(.subheadline.weight(.semibold))
-                                            .fixedSize(horizontal: false, vertical: true)
-                                    }
-                                }
-
-                                PrimaryActionButton(title: mission.nextActionTitle, icon: mission.nextActionIcon, accent: category.accent) {
-                                    mission.performNextAction()
-                                }
-                            }
-                        }
+                        MorningBriefHero(
+                            greeting: greeting,
+                            phaseLine: phaseBriefLine,
+                            dateText: Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()),
+                            mission: mission,
+                            snapshot: snapshot,
+                            accent: category.accent
+                        )
 
                         VStack(alignment: .leading, spacing: 12) {
                             SectionHeader(
@@ -184,6 +136,45 @@ private struct TodayDashboard: View {
         return "GOOD EVENING, BRIAN"
     }
 
+    private var briefHeader: some View {
+        HStack(alignment: .center, spacing: 12) {
+            CommandBrandMark(accent: appModel.activeCategory.accent, size: 44)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("TODAY")
+                    .font(.caption.weight(.semibold))
+                    .tracking(0.6)
+                    .foregroundStyle(CommandDesign.secondaryText)
+                Text("Morning Brief")
+                    .font(.title2.weight(.bold))
+            }
+            Spacer()
+            Button {
+                appModel.selectedTab = .profile
+            } label: {
+                Image(systemName: "person.crop.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.white.opacity(0.82))
+                    .frame(width: 44, height: 44)
+                    .background(CommandDesign.elevatedSurface, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Open profile")
+        }
+    }
+
+    private var phaseBriefLine: String {
+        switch appModel.programPhase {
+        case .nightShift:
+            return "Night Shift: protect the sleep window and keep training near the front of the shift when possible."
+        case .dayShift:
+            return "Day Shift: use the stable rhythm. Train early or after work, then shut it down cleanly."
+        case .newBaby:
+            return "New-Baby: flexible timing, tiny floor, no heroics. Consistency beats pressure."
+        case .normalRoutine:
+            return "Normal Routine: balanced progression, recovery protected, next action first."
+        }
+    }
+
     private func healthMini(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(value)
@@ -197,6 +188,77 @@ private struct TodayDashboard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+    }
+}
+
+private struct MorningBriefHero: View {
+    let greeting: String
+    let phaseLine: String
+    let dateText: String
+    let mission: TodayMission
+    let snapshot: HealthSnapshot
+    let accent: Color
+
+    var body: some View {
+        HeroCard(accent: accent) {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(greeting)
+                            .font(.caption.weight(.semibold))
+                            .tracking(0.6)
+                            .foregroundStyle(CommandDesign.secondaryText)
+                        Text(dateText)
+                            .font(.title3.weight(.bold))
+                    }
+                    Spacer()
+                    StatusPill(title: mission.briefCallTitle, icon: mission.briefCallIcon, accent: accent)
+                }
+
+                Text(mission.primaryMissionTitle)
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    briefRow("Today’s call", mission.todaysCallText, "gauge.with.dots.needle.bottom.100percent")
+                    briefRow("Primary mission", mission.primaryMissionDetail, "scope")
+                    briefRow("Main watchout", mission.mainWatchout, "exclamationmark.triangle")
+                    briefRow("Health context", mission.supportingHealthContext(snapshot: snapshot), "heart.text.square")
+                }
+
+                Text(phaseLine)
+                    .font(.caption)
+                    .foregroundStyle(CommandDesign.secondaryText)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(12)
+                    .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+
+                PrimaryActionButton(title: mission.nextActionTitle, icon: mission.nextActionIcon, accent: accent) {
+                    mission.performNextAction()
+                }
+            }
+        }
+    }
+
+    private func briefRow(_ title: String, _ value: String, _ icon: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(accent)
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .textCase(.uppercase)
+                    .foregroundStyle(CommandDesign.tertiaryText)
+                Text(value)
+                    .font(.subheadline.weight(.semibold))
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 }
 
@@ -377,6 +439,68 @@ private struct TodayMission {
     var hasWorkoutProgress: Bool { !todayLogs.isEmpty }
     var hasRitualProgress: Bool { ritualCompleted > 0 }
     var isRecoveryBiased: Bool { category == .recoveryDay || category == .bareMinimumDay }
+
+    var briefCallTitle: String {
+        appModel.hasCheckedInToday ? category.rawValue : "Check-in needed"
+    }
+
+    var briefCallIcon: String {
+        appModel.hasCheckedInToday ? "bolt.heart.fill" : "waveform.path.ecg"
+    }
+
+    var primaryMissionTitle: String {
+        if !appModel.hasCheckedInToday { return "Classify the day before choosing intensity." }
+        return dailyPlan.primaryFocus
+    }
+
+    var todaysCallText: String {
+        if !appModel.hasCheckedInToday {
+            if hasWorkoutProgress || hasRitualProgress {
+                return "No readiness category yet. Today’s progress counts, but training guidance waits for Check In."
+            }
+            return "No readiness category yet. Start Check In so the plan does not guess."
+        }
+        return "\(category.rawValue): \(dailyPlan.recommendedAction)"
+    }
+
+    var primaryMissionDetail: String {
+        if !appModel.hasCheckedInToday {
+            return "Start Check In, then Today will route you to Train or Recovery."
+        }
+        return dailyPlan.todaysMission
+    }
+
+    var mainWatchout: String {
+        if !appModel.hasCheckedInToday {
+            return "Do not treat the day as a training day until Brian classifies readiness."
+        }
+        if let subjectiveOverride = recoveryStatus.subjectiveOverrideText {
+            return subjectiveOverride
+        }
+        switch recoveryStatus.recoveryCategory {
+        case .poor:
+            return "Recovery is poor. Keep the floor low and protect sleep before adding load."
+        case .limited:
+            return "Recovery is limited. Shorten the session or bias toward mobility."
+        case .unknown:
+            return "Recovery data is incomplete. Use the Check In and basic guardrails."
+        case .strong:
+            return category == .pushDay ? "Push intelligently. Extra work only if reps stay clean." : "Do not overreach just because the signals look good."
+        case .okay:
+            return "Keep the plan clean. Finish with energy left for tomorrow."
+        }
+    }
+
+    func supportingHealthContext(snapshot: HealthSnapshot) -> String {
+        let sleep = recoveryStatus.sleepDurationText
+        let source = recoveryStatus.sleepSourceText
+        let steps = snapshot.steps.map { "\($0) steps" } ?? "steps unavailable"
+        let hrv = snapshot.hrvSDNN.map { String(format: "HRV %.0f ms", $0) } ?? "HRV unavailable"
+        if !appModel.hasCheckedInToday {
+            return "\(source): \(sleep). \(steps), \(hrv). Apple Health can support the call, but Check In owns readiness."
+        }
+        return "\(source): \(sleep). \(steps), \(hrv). Oura stays supplemental unless explicitly selected."
+    }
 
     var coachingMessage: String {
         if !appModel.hasCheckedInToday {
