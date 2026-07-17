@@ -481,13 +481,22 @@ enum ExerciseLibrary {
             ?? definitions.first { $0.name.localizedCaseInsensitiveCompare(exercise.name) == .orderedSame }
     }
 
-    static var importedDefinitions: [ExerciseDefinition] {
+    static let importedDefinitions: [ExerciseDefinition] = {
         guard let url = Bundle.main.url(forResource: "ImportedExerciseLibrary", withExtension: "json"),
-              let data = try? Data(contentsOf: url),
-              let decoded = try? JSONDecoder().decode([ExerciseDefinition].self, from: data) else {
+              let data = try? Data(contentsOf: url) else {
             return []
         }
-        return decoded
+        return decodeImportedDefinitions(from: data)
+    }()
+
+    static func decodeImportedDefinitions(from data: Data) -> [ExerciseDefinition] {
+        (try? JSONDecoder().decode([ExerciseDefinition].self, from: data)) ?? []
+    }
+
+    static var libraryLoadStatusText: String {
+        importedDefinitions.isEmpty
+            ? "Bundled exercise resource did not load. Curated HCC exercises are still available."
+            : "\(definitions.count) local exercise records loaded."
     }
 
     static func search(
@@ -534,17 +543,131 @@ enum ExerciseLibrary {
         let q = query.lowercased()
         let name = definition.name.lowercased()
         if name == q { return 100 }
-        if definition.aliases.map({ $0.lowercased() }).contains(q) { return 92 }
-        if name.contains(q) { return 82 }
-        if definition.aliases.contains(where: { $0.lowercased().contains(q) }) { return 72 }
-        let fields = [
-            definition.category.rawValue,
-            definition.movementPattern.rawValue,
+        if name.hasPrefix(q) { return 94 }
+        let lowerAliases = definition.aliases.map { $0.lowercased() }
+        if lowerAliases.contains(q) { return 90 }
+        if lowerAliases.contains(where: { $0.hasPrefix(q) }) { return 86 }
+        if name.contains(q) { return 78 }
+        if lowerAliases.contains(where: { $0.contains(q) }) { return 72 }
+
+        let equipmentMovement = [
             definition.equipment.map(\.rawValue).joined(separator: " "),
-            definition.primaryMuscles.map(\.rawValue).joined(separator: " "),
-            definition.secondaryMuscles.map(\.rawValue).joined(separator: " "),
-            definition.setup
+            definition.movementPattern.rawValue,
+            definition.category.rawValue
         ].joined(separator: " ").lowercased()
-        return fields.contains(q) ? 42 : 0
+        if equipmentMovement.contains(q) { return 58 }
+
+        let muscles = [
+            definition.primaryMuscles.map(\.rawValue).joined(separator: " "),
+            definition.secondaryMuscles.map(\.rawValue).joined(separator: " ")
+        ].joined(separator: " ").lowercased()
+        if muscles.contains(q) { return 50 }
+
+        let lowPriorityInstructionText = [
+            definition.setup,
+            definition.executionSteps.joined(separator: " "),
+            definition.commonMistakes.joined(separator: " "),
+            definition.howItShouldFeel,
+            definition.painCautionGuidance
+        ].joined(separator: " ").lowercased()
+        return lowPriorityInstructionText.contains(q) ? 18 : 0
+    }
+
+    static func automaticGenerationCandidates(
+        location: TrainingLocation,
+        equipment: [EquipmentType],
+        lane: ExerciseGenerationLane,
+        shoulderCaution: Bool,
+        lowBackCaution: Bool
+    ) -> [ExerciseDefinition] {
+        let allowedCategories: Set<ExerciseCategory>
+        switch lane {
+        case .strength:
+            allowedCategories = [.squat, .hinge, .push, .pull, .carry, .core, .bands, .dumbbells, .bodyweight]
+        case .conditioning:
+            allowedCategories = [.bike, .stairs, .carry, .bodyweight]
+        case .recovery:
+            allowedCategories = [.mobility, .recovery, .bodyweight, .bands]
+        case .bareMinimum:
+            allowedCategories = [.core, .bands, .bodyweight, .mobility, .recovery]
+        }
+
+        let candidates = definitions.filter { definition in
+            let isCurated = definition.sourceName.localizedCaseInsensitiveContains("Health Command Center")
+                || definition.sourceName.localizedCaseInsensitiveContains("curated")
+            let compatibleLocation = location == .mixed || definition.locationCompatibility.contains(location)
+            let compatibleEquipment = Set(definition.equipment).isDisjoint(with: equipment) == false
+                || definition.equipment.contains(.bodyweight)
+                || definition.equipment.contains(.other)
+            let safeForShoulder = !shoulderCaution || definition.isShoulderFriendly
+            let safeForLowBack = !lowBackCaution || definition.isLowBackFriendly
+            return isCurated
+                && allowedCategories.contains(definition.category)
+                && (compatibleLocation || compatibleEquipment)
+                && safeForShoulder
+                && safeForLowBack
+        }
+
+        return candidates.sorted {
+            if $0.difficulty == $1.difficulty { return $0.name < $1.name }
+            return difficultyRank($0.difficulty) < difficultyRank($1.difficulty)
+        }
+    }
+
+    static func updatedRecentIDs(_ ids: [String], adding id: String, limit: Int = 12) -> [String] {
+        guard !id.isEmpty else { return ids }
+        var updated = ids.filter { $0 != id }
+        updated.insert(id, at: 0)
+        return Array(updated.prefix(limit))
+    }
+
+    static func toggledFavoriteIDs(_ ids: [String], id: String) -> [String] {
+        guard !id.isEmpty else { return ids }
+        var updated = ids
+        if let index = updated.firstIndex(of: id) {
+            updated.remove(at: index)
+        } else {
+            updated.insert(id, at: 0)
+        }
+        return updated
+    }
+
+    private static func difficultyRank(_ difficulty: ExerciseDifficulty) -> Int {
+        switch difficulty {
+        case .starter: return 0
+        case .beginner: return 1
+        case .moderate: return 2
+        case .advanced: return 3
+        }
+    }
+}
+
+enum ExerciseGenerationLane: String, Hashable {
+    case strength
+    case conditioning
+    case recovery
+    case bareMinimum
+}
+
+extension ExerciseDefinition {
+    var isHCCCurated: Bool {
+        sourceName.localizedCaseInsensitiveContains("Health Command Center")
+            || sourceName.localizedCaseInsensitiveContains("curated")
+    }
+
+    var shortMetadataText: String {
+        [
+            category.rawValue,
+            movementPattern.rawValue,
+            difficulty.rawValue
+        ].joined(separator: " · ")
+    }
+
+    var equipmentText: String {
+        equipment.map(\.rawValue).joined(separator: ", ")
+    }
+
+    var muscleText: String {
+        primaryMuscles.map(\.rawValue).joined(separator: ", ")
     }
 }

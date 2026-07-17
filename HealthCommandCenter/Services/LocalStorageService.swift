@@ -137,6 +137,26 @@ final class LocalStorageService {
         }
     }
 
+    var favoriteExerciseIDs: [String] {
+        get { userDefaults.stringArray(forKey: "favoriteExerciseIDs") ?? [] }
+        set { userDefaults.set(newValue, forKey: "favoriteExerciseIDs") }
+    }
+
+    var recentlyViewedExerciseIDs: [String] {
+        get { userDefaults.stringArray(forKey: "recentlyViewedExerciseIDs") ?? [] }
+        set { userDefaults.set(newValue, forKey: "recentlyViewedExerciseIDs") }
+    }
+
+    var recentlyUsedExerciseIDs: [String] {
+        get { userDefaults.stringArray(forKey: "recentlyUsedExerciseIDs") ?? [] }
+        set { userDefaults.set(newValue, forKey: "recentlyUsedExerciseIDs") }
+    }
+
+    var savedRecoveryFlowExerciseIDs: [String] {
+        get { userDefaults.stringArray(forKey: "savedRecoveryFlowExerciseIDs") ?? [] }
+        set { userDefaults.set(newValue, forKey: "savedRecoveryFlowExerciseIDs") }
+    }
+
     func loadCheckIns() -> [CheckIn] {
         guard let data = try? Data(contentsOf: checkInsURL) else { return [] }
         return (try? JSONDecoder.healthCommand.decode([CheckIn].self, from: data)) ?? []
@@ -235,6 +255,7 @@ final class LocalStorageService {
         if let index = logs.firstIndex(where: { $0.dateKey == dateKey }) {
             logs[index].completedItemIDs = []
             logs[index].dailyWinText = ""
+            logs[index].recoveryExerciseIDs = []
             logs[index].updatedAt = Date()
             saveRitualLogs(logs)
         }
@@ -254,7 +275,7 @@ final class LocalStorageService {
         try? FileManager.default.removeItem(at: customWorkoutsURL)
         try? FileManager.default.removeItem(at: progressPhotosURL)
         try? FileManager.default.removeItem(at: progressPhotosDirectoryURL)
-        ["userName", "hasSeenGreeting", "programPhase", "trainingLocation", "workoutTimePreference", "personalizationSettings", "reminderSettings", "ouraConnectionSettings", "programScheduleOverrides", "goalSettings"].forEach {
+        ["userName", "hasSeenGreeting", "programPhase", "trainingLocation", "workoutTimePreference", "personalizationSettings", "reminderSettings", "ouraConnectionSettings", "programScheduleOverrides", "goalSettings", "favoriteExerciseIDs", "recentlyViewedExerciseIDs", "recentlyUsedExerciseIDs", "savedRecoveryFlowExerciseIDs"].forEach {
             userDefaults.removeObject(forKey: $0)
         }
     }

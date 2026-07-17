@@ -2,6 +2,8 @@ import SwiftUI
 
 struct RitualView: View {
     @EnvironmentObject private var appModel: AppViewModel
+    @State private var showingRecoveryLibrary = false
+    @State private var selectedRecoveryDefinition: ExerciseDefinition?
 
     private var category: ReadinessCategory {
         appModel.activeCategory
@@ -33,6 +35,7 @@ struct RitualView: View {
 
                     ritualSummary
                     dailyPlanPanel
+                    recoveryLibrarySection
                     CommandSection(
                         title: "Recovery protocol",
                         subtitle: "Sleep, nutrition, and small anchors before anything fancy.",
@@ -64,6 +67,24 @@ struct RitualView: View {
             DispatchQueue.main.async {
                 appModel.prepareTodayStateIfNeeded()
             }
+        }
+        .sheet(isPresented: $showingRecoveryLibrary) {
+            ExerciseLibraryBrowserView(
+                title: "Recovery Movement Library",
+                subtitle: "Search mobility, stretching, desk resets, shoulder-friendly work, and low-sleep recovery options.",
+                accent: category.accent,
+                initialMobilityOnly: true,
+                selectActionTitle: "Add to Today’s Recovery",
+                selectActionIcon: "plus.circle.fill",
+                onSelect: { definition in
+                    appModel.addRecoveryExerciseToToday(definition)
+                }
+            )
+            .environmentObject(appModel)
+        }
+        .sheet(item: $selectedRecoveryDefinition) { definition in
+            ExerciseLibraryDetailView(definition: definition, accent: category.accent)
+                .environmentObject(appModel)
         }
     }
 
@@ -119,6 +140,115 @@ struct RitualView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    private var recoveryLibrarySection: some View {
+        let selected = appModel.todayRecoveryExercises()
+        let saved = appModel.savedRecoveryFlowExercises()
+
+        return CommandSection(
+            title: "Recovery Library",
+            subtitle: "Add mobility or stretch movements to today's recovery routine without changing the built-in ritual.",
+            icon: "figure.cooldown",
+            accent: category.accent
+        ) {
+            CommandCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Today’s selected movements")
+                                .font(.headline)
+                            Text(selected.isEmpty ? "No library movements added yet. Browse shoulder, hip, desk, and pre-sleep options." : "\(selected.count) movements added for today.")
+                                .font(.caption)
+                                .foregroundStyle(CommandDesign.secondaryText)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer()
+                        SecondaryActionButton(title: "Browse", icon: "books.vertical", accent: category.accent) {
+                            showingRecoveryLibrary = true
+                        }
+                    }
+
+                    if selected.isEmpty {
+                        EmptyStateCard(
+                            title: "No recovery movements added",
+                            message: "Browse the mobility library and add one movement that makes tonight easier.",
+                            icon: "figure.mind.and.body",
+                            accent: category.accent,
+                            actionTitle: "Browse Recovery Library",
+                            actionIcon: "books.vertical",
+                            action: { showingRecoveryLibrary = true }
+                        )
+                    } else {
+                        ForEach(selected) { definition in
+                            recoveryMovementRow(definition)
+                        }
+
+                        SecondaryActionButton(title: "Save Today as Recovery Flow", icon: "tray.and.arrow.down", accent: category.accent) {
+                            appModel.saveTodayRecoveryFlow()
+                        }
+                    }
+
+                    if !saved.isEmpty {
+                        DisclosureGroup {
+                            VStack(spacing: 8) {
+                                ForEach(saved) { definition in
+                                    recoveryMovementRow(definition, showRemove: false)
+                                }
+                            }
+                            .padding(.top, 8)
+                        } label: {
+                            Label("Saved recovery flow", systemImage: "bookmark")
+                                .font(.headline)
+                        }
+                        .tint(category.accent)
+                    }
+                }
+            }
+        }
+    }
+
+    private func recoveryMovementRow(_ definition: ExerciseDefinition, showRemove: Bool = true) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(definition.name)
+                    .font(.subheadline.weight(.semibold))
+                Text(definition.shortMetadataText)
+                    .font(.caption)
+                    .foregroundStyle(category.accent)
+                Text(definition.howItShouldFeel)
+                    .font(.caption)
+                    .foregroundStyle(CommandDesign.secondaryText)
+                    .lineLimit(2)
+            }
+            Spacer()
+            Button {
+                selectedRecoveryDefinition = definition
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.headline)
+                    .foregroundStyle(category.accent)
+                    .frame(width: 44, height: 44)
+                    .background(.white.opacity(0.06), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("View details for \(definition.name)")
+            if showRemove {
+                Button(role: .destructive) {
+                    appModel.removeRecoveryExerciseFromToday(definition)
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.red.opacity(0.9))
+                        .frame(width: 44, height: 44)
+                        .background(.white.opacity(0.06), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Remove \(definition.name) from today's recovery")
+            }
+        }
+        .padding(12)
+        .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
     }
 
     private func ritualPlanMetric(_ title: String, _ value: String, _ icon: String) -> some View {

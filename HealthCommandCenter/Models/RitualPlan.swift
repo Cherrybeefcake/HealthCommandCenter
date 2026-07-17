@@ -27,14 +27,16 @@ struct DailyRitualLog: Codable, Identifiable, Hashable {
     let dateKey: String
     var completedItemIDs: Set<String>
     var dailyWinText: String
+    var recoveryExerciseIDs: [String]
     var updatedAt: Date
 
     var id: String { dateKey }
 
-    init(dateKey: String, completedItemIDs: Set<String> = [], dailyWinText: String = "", updatedAt: Date = Date()) {
+    init(dateKey: String, completedItemIDs: Set<String> = [], dailyWinText: String = "", recoveryExerciseIDs: [String] = [], updatedAt: Date = Date()) {
         self.dateKey = dateKey
         self.completedItemIDs = completedItemIDs
         self.dailyWinText = dailyWinText
+        self.recoveryExerciseIDs = recoveryExerciseIDs
         self.updatedAt = updatedAt
     }
 
@@ -42,6 +44,7 @@ struct DailyRitualLog: Codable, Identifiable, Hashable {
         case dateKey
         case completedItemIDs
         case dailyWinText
+        case recoveryExerciseIDs
         case updatedAt
     }
 
@@ -50,6 +53,7 @@ struct DailyRitualLog: Codable, Identifiable, Hashable {
         dateKey = try container.decode(String.self, forKey: .dateKey)
         completedItemIDs = try container.decodeIfPresent(Set<String>.self, forKey: .completedItemIDs) ?? []
         dailyWinText = try container.decodeIfPresent(String.self, forKey: .dailyWinText) ?? ""
+        recoveryExerciseIDs = try container.decodeIfPresent([String].self, forKey: .recoveryExerciseIDs) ?? []
         updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
     }
 }

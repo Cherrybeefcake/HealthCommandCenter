@@ -238,6 +238,73 @@ final class ReleaseQualityTests: XCTestCase {
         let dumbbellMatches = ExerciseLibrary.search(query: "bench press", category: nil, equipment: .dumbbells, muscle: .chest, location: nil)
         XCTAssertTrue(dumbbellMatches.contains { $0.name.localizedCaseInsensitiveContains("Dumbbell") })
     }
+
+    func testExerciseLibraryResourceCountAndMalformedFallback() {
+        XCTAssertEqual(ExerciseLibrary.importedDefinitions.count, 1_073)
+        XCTAssertEqual(ExerciseLibrary.decodeImportedDefinitions(from: Data("not-json".utf8)), [])
+    }
+
+    func testExerciseLibrarySearchRankingPrioritizesNameBeforeInstructions() {
+        let matches = ExerciseLibrary.search(query: "Goblet", category: nil, equipment: nil, muscle: nil, location: nil)
+        XCTAssertEqual(matches.first?.name, "Goblet Squat")
+
+        let instructionFallback = ExerciseLibrary.search(query: "borrowed phrase unlikely load before form", category: nil, equipment: nil, muscle: nil, location: nil)
+        XCTAssertTrue(instructionFallback.isEmpty || instructionFallback.first?.name != "Goblet Squat")
+    }
+
+    func testExerciseLibraryFavoritesAndRecentsHelpers() {
+        let recents = ExerciseLibrary.updatedRecentIDs(["band-row", "dead-bug"], adding: "band-row")
+        XCTAssertEqual(recents, ["band-row", "dead-bug"])
+
+        let addedFavorite = ExerciseLibrary.toggledFavoriteIDs([], id: "goblet-squat")
+        XCTAssertEqual(addedFavorite, ["goblet-squat"])
+        XCTAssertEqual(ExerciseLibrary.toggledFavoriteIDs(addedFavorite, id: "goblet-squat"), [])
+    }
+
+    func testCustomExerciseCanBeCreatedFromLibraryDefinition() throws {
+        let definition = try XCTUnwrap(ExerciseLibrary.definition(for: "band-row"))
+        let exercise = CustomExercise(from: definition, targetSets: 3, targetReps: "10-12")
+
+        XCTAssertEqual(exercise.name, definition.name)
+        XCTAssertEqual(exercise.libraryExerciseID, definition.id)
+        XCTAssertEqual(exercise.targetSets, 3)
+        XCTAssertEqual(exercise.targetReps, "10-12")
+    }
+
+    func testGeneratorAutomaticCandidatesStayCuratedAndCautionAware() {
+        let candidates = ExerciseLibrary.automaticGenerationCandidates(
+            location: .home,
+            equipment: [.dumbbells, .resistanceBands, .mat],
+            lane: .strength,
+            shoulderCaution: true,
+            lowBackCaution: true
+        )
+
+        XCTAssertFalse(candidates.isEmpty)
+        XCTAssertTrue(candidates.allSatisfy(\.isHCCCurated))
+        XCTAssertTrue(candidates.allSatisfy(\.isShoulderFriendly))
+        XCTAssertTrue(candidates.allSatisfy(\.isLowBackFriendly))
+    }
+
+    func testRitualLogRecoveryExercisesDecodeBackwardCompatible() throws {
+        let oldJSON = #"{"dateKey":"2026-07-16","completedItemIDs":["water"],"dailyWinText":"Did the floor."}"#.data(using: .utf8)!
+        let oldLog = try JSONDecoder().decode(DailyRitualLog.self, from: oldJSON)
+        XCTAssertEqual(oldLog.recoveryExerciseIDs, [])
+
+        let newLog = DailyRitualLog(dateKey: "2026-07-16", recoveryExerciseIDs: ["shoulder-neck-reset"])
+        let data = try JSONEncoder().encode(newLog)
+        let decoded = try JSONDecoder().decode(DailyRitualLog.self, from: data)
+        XCTAssertEqual(decoded.recoveryExerciseIDs, ["shoulder-neck-reset"])
+    }
+
+    func testHistoricalExerciseLogDecodingStillToleratesOldRecords() throws {
+        let json = #"{"exerciseName":"Old Custom Row","reps":8,"setsCompleted":2,"effort":7}"#.data(using: .utf8)!
+        let log = try JSONDecoder().decode(ExerciseLog.self, from: json)
+
+        XCTAssertEqual(log.workoutTitle, "Workout Session")
+        XCTAssertEqual(log.exerciseName, "Old Custom Row")
+        XCTAssertEqual(log.setsCompleted, 2)
+    }
 }
 
 private extension ReleaseQualityTests {

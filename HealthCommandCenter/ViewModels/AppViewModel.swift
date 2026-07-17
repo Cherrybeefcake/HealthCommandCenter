@@ -76,6 +76,10 @@ final class AppViewModel: ObservableObject {
     @Published var goalSettings: GoalSettings
     @Published var progressPhotos: [ProgressPhotoEntry] = []
     @Published var exportedReportFiles: [ExportedReportFile] = []
+    @Published var favoriteExerciseIDs: [String] = []
+    @Published var recentlyViewedExerciseIDs: [String] = []
+    @Published var recentlyUsedExerciseIDs: [String] = []
+    @Published var savedRecoveryFlowExerciseIDs: [String] = []
     @Published var todayRitualDateKey: String = RitualLibrary.dateKey()
     @Published var programPhase: ProgramPhase
     @Published var trainingLocation: TrainingLocation
@@ -126,6 +130,10 @@ final class AppViewModel: ObservableObject {
         self.ouraConnectionSettings = storage.ouraConnectionSettings
         self.programScheduleOverrides = storage.programScheduleOverrides
         self.goalSettings = storage.goalSettings
+        self.favoriteExerciseIDs = storage.favoriteExerciseIDs
+        self.recentlyViewedExerciseIDs = storage.recentlyViewedExerciseIDs
+        self.recentlyUsedExerciseIDs = storage.recentlyUsedExerciseIDs
+        self.savedRecoveryFlowExerciseIDs = storage.savedRecoveryFlowExerciseIDs
     }
 
     func bootstrap() async {
@@ -141,6 +149,10 @@ final class AppViewModel: ObservableObject {
         progressPhotos = storage.loadProgressPhotos().sorted { $0.date > $1.date }
         programScheduleOverrides = storage.programScheduleOverrides
         goalSettings = storage.goalSettings
+        favoriteExerciseIDs = storage.favoriteExerciseIDs
+        recentlyViewedExerciseIDs = storage.recentlyViewedExerciseIDs
+        recentlyUsedExerciseIDs = storage.recentlyUsedExerciseIDs
+        savedRecoveryFlowExerciseIDs = storage.savedRecoveryFlowExerciseIDs
         prepareTodayStateIfNeeded()
         latestCheckIn = checkIns.first
         await refreshNotificationStatus()
@@ -378,6 +390,10 @@ final class AppViewModel: ObservableObject {
         exerciseLogs.insert(log, at: 0)
         exerciseLogs.sort { $0.date > $1.date }
         storage.saveExerciseLogs(exerciseLogs)
+        if let definition = ExerciseLibrary.definition(for: log.exerciseID)
+            ?? ExerciseLibrary.search(query: log.exerciseName, category: nil, equipment: nil, muscle: nil, location: nil).first {
+            markExerciseUsed(definition)
+        }
         appendDebug("Exercise log: \(log.exerciseName) - \(log.summary)")
     }
 
@@ -468,6 +484,79 @@ final class AppViewModel: ObservableObject {
         customWorkouts.removeAll { $0.id == workout.id }
         storage.saveCustomWorkouts(customWorkouts)
         appendDebug("Custom workout deleted: \(workout.name)")
+    }
+
+    func isFavoriteExercise(_ id: String) -> Bool {
+        favoriteExerciseIDs.contains(id)
+    }
+
+    func toggleFavoriteExercise(_ definition: ExerciseDefinition) {
+        favoriteExerciseIDs = ExerciseLibrary.toggledFavoriteIDs(favoriteExerciseIDs, id: definition.id)
+        storage.favoriteExerciseIDs = favoriteExerciseIDs
+    }
+
+    func markExerciseViewed(_ definition: ExerciseDefinition) {
+        recentlyViewedExerciseIDs = ExerciseLibrary.updatedRecentIDs(recentlyViewedExerciseIDs, adding: definition.id)
+        storage.recentlyViewedExerciseIDs = recentlyViewedExerciseIDs
+    }
+
+    func markExerciseUsed(_ definition: ExerciseDefinition) {
+        recentlyUsedExerciseIDs = ExerciseLibrary.updatedRecentIDs(recentlyUsedExerciseIDs, adding: definition.id)
+        storage.recentlyUsedExerciseIDs = recentlyUsedExerciseIDs
+    }
+
+    func recentViewedExercises(limit: Int = 8) -> [ExerciseDefinition] {
+        Array(recentlyViewedExerciseIDs.compactMap(ExerciseLibrary.definition(for:)).prefix(limit))
+    }
+
+    func recentlyUsedExercises(limit: Int = 8) -> [ExerciseDefinition] {
+        Array(recentlyUsedExerciseIDs.compactMap(ExerciseLibrary.definition(for:)).prefix(limit))
+    }
+
+    func favoriteExercises() -> [ExerciseDefinition] {
+        favoriteExerciseIDs.compactMap(ExerciseLibrary.definition(for:))
+    }
+
+    func addRecoveryExerciseToToday(_ definition: ExerciseDefinition) {
+        prepareTodayStateIfNeeded()
+        let dateKey = RitualLibrary.dateKey()
+        guard let index = ritualLogs.firstIndex(where: { $0.dateKey == dateKey }) else { return }
+        ritualLogs[index].recoveryExerciseIDs = ExerciseLibrary.updatedRecentIDs(
+            ritualLogs[index].recoveryExerciseIDs,
+            adding: definition.id,
+            limit: 8
+        )
+        ritualLogs[index].updatedAt = Date()
+        ritualLogs.sort { $0.dateKey > $1.dateKey }
+        storage.saveRitualLogs(ritualLogs)
+        markExerciseUsed(definition)
+        appendDebug("Recovery movement added: \(definition.name)")
+    }
+
+    func removeRecoveryExerciseFromToday(_ definition: ExerciseDefinition) {
+        let dateKey = RitualLibrary.dateKey()
+        guard let index = ritualLogs.firstIndex(where: { $0.dateKey == dateKey }) else { return }
+        ritualLogs[index].recoveryExerciseIDs.removeAll { $0 == definition.id }
+        ritualLogs[index].updatedAt = Date()
+        storage.saveRitualLogs(ritualLogs)
+        appendDebug("Recovery movement removed: \(definition.name)")
+    }
+
+    func todayRecoveryExercises() -> [ExerciseDefinition] {
+        let dateKey = RitualLibrary.dateKey()
+        return ritualLogs.first { $0.dateKey == dateKey }?
+            .recoveryExerciseIDs
+            .compactMap(ExerciseLibrary.definition(for:)) ?? []
+    }
+
+    func saveTodayRecoveryFlow() {
+        savedRecoveryFlowExerciseIDs = todayRecoveryExercises().map(\.id)
+        storage.savedRecoveryFlowExerciseIDs = savedRecoveryFlowExerciseIDs
+        appendDebug("Recovery flow saved with \(savedRecoveryFlowExerciseIDs.count) movements")
+    }
+
+    func savedRecoveryFlowExercises() -> [ExerciseDefinition] {
+        savedRecoveryFlowExerciseIDs.compactMap(ExerciseLibrary.definition(for:))
     }
 
     func saveProgressPhoto(angle: ProgressPhotoAngle, notes: String, imageData: Data) {
@@ -1050,6 +1139,10 @@ final class AppViewModel: ObservableObject {
         programScheduleOverrides = []
         goalSettings = storage.goalSettings
         progressPhotos = []
+        favoriteExerciseIDs = []
+        recentlyViewedExerciseIDs = []
+        recentlyUsedExerciseIDs = []
+        savedRecoveryFlowExerciseIDs = []
         debugLog = []
         todaySnapshot = .empty
         lastHealthRefreshAt = nil

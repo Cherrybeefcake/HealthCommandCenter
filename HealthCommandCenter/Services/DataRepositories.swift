@@ -69,6 +69,10 @@ protocol ProfilePreferencesRepository {
     var reminderSettings: ReminderSettings { get set }
     var ouraConnectionSettings: OuraConnectionSettings { get set }
     var programScheduleOverrides: [ProgramScheduleOverride] { get set }
+    var favoriteExerciseIDs: [String] { get set }
+    var recentlyViewedExerciseIDs: [String] { get set }
+    var recentlyUsedExerciseIDs: [String] { get set }
+    var savedRecoveryFlowExerciseIDs: [String] { get set }
 }
 
 protocol LocalAppDataRepository:

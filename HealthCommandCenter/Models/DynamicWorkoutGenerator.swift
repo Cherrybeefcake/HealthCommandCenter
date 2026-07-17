@@ -131,6 +131,11 @@ private extension DynamicWorkoutGenerator {
             return ["shoulder", "neck", "trap", "rotator", "overhead"].contains { note.contains($0) }
         }
 
+        var hasLowBackCaution: Bool {
+            guard let note = checkIn?.painNote.lowercased() else { return false }
+            return ["low back", "lower back", "back pain", "sciatic", "sciatica", "lumbar"].contains { note.contains($0) }
+        }
+
         var trainedMusclesRecently: Set<MuscleGroup> {
             let cutoff = Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date()
             let recentNames = recentLogs
@@ -214,13 +219,34 @@ private extension DynamicWorkoutGenerator {
     }
 
     static func preferredDefinitions(ids: [String], context: GenerationContext) -> [ExerciseDefinition] {
+        let candidateIDs = Set(ExerciseLibrary.automaticGenerationCandidates(
+            location: context.trainingLocation,
+            equipment: context.availableEquipment,
+            lane: generationLane(for: ids),
+            shoulderCaution: context.hasShoulderCaution,
+            lowBackCaution: context.hasLowBackCaution
+        ).map(\.id))
         let definitions = ids.compactMap { ExerciseLibrary.definition(for: $0) }
         let compatible = definitions.filter { definition in
-            definition.locationCompatibility.contains(context.trainingLocation)
+            candidateIDs.contains(definition.id)
+                && (definition.locationCompatibility.contains(context.trainingLocation)
                 || context.trainingLocation == .mixed
-                || !Set(definition.equipment).isDisjoint(with: context.availableEquipment)
+                || !Set(definition.equipment).isDisjoint(with: context.availableEquipment))
         }
         return compatible.isEmpty ? definitions : compatible
+    }
+
+    static func generationLane(for ids: [String]) -> ExerciseGenerationLane {
+        if ids.contains(where: { $0.contains("recovery") || $0.contains("reset") || $0.contains("hips") }) {
+            return .recovery
+        }
+        if ids.contains(where: { $0.contains("bike") || $0.contains("stairs") }) {
+            return .conditioning
+        }
+        if ids.count <= 3 {
+            return .bareMinimum
+        }
+        return .strength
     }
 
     static func workoutVersion(

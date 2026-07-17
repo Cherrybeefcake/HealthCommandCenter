@@ -30,6 +30,7 @@
 		01A000000000000000000114 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000014 /* HealthKit.framework */; };
 		01A000000000000000000115 /* WorkoutPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000017 /* WorkoutPlan.swift */; };
 		01A000000000000000000116 /* PlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000018 /* PlanView.swift */; };
+		01D000000000000000000101 /* ExerciseLibraryBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01D000000000000000000001 /* ExerciseLibraryBrowserView.swift */; };
 		01A000000000000000000117 /* RitualPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000019 /* RitualPlan.swift */; };
 		01A000000000000000000118 /* RitualView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000001A /* RitualView.swift */; };
 		01A000000000000000000119 /* ProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000001B /* ProgressView.swift */; };
@@ -91,6 +92,7 @@
 		01A000000000000000000016 /* HealthCommandCenter.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HealthCommandCenter.entitlements; sourceTree = "<group>"; };
 		01A000000000000000000017 /* WorkoutPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutPlan.swift; sourceTree = "<group>"; };
 		01A000000000000000000018 /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
+		01D000000000000000000001 /* ExerciseLibraryBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibraryBrowserView.swift; sourceTree = "<group>"; };
 		01A000000000000000000019 /* RitualPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RitualPlan.swift; sourceTree = "<group>"; };
 		01A00000000000000000001A /* RitualView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RitualView.swift; sourceTree = "<group>"; };
 		01A00000000000000000001B /* ProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressView.swift; sourceTree = "<group>"; };
@@ -240,6 +242,7 @@
 				01A000000000000000000012 /* PlaceholderViews.swift */,
 				01A000000000000000000013 /* ProfileView.swift */,
 				01A000000000000000000018 /* PlanView.swift */,
+				01D000000000000000000001 /* ExerciseLibraryBrowserView.swift */,
 				01A00000000000000000001A /* RitualView.swift */,
 				01A00000000000000000001B /* ProgressView.swift */,
 			);
@@ -406,6 +409,7 @@
 				01A000000000000000000113 /* ProfileView.swift in Sources */,
 				01A000000000000000000115 /* WorkoutPlan.swift in Sources */,
 				01A000000000000000000116 /* PlanView.swift in Sources */,
+				01D000000000000000000101 /* ExerciseLibraryBrowserView.swift in Sources */,
 				01A000000000000000000117 /* RitualPlan.swift in Sources */,
 				01A000000000000000000118 /* RitualView.swift in Sources */,
 				01A000000000000000000119 /* ProgressView.swift in Sources */,

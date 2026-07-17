@@ -53,8 +53,11 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Train shows today's recommended workout first, using readiness, program phase, and workout timing to choose a conservative local option.
 - Starter Program remains the backbone: Full Body A, Full Body B, and Full Body C.
 - Workout Library adds deterministic, local-only options for short work-shift sessions, bands/bodyweight, dumbbell strength, recovery mobility, bike/stairs conditioning, and bare-minimum movement.
-- Exercise Library adds local movement definitions with setup, execution steps, cues, caution guidance, equipment filters, and substitutions. Custom workouts can prefill exercises from the library while still allowing manual entries.
+- Exercise Library adds a full premium browser from Train with search, result counts, category/filter chips, a filter sheet, favorites, recently used filters, and detail sheets with setup, execution steps, cues, caution guidance, substitutions, and source/license disclosure.
+- Custom workouts can add exercises directly from the full Exercise Library or use manual entries. Editing a custom template does not rewrite historical workout logs.
 - Exercise Library now bundles a normalized offline import from `yuhonas/free-exercise-db` plus HCC-curated band and mobility extensions. Attribution and license details are documented in `Docs/EXERCISE_LIBRARY_IMPORT.md`.
+- Imported exercise metadata is searchable and browseable, but automatic workout generation uses a conservative HCC-curated/allowlisted subset so obscure imported records do not become prescribed sessions by accident.
+- Recovery includes access to the Exercise Library filtered toward mobility/stretch/recovery movements. Brian can add movements to today's recovery routine and save the selected IDs as a simple local recovery flow.
 - Dynamic Workout Generator creates a local, rule-based workout option from readiness, recovery, sleep/stress/soreness context, available time, program phase, location, equipment, recent logs, and the DailyPlan. Generated workouts are selectable in Train and can be copied into Custom Workouts before logging.
 - Adaptive Program Scheduler shows a local weekly structure with three full-body strength sessions and optional recovery/conditioning days. Readiness and recovery can downgrade today's session, and manual reschedules are stored locally without marking skipped days as failure.
 - Goals & Targets add editable local guardrails for recomposition, strength, workout frequency, protein, hydration, sleep, meditation, mobility, and consistency. These targets shape Today, DailyPlan nutrition guidance, Insights, and Weekly Coach Report copy without aggressive weight-loss prescriptions.
@@ -69,7 +72,8 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Accessibility and localization readiness is documented in `Docs/ACCESSIBILITY_LOCALIZATION_READINESS.md`. The app now has Reduce Motion guards for common micro-interactions, clearer icon-button labels, and a lightweight `AppStrings` namespace for repeated user-facing strings.
 - Built-in library workouts use the same local ExerciseLog flow as starter workouts, so Progress session detail and exercise summaries continue to work.
 - Custom Workouts are local templates in `custom_workouts.json`; editing a template does not rewrite past workout logs.
-- Imported exercise metadata is bundled locally in `ImportedExerciseLibrary.json`; the app does not need the internet for exercise search. Images from the source dataset are deferred pending a separate image-license/app-size audit.
+- Favorites, recently viewed exercises, recently used exercises, and saved recovery flow exercise IDs are local UserDefaults preferences and are cleared by Delete All Local App Data.
+- Imported exercise metadata is bundled locally in `ImportedExerciseLibrary.json`; the app does not need the internet for exercise search. Images from the source dataset are deferred pending a separate image-license/app-size audit and are not bundled in this pass.
 
 ## Weekly Review Notes
 
@@ -473,6 +477,10 @@ Repo-local git identity is configured for Brian Cady.
   - `trainingLocation`: selected Training Location.
   - `workoutTimePreference`: selected Workout Time.
   - `personalizationSettings`: onboarding baseline, goal, equipment confirmation, avoidances, and nutrition anchors.
+  - `favoriteExerciseIDs`: local Exercise Library favorites.
+  - `recentlyViewedExerciseIDs`: local Exercise Library recently viewed IDs.
+  - `recentlyUsedExerciseIDs`: local Exercise Library recently logged/used IDs.
+  - `savedRecoveryFlowExerciseIDs`: local saved Recovery movement flow IDs.
   - `reminderSettings`: optional local reminder toggles and daily reminder times.
   - `ouraConnectionSettings`: Oura foundation mode and preferred recovery source.
   - `programScheduleOverrides`: local manual program reschedules.

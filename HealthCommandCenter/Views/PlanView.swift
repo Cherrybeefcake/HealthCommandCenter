@@ -9,6 +9,7 @@ struct PlanView: View {
     @State private var customWorkoutToEdit: CustomWorkout?
     @State private var customWorkoutToDelete: CustomWorkout?
     @State private var customWorkoutFeedback: String?
+    @State private var showingExerciseLibraryBrowser = false
     @State private var expandedLibraryCategories: Set<WorkoutCategory> = [.workShiftQuick, .dumbbellStrength, .recoveryMobility, .bareMinimum]
     @State private var exerciseSearchText = ""
     @State private var exerciseCategoryFilter: ExerciseCategory?
@@ -103,7 +104,16 @@ struct PlanView: View {
                 }
         }
         .sheet(item: $selectedExerciseDefinition) { definition in
-            ExerciseDetailView(definition: definition, accent: category.accent)
+            ExerciseLibraryDetailView(definition: definition, accent: category.accent)
+                .environmentObject(appModel)
+        }
+        .sheet(isPresented: $showingExerciseLibraryBrowser) {
+            ExerciseLibraryBrowserView(
+                title: "Exercise Library",
+                subtitle: "Search all bundled movements, save favorites, and open substitutions before changing the workout.",
+                accent: category.accent
+            )
+            .environmentObject(appModel)
         }
         .alert("Delete custom workout?", isPresented: Binding(
             get: { customWorkoutToDelete != nil },
@@ -450,6 +460,10 @@ struct PlanView: View {
                         .textInputAutocapitalization(.words)
                         .commandFieldStyle()
 
+                    SecondaryActionButton(title: "Open Full Library", icon: "books.vertical", accent: category.accent) {
+                        showingExerciseLibraryBrowser = true
+                    }
+
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                         libraryPicker("Category", selection: $exerciseCategoryFilter, cases: ExerciseCategory.allCases, accent: category.accent)
                         libraryPicker("Equipment", selection: $exerciseEquipmentFilter, cases: EquipmentType.allCases, accent: category.accent)
@@ -475,6 +489,17 @@ struct PlanView: View {
                     Text("Filtered for \(appModel.trainingLocation.rawValue). Change training location in You if today’s context changes.")
                         .font(.caption)
                         .foregroundStyle(CommandDesign.secondaryText)
+
+                    if !appModel.favoriteExercises().isEmpty || !appModel.recentlyUsedExercises().isEmpty {
+                        HStack(spacing: 8) {
+                            if !appModel.favoriteExercises().isEmpty {
+                                StatusPill(title: "\(appModel.favoriteExercises().count) favorites", icon: "star.fill", accent: category.accent)
+                            }
+                            if !appModel.recentlyUsedExercises().isEmpty {
+                                StatusPill(title: "\(appModel.recentlyUsedExercises().count) recent", icon: "clock.arrow.circlepath", accent: Color.gray)
+                            }
+                        }
+                    }
 
                     if definitions.isEmpty {
                         EmptyStateCard(
@@ -1539,6 +1564,7 @@ private struct CustomWorkoutSheet: View {
     @State private var selectedLibraryExerciseID: String?
     @State private var exercises: [CustomExercise] = []
     @State private var validationMessage: String?
+    @State private var showingLibraryBrowser = false
 
     private var isEditing: Bool {
         guard let workoutToEdit else { return false }
@@ -1591,6 +1617,19 @@ private struct CustomWorkoutSheet: View {
             .onAppear {
                 loadWorkoutIfNeeded()
             }
+            .sheet(isPresented: $showingLibraryBrowser) {
+                ExerciseLibraryBrowserView(
+                    title: "Add from Exercise Library",
+                    subtitle: "Choose a bundled exercise, then adjust sets, reps, time, distance, or notes before adding it to the custom workout.",
+                    accent: accent,
+                    selectActionTitle: "Use in Custom Workout",
+                    selectActionIcon: "plus.circle.fill",
+                    onSelect: { definition in
+                        applyLibraryExercise(definition)
+                    }
+                )
+                .environmentObject(appModel)
+            }
         }
     }
 
@@ -1613,10 +1652,15 @@ private struct CustomWorkoutSheet: View {
             VStack(alignment: .leading, spacing: 14) {
                 SectionHeader(
                     title: "Add exercise",
-                    subtitle: "A custom exercise can be logged like any starter-plan exercise.",
+                    subtitle: "Use the full library when possible, or enter a manual movement when Brian changes the plan.",
                     icon: "dumbbell",
                     accent: accent
                 )
+
+                SecondaryActionButton(title: "Add from Exercise Library", icon: "books.vertical", accent: accent) {
+                    dismissCommandKeyboard()
+                    showingLibraryBrowser = true
+                }
 
                 TextField("Exercise name", text: $exerciseName)
                     .textInputAutocapitalization(.words)
@@ -1662,7 +1706,7 @@ private struct CustomWorkoutSheet: View {
                     TextField("Equipment", text: $exerciseEquipment)
                         .textInputAutocapitalization(.words)
                         .commandFieldStyle()
-                    TextField("Reps/time", text: $targetReps)
+                    TextField("Reps / time / distance", text: $targetReps)
                         .commandFieldStyle()
                     Stepper("Sets: \(targetSets)", value: $targetSets, in: 1...8)
                         .padding(.horizontal, 10)
@@ -1700,7 +1744,7 @@ private struct CustomWorkoutSheet: View {
                     accent: accent
                 )
             } else {
-                ForEach(exercises) { exercise in
+                ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
                     HStack(alignment: .top, spacing: 10) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(exercise.name)
@@ -1711,6 +1755,33 @@ private struct CustomWorkoutSheet: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         Spacer()
+                        VStack(spacing: 6) {
+                            Button {
+                                moveExercise(from: index, offset: -1)
+                            } label: {
+                                Image(systemName: "chevron.up")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(index == 0 ? CommandDesign.tertiaryText : accent)
+                                    .frame(width: 44, height: 32)
+                                    .background(.white.opacity(0.06), in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(index == 0)
+                            .accessibilityLabel("Move \(exercise.name) up")
+
+                            Button {
+                                moveExercise(from: index, offset: 1)
+                            } label: {
+                                Image(systemName: "chevron.down")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(index == exercises.count - 1 ? CommandDesign.tertiaryText : accent)
+                                    .frame(width: 44, height: 32)
+                                    .background(.white.opacity(0.06), in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(index == exercises.count - 1)
+                            .accessibilityLabel("Move \(exercise.name) down")
+                        }
                         Button(role: .destructive) {
                             exercises.removeAll { $0.id == exercise.id }
                         } label: {
@@ -1756,6 +1827,15 @@ private struct CustomWorkoutSheet: View {
         selectedLibraryExerciseID = nil
         targetSets = 2
         targetReps = "8-12"
+    }
+
+    private func moveExercise(from index: Int, offset: Int) {
+        let destination = index + offset
+        guard exercises.indices.contains(index), exercises.indices.contains(destination) else { return }
+        withAnimation(.easeOut(duration: 0.16)) {
+            let exercise = exercises.remove(at: index)
+            exercises.insert(exercise, at: destination)
+        }
     }
 
     private func applyLibraryExercise(_ definition: ExerciseDefinition) {

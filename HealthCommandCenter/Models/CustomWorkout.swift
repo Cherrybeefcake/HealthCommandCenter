@@ -57,6 +57,20 @@ struct CustomExercise: Codable, Identifiable, Hashable {
         self.isLoggable = isLoggable
         self.libraryExerciseID = libraryExerciseID
     }
+
+    init(from definition: ExerciseDefinition, targetSets: Int = 2, targetReps: String = "8-12") {
+        self.init(
+            id: UUID().uuidString,
+            name: definition.name,
+            category: definition.category.rawValue,
+            equipment: definition.equipmentText,
+            targetSets: targetSets,
+            targetReps: targetReps,
+            notes: definition.painCautionGuidance,
+            isLoggable: definition.movementPattern != .mobility && definition.movementPattern != .recovery,
+            libraryExerciseID: definition.id
+        )
+    }
 }
 
 extension CustomWorkout {
