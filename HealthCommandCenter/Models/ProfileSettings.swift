@@ -314,6 +314,9 @@ struct ReminderTime: Codable, Hashable {
     static let ritualDefault = ReminderTime(hour: 18, minute: 30)
     static let sleepDefault = ReminderTime(hour: 21, minute: 30)
     static let nutritionDefault = ReminderTime(hour: 19, minute: 30)
+    static let workoutDefault = ReminderTime(hour: 16, minute: 30)
+    static let recoveryDefault = ReminderTime(hour: 12, minute: 30)
+    static let weeklyReviewDefault = ReminderTime(hour: 17, minute: 0)
 
     var dateComponents: DateComponents {
         DateComponents(hour: hour, minute: minute)
@@ -357,6 +360,12 @@ struct ReminderSettings: Codable, Hashable {
     var sleepReminderTime: ReminderTime
     var nutritionReminderEnabled: Bool
     var nutritionReminderTime: ReminderTime
+    var plannedWorkoutReminderEnabled: Bool
+    var plannedWorkoutReminderTime: ReminderTime
+    var recoveryReminderEnabled: Bool
+    var recoveryReminderTime: ReminderTime
+    var weeklyReviewReminderEnabled: Bool
+    var weeklyReviewReminderTime: ReminderTime
 
     static let `default` = ReminderSettings(
         remindersEnabled: false,
@@ -367,8 +376,85 @@ struct ReminderSettings: Codable, Hashable {
         sleepReminderEnabled: true,
         sleepReminderTime: .sleepDefault,
         nutritionReminderEnabled: false,
-        nutritionReminderTime: .nutritionDefault
+        nutritionReminderTime: .nutritionDefault,
+        plannedWorkoutReminderEnabled: false,
+        plannedWorkoutReminderTime: .workoutDefault,
+        recoveryReminderEnabled: false,
+        recoveryReminderTime: .recoveryDefault,
+        weeklyReviewReminderEnabled: false,
+        weeklyReviewReminderTime: .weeklyReviewDefault
     )
+
+    private enum CodingKeys: String, CodingKey {
+        case remindersEnabled
+        case checkInReminderEnabled
+        case checkInReminderTime
+        case ritualReminderEnabled
+        case ritualReminderTime
+        case sleepReminderEnabled
+        case sleepReminderTime
+        case nutritionReminderEnabled
+        case nutritionReminderTime
+        case plannedWorkoutReminderEnabled
+        case plannedWorkoutReminderTime
+        case recoveryReminderEnabled
+        case recoveryReminderTime
+        case weeklyReviewReminderEnabled
+        case weeklyReviewReminderTime
+    }
+
+    init(
+        remindersEnabled: Bool,
+        checkInReminderEnabled: Bool,
+        checkInReminderTime: ReminderTime,
+        ritualReminderEnabled: Bool,
+        ritualReminderTime: ReminderTime,
+        sleepReminderEnabled: Bool,
+        sleepReminderTime: ReminderTime,
+        nutritionReminderEnabled: Bool,
+        nutritionReminderTime: ReminderTime,
+        plannedWorkoutReminderEnabled: Bool,
+        plannedWorkoutReminderTime: ReminderTime,
+        recoveryReminderEnabled: Bool,
+        recoveryReminderTime: ReminderTime,
+        weeklyReviewReminderEnabled: Bool,
+        weeklyReviewReminderTime: ReminderTime
+    ) {
+        self.remindersEnabled = remindersEnabled
+        self.checkInReminderEnabled = checkInReminderEnabled
+        self.checkInReminderTime = checkInReminderTime
+        self.ritualReminderEnabled = ritualReminderEnabled
+        self.ritualReminderTime = ritualReminderTime
+        self.sleepReminderEnabled = sleepReminderEnabled
+        self.sleepReminderTime = sleepReminderTime
+        self.nutritionReminderEnabled = nutritionReminderEnabled
+        self.nutritionReminderTime = nutritionReminderTime
+        self.plannedWorkoutReminderEnabled = plannedWorkoutReminderEnabled
+        self.plannedWorkoutReminderTime = plannedWorkoutReminderTime
+        self.recoveryReminderEnabled = recoveryReminderEnabled
+        self.recoveryReminderTime = recoveryReminderTime
+        self.weeklyReviewReminderEnabled = weeklyReviewReminderEnabled
+        self.weeklyReviewReminderTime = weeklyReviewReminderTime
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        remindersEnabled = try container.decodeIfPresent(Bool.self, forKey: .remindersEnabled) ?? false
+        checkInReminderEnabled = try container.decodeIfPresent(Bool.self, forKey: .checkInReminderEnabled) ?? true
+        checkInReminderTime = try container.decodeIfPresent(ReminderTime.self, forKey: .checkInReminderTime) ?? .checkInDefault
+        ritualReminderEnabled = try container.decodeIfPresent(Bool.self, forKey: .ritualReminderEnabled) ?? true
+        ritualReminderTime = try container.decodeIfPresent(ReminderTime.self, forKey: .ritualReminderTime) ?? .ritualDefault
+        sleepReminderEnabled = try container.decodeIfPresent(Bool.self, forKey: .sleepReminderEnabled) ?? true
+        sleepReminderTime = try container.decodeIfPresent(ReminderTime.self, forKey: .sleepReminderTime) ?? .sleepDefault
+        nutritionReminderEnabled = try container.decodeIfPresent(Bool.self, forKey: .nutritionReminderEnabled) ?? false
+        nutritionReminderTime = try container.decodeIfPresent(ReminderTime.self, forKey: .nutritionReminderTime) ?? .nutritionDefault
+        plannedWorkoutReminderEnabled = try container.decodeIfPresent(Bool.self, forKey: .plannedWorkoutReminderEnabled) ?? false
+        plannedWorkoutReminderTime = try container.decodeIfPresent(ReminderTime.self, forKey: .plannedWorkoutReminderTime) ?? .workoutDefault
+        recoveryReminderEnabled = try container.decodeIfPresent(Bool.self, forKey: .recoveryReminderEnabled) ?? false
+        recoveryReminderTime = try container.decodeIfPresent(ReminderTime.self, forKey: .recoveryReminderTime) ?? .recoveryDefault
+        weeklyReviewReminderEnabled = try container.decodeIfPresent(Bool.self, forKey: .weeklyReviewReminderEnabled) ?? false
+        weeklyReviewReminderTime = try container.decodeIfPresent(ReminderTime.self, forKey: .weeklyReviewReminderTime) ?? .weeklyReviewDefault
+    }
 }
 
 struct DailyNutritionLog: Codable, Identifiable, Hashable {

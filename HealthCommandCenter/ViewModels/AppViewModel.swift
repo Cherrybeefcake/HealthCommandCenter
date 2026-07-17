@@ -929,7 +929,12 @@ final class AppViewModel: ObservableObject {
 
         let status: NotificationDebugStatus
         if settings.remindersEnabled {
-            status = await notificationService.scheduleDailyReminders(settings: settings)
+            status = await notificationService.scheduleDailyReminders(
+                settings: settings,
+                programPhase: programPhase,
+                workoutTimePreference: workoutTimePreference,
+                plannedSession: todaysPlannedSession()
+            )
             if status.permissionStatusText == "Denied" {
                 appendDebug("Notifications denied. Reminder settings saved, but no reminders scheduled.")
             } else {

@@ -21,7 +21,10 @@ final class LocalNotificationService: NSObject, UNUserNotificationCenterDelegate
         "hcc.checkin.daily",
         "hcc.ritual.daily",
         "hcc.sleep.daily",
-        "hcc.nutrition.daily"
+        "hcc.nutrition.daily",
+        "hcc.workout.planned",
+        "hcc.recovery.daily",
+        "hcc.weekly.review"
     ]
 
     init(center: UNUserNotificationCenter = .current()) {
@@ -38,7 +41,12 @@ final class LocalNotificationService: NSObject, UNUserNotificationCenterDelegate
         }
     }
 
-    func scheduleDailyReminders(settings: ReminderSettings) async -> NotificationDebugStatus {
+    func scheduleDailyReminders(
+        settings: ReminderSettings,
+        programPhase: ProgramPhase = .normalRoutine,
+        workoutTimePreference: WorkoutTimePreference = .flexible,
+        plannedSession: PlannedSession? = nil
+    ) async -> NotificationDebugStatus {
         cancelAllHealthCommandReminders()
         guard settings.remindersEnabled else {
             return await debugStatus()
@@ -53,8 +61,17 @@ final class LocalNotificationService: NSObject, UNUserNotificationCenterDelegate
             await scheduleDailyReminder(
                 identifier: "hcc.checkin.daily",
                 title: "Health Command Center",
-                body: "Start with the data. Classify today.",
-                time: settings.checkInReminderTime
+                body: checkInReminderBody(for: programPhase),
+                time: adaptiveCheckInTime(settings.checkInReminderTime, phase: programPhase)
+            )
+        }
+
+        if settings.plannedWorkoutReminderEnabled, let plannedSession {
+            await scheduleOneTimeReminder(
+                identifier: "hcc.workout.planned",
+                title: "Today’s Training",
+                body: "\(plannedSession.workoutTitle): \(plannedSession.note)",
+                time: adaptiveWorkoutTime(settings.plannedWorkoutReminderTime, phase: programPhase, preference: workoutTimePreference)
             )
         }
 
@@ -67,12 +84,21 @@ final class LocalNotificationService: NSObject, UNUserNotificationCenterDelegate
             )
         }
 
+        if settings.recoveryReminderEnabled {
+            await scheduleDailyReminder(
+                identifier: "hcc.recovery.daily",
+                title: "Recovery Check",
+                body: "Mobility, hydration, and stress downshift. Keep the floor low.",
+                time: settings.recoveryReminderTime
+            )
+        }
+
         if settings.sleepReminderEnabled {
             await scheduleDailyReminder(
                 identifier: "hcc.sleep.daily",
                 title: "Sleep Prep",
-                body: "Start the wind-down. Protect tomorrow.",
-                time: settings.sleepReminderTime
+                body: sleepReminderBody(for: programPhase),
+                time: adaptiveSleepTime(settings.sleepReminderTime, phase: programPhase)
             )
         }
 
@@ -82,6 +108,15 @@ final class LocalNotificationService: NSObject, UNUserNotificationCenterDelegate
                 title: "Nutrition Anchors",
                 body: "Log Cronometer and hit the anchors.",
                 time: settings.nutritionReminderTime
+            )
+        }
+
+        if settings.weeklyReviewReminderEnabled {
+            await scheduleWeeklyReminder(
+                identifier: "hcc.weekly.review",
+                title: "Weekly Coach Report",
+                body: "Review the week. Pick the next focus, not a punishment.",
+                time: settings.weeklyReviewReminderTime
             )
         }
 
@@ -164,6 +199,92 @@ final class LocalNotificationService: NSObject, UNUserNotificationCenterDelegate
         let trigger = UNCalendarNotificationTrigger(dateMatching: time.dateComponents, repeats: true)
         let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
         try? await center.add(request)
+    }
+
+    private func scheduleWeeklyReminder(
+        identifier: String,
+        title: String,
+        body: String,
+        time: ReminderTime
+    ) async {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+
+        var components = time.dateComponents
+        components.weekday = 1
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+        try? await center.add(request)
+    }
+
+    private func scheduleOneTimeReminder(
+        identifier: String,
+        title: String,
+        body: String,
+        time: ReminderTime
+    ) async {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+
+        let triggerDate = nextDate(for: time)
+        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+        try? await center.add(request)
+    }
+
+    private func nextDate(for time: ReminderTime) -> Date {
+        let candidate = time.date()
+        if candidate > Date() { return candidate }
+        return Calendar.current.date(byAdding: .day, value: 1, to: candidate) ?? candidate
+    }
+
+    private func adaptiveCheckInTime(_ time: ReminderTime, phase: ProgramPhase) -> ReminderTime {
+        phase == .nightShift ? ReminderTime(hour: 15, minute: 0) : time
+    }
+
+    private func adaptiveSleepTime(_ time: ReminderTime, phase: ProgramPhase) -> ReminderTime {
+        switch phase {
+        case .nightShift:
+            return ReminderTime(hour: 8, minute: 30)
+        case .newBaby:
+            return ReminderTime(hour: 20, minute: 30)
+        case .dayShift, .normalRoutine:
+            return time
+        }
+    }
+
+    private func adaptiveWorkoutTime(_ time: ReminderTime, phase: ProgramPhase, preference: WorkoutTimePreference) -> ReminderTime {
+        if phase == .nightShift || preference == .beginningOfShift { return ReminderTime(hour: 15, minute: 30) }
+        if preference == .morning { return ReminderTime(hour: 8, minute: 30) }
+        if preference == .afterShift { return ReminderTime(hour: 17, minute: 30) }
+        return time
+    }
+
+    private func checkInReminderBody(for phase: ProgramPhase) -> String {
+        switch phase {
+        case .nightShift:
+            return "Classify the shift before intensity. Protect the sleep window."
+        case .newBaby:
+            return "Tiny floor first. Classify today without pressure."
+        case .dayShift, .normalRoutine:
+            return "Start with the data. Classify today."
+        }
+    }
+
+    private func sleepReminderBody(for phase: ProgramPhase) -> String {
+        switch phase {
+        case .nightShift:
+            return "Start the post-shift wind-down. Protect the next sleep window."
+        case .newBaby:
+            return "Take the next real sleep chance. Lower the floor."
+        case .dayShift, .normalRoutine:
+            return "Start the wind-down. Protect tomorrow."
+        }
     }
 
     private func notificationSettings() async -> UNNotificationSettings {

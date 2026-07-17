@@ -392,6 +392,22 @@ struct ProfileView: View {
             )
 
             reminderRow(
+                title: "Planned Workout",
+                subtitle: "Shift-aware nudge for today's scheduled training session.",
+                icon: "dumbbell",
+                enabledKeyPath: \.plannedWorkoutReminderEnabled,
+                timeKeyPath: \.plannedWorkoutReminderTime
+            )
+
+            reminderRow(
+                title: "Recovery Check",
+                subtitle: "Mobility, hydration, and stress control without turning it into noise.",
+                icon: "figure.mind.and.body",
+                enabledKeyPath: \.recoveryReminderEnabled,
+                timeKeyPath: \.recoveryReminderTime
+            )
+
+            reminderRow(
                 title: "Sleep Wind-Down",
                 subtitle: "Start the wind-down. Protect tomorrow.",
                 icon: "bed.double",
@@ -405,6 +421,14 @@ struct ProfileView: View {
                 icon: "fork.knife",
                 enabledKeyPath: \.nutritionReminderEnabled,
                 timeKeyPath: \.nutritionReminderTime
+            )
+
+            reminderRow(
+                title: "Weekly Review",
+                subtitle: "Review the week and choose the next focus. Sundays by default.",
+                icon: "doc.text.magnifyingglass",
+                enabledKeyPath: \.weeklyReviewReminderEnabled,
+                timeKeyPath: \.weeklyReviewReminderTime
             )
 
             HStack(spacing: 10) {
