@@ -23,11 +23,14 @@ struct GreetingView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: CommandDesign.stackSpacing) {
-                    ScreenHeader(
-                        eyebrow: "Health Command Center",
-                        title: "Set the baseline.",
-                        subtitle: "Confirm Brian's defaults once. You can change this later in Profile."
-                    )
+                    HStack(alignment: .center, spacing: 14) {
+                        CommandBrandMark(accent: CommandPalette.brand, size: 58)
+                        ScreenHeader(
+                            eyebrow: "Health Command Center",
+                            title: "Set the baseline.",
+                            subtitle: "Confirm Brian's defaults once. You can change this later in Profile."
+                        )
+                    }
 
                     identitySection
                     scheduleSection

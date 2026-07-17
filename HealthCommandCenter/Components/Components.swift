@@ -71,6 +71,48 @@ struct CommandBackground: View {
     }
 }
 
+struct CommandBrandMark: View {
+    var accent: Color = CommandPalette.brand
+    var size: CGFloat = 62
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(CommandPalette.backgroundRaised)
+                .overlay {
+                    Circle()
+                        .stroke(accent.opacity(0.78), lineWidth: max(2, size * 0.055))
+                }
+                .shadow(color: accent.opacity(0.22), radius: size * 0.16)
+
+            Circle()
+                .fill(Color(red: 0.64, green: 0.96, blue: 0.78))
+                .frame(width: size * 0.12, height: size * 0.12)
+                .offset(x: size * 0.18, y: -size * 0.18)
+                .shadow(color: Color(red: 0.64, green: 0.96, blue: 0.78).opacity(0.45), radius: size * 0.08)
+
+            HealthSignalLine()
+                .stroke(Color.white.opacity(0.92), style: StrokeStyle(lineWidth: max(2, size * 0.06), lineCap: .round, lineJoin: .round))
+                .padding(size * 0.22)
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct HealthSignalLine: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.midY))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.27, y: rect.midY))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.40, y: rect.minY + rect.height * 0.20))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.58, y: rect.minY + rect.height * 0.82))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.74, y: rect.midY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        return path
+    }
+}
+
 struct ScreenHeader: View {
     let eyebrow: String
     let title: String

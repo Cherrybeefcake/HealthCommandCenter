@@ -38,6 +38,7 @@
 		01A00000000000000000011D /* BodyMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000001F /* BodyMetrics.swift */; };
 		01A00000000000000000011E /* CustomWorkout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000021 /* CustomWorkout.swift */; };
 		01A00000000000000000011F /* WeeklyReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000022 /* WeeklyReview.swift */; };
+		01A000000000000000000120 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000023 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -74,6 +75,7 @@
 		01A00000000000000000001F /* BodyMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyMetrics.swift; sourceTree = "<group>"; };
 		01A000000000000000000021 /* CustomWorkout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWorkout.swift; sourceTree = "<group>"; };
 		01A000000000000000000022 /* WeeklyReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyReview.swift; sourceTree = "<group>"; };
+		01A000000000000000000023 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -107,6 +109,7 @@
 				01A000000000000000000044 /* ViewModels */,
 				01A000000000000000000045 /* Components */,
 				01A000000000000000000046 /* Views */,
+				01A000000000000000000023 /* Assets.xcassets */,
 			);
 			path = HealthCommandCenter;
 			sourceTree = "<group>";
@@ -207,6 +210,7 @@
 			buildConfigurationList = 01A000000000000000000090 /* Build configuration list for PBXNativeTarget "HealthCommandCenter" */;
 			buildPhases = (
 				01A000000000000000000080 /* Sources */,
+				01A000000000000000000081 /* Resources */,
 				01A000000000000000000020 /* Frameworks */,
 			);
 			buildRules = (
@@ -255,6 +259,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		01A000000000000000000081 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				01A000000000000000000120 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		01A000000000000000000080 /* Sources */ = {
@@ -414,6 +429,7 @@
 		01A000000000000000000094 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = HealthCommandCenter/HealthCommandCenter.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -426,6 +442,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -446,6 +463,7 @@
 		01A000000000000000000095 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = HealthCommandCenter/HealthCommandCenter.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -457,6 +475,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -577,6 +577,17 @@ struct ProfileView: View {
 
     private var aboutSection: some View {
         settingsSection("About MVP", icon: "info.circle") {
+            HStack(spacing: 12) {
+                CommandBrandMark(accent: appModel.activeCategory.accent, size: 44)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Health Command Center")
+                        .font(.headline)
+                    Text("Private MVP for Brian")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(CommandDesign.secondaryText)
+                }
+            }
+
             Text("This is Brian's private Health Command Center MVP: a local-first app for readiness, training, rituals, weekly review, and practical next actions.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
