@@ -61,6 +61,7 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Local exports are user-initiated from You/Profile. The app can create a JSON backup, workout CSV, nutrition CSV, body metrics CSV, and a plain-text weekly coach report in a temporary local export folder for sharing through iOS.
 - Smart Reminders remain local and optional. Check-in, workout, recovery, nutrition, sleep, ritual, and weekly review reminders can be controlled separately; phase and workout timing adjust reminder copy/times conservatively.
 - Shortcuts foundation adds App Intents for opening Today, starting Check In, opening Train, logging Daily Win, and opening Health refresh. A widget target is deferred because adding an extension target safely requires Xcode-managed signing/App Group review on Brian's machine.
+- Apple Watch foundation is documented in `Docs/APPLE_WATCH_FOUNDATION.md`. The watch target is deferred until it can be added through Xcode with Brian's signing context active.
 - Built-in library workouts use the same local ExerciseLog flow as starter workouts, so Progress session detail and exercise summaries continue to work.
 - Custom Workouts are local templates in `custom_workouts.json`; editing a template does not rewrite past workout logs.
 
