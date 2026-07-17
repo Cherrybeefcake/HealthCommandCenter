@@ -359,14 +359,26 @@ This project is now tracked with local git history. Make a commit before major f
 
 Repo-local git identity is configured for Brian Cady.
 
+## Release Candidate Audit
+
+- Current release-candidate version is `0.2` build `2`.
+- Active Xcode targets are the iPhone app and `HealthCommandCenterTests`.
+- Widget and Apple Watch foundations are documented, but the actual targets remain intentionally deferred until Xcode-managed signing/App Group setup can be done on Brian's machine.
+- Apple Health remains read-only. The app requests no Apple Health write permissions and does not delete or modify Apple Health data.
+- Oura real OAuth is not active. Secure token storage and integration protocols exist, but no client ID, secret, redirect URI, access token, or network call is committed.
+- Cronometer direct integration is not active. Nutrition is manual in HCC or automatic only when another app writes nutrition samples to Apple Health.
+- Exports and progress photos are user-initiated and local. `.gitignore` excludes generated local debug/export artifacts; do not commit personal exports or photo files.
+- Guidance is personal coaching organization, not medical advice, diagnosis, treatment, or clinical decision support.
+
 ## Project Configuration
 
 - App target: `HealthCommandCenter`
+- Test target: `HealthCommandCenterTests`
 - Shared scheme: `HealthCommandCenter`
 - Bundle identifier: `com.brian.healthcommandcenter`
 - Display name: `Health Command Center`
-- Version: `0.1`
-- Build: `1`
+- Version: `0.2`
+- Build: `2`
 - Signing: automatic, currently configured with development team `43V4UB543R`; update the team locally in Xcode if App Store Connect requires a different account
 - Platform: iPhone only, iOS 17.0+
 - HealthKit entitlement: `com.apple.developer.healthkit`
@@ -401,7 +413,7 @@ Repo-local git identity is configured for Brian Cady.
 - Apple Developer Program membership is required for App Store Connect and TestFlight distribution.
 - Confirm the bundle identifier is available for the Apple Developer account: `com.brian.healthcommandcenter`.
 - Confirm the signing team in Xcode under `Signing & Capabilities`.
-- Confirm `Version` and `Build` are set before each archive. Current MVP values are `0.1` and `1`.
+- Confirm `Version` and `Build` are set before each archive. Current MVP values are `0.2` and `2`.
 - Confirm HealthKit appears under `Signing & Capabilities`.
 - Confirm Apple Health permission wording explains read-only sleep, activity, workout, heart, body, and nutrition access.
 - Confirm notification reminders are described as optional local reminders.
@@ -459,6 +471,14 @@ xcodebuild -project HealthCommandCenter.xcodeproj -scheme HealthCommandCenter -d
 ```
 
 The explicit `-derivedDataPath` keeps build output in a writable location for sandboxed/local automation.
+
+The hosted XCTest target can be run with:
+
+```sh
+xcodebuild -project HealthCommandCenter.xcodeproj -scheme HealthCommandCenter -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath /private/tmp/HealthCommandCenterDerivedData test
+```
+
+Current release-candidate automated suite: `ReleaseQualityTests`, 10 tests.
 
 ## Next integration point
 
