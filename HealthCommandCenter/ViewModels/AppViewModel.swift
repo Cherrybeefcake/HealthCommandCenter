@@ -75,6 +75,7 @@ final class AppViewModel: ObservableObject {
     @Published var programScheduleOverrides: [ProgramScheduleOverride] = []
     @Published var goalSettings: GoalSettings
     @Published var progressPhotos: [ProgressPhotoEntry] = []
+    @Published var exportedReportFiles: [ExportedReportFile] = []
     @Published var todayRitualDateKey: String = RitualLibrary.dateKey()
     @Published var programPhase: ProgramPhase
     @Published var trainingLocation: TrainingLocation
@@ -454,6 +455,56 @@ final class AppViewModel: ObservableObject {
 
     func progressPhotoImageURL(for entry: ProgressPhotoEntry) -> URL {
         storage.progressPhotoImageURL(fileName: entry.imageFileName)
+    }
+
+    func generateLocalHealthReportExport() {
+        let review = currentWeeklyReview()
+        let export = HealthReportExport(
+            generatedAt: Date(),
+            appVersion: "0.2 local export",
+            weeklyCoachSummary: review.coachSummary,
+            checkIns: checkIns,
+            exerciseLogs: exerciseLogs,
+            ritualLogs: ritualLogs,
+            nutritionLogs: nutritionLogs,
+            bodyMetricsEntries: bodyMetricsEntries,
+            customWorkouts: customWorkouts,
+            ouraManualSnapshots: ouraManualSnapshots,
+            goalSettings: goalSettings
+        )
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("HealthCommandCenterExport-\(RitualLibrary.dateKey())", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            var files: [ExportedReportFile] = []
+
+            let jsonURL = directory.appendingPathComponent("health_command_center_backup.json")
+            let jsonData = try exportJSONEncoder.encode(export)
+            try jsonData.write(to: jsonURL, options: [.atomic])
+            files.append(ExportedReportFile(id: "json", title: "JSON Backup", url: jsonURL))
+
+            let workoutURL = directory.appendingPathComponent("workout_history.csv")
+            try workoutCSV().write(to: workoutURL, atomically: true, encoding: .utf8)
+            files.append(ExportedReportFile(id: "workouts", title: "Workout CSV", url: workoutURL))
+
+            let nutritionURL = directory.appendingPathComponent("nutrition_summary.csv")
+            try nutritionCSV().write(to: nutritionURL, atomically: true, encoding: .utf8)
+            files.append(ExportedReportFile(id: "nutrition", title: "Nutrition CSV", url: nutritionURL))
+
+            let bodyURL = directory.appendingPathComponent("body_metrics.csv")
+            try bodyMetricsCSV().write(to: bodyURL, atomically: true, encoding: .utf8)
+            files.append(ExportedReportFile(id: "body", title: "Body Metrics CSV", url: bodyURL))
+
+            let summaryURL = directory.appendingPathComponent("weekly_coach_report.txt")
+            try weeklyReportText(review).write(to: summaryURL, atomically: true, encoding: .utf8)
+            files.append(ExportedReportFile(id: "weekly", title: "Weekly Report", url: summaryURL))
+
+            exportedReportFiles = files
+            appendDebug("Local health report export created")
+        } catch {
+            exportedReportFiles = []
+            appendDebug("Export failed: \(error.localizedDescription)")
+        }
     }
 
     func recentBodyMetricsEntries(limit: Int = 8) -> [BodyMetricsEntry] {
@@ -2095,6 +2146,114 @@ final class AppViewModel: ObservableObject {
             coachingLine: "Protect the sleep window before adding more training stress.",
             progressFraction: fraction
         )
+    }
+
+    private var exportJSONEncoder: JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return encoder
+    }
+
+    private func workoutCSV() -> String {
+        var rows = ["date,workout,version,exercise,sets,reps,weight,effort,notes"]
+        rows += exerciseLogs.sorted { $0.date > $1.date }.map { log in
+            [
+                csvDate(log.date),
+                log.workoutTitle,
+                log.versionType.rawValue,
+                log.exerciseName,
+                "\(log.setsCompleted)",
+                "\(log.reps)",
+                log.weight.map { String(format: "%.1f", $0) } ?? "",
+                "\(log.effort)",
+                log.notes
+            ].map(csvEscape).joined(separator: ",")
+        }
+        return rows.joined(separator: "\n")
+    }
+
+    private func nutritionCSV() -> String {
+        var rows = ["date,calories,protein,water,fiber,cronometer,protein_target,water_target,notes"]
+        let sortedLogs = nutritionLogs.sorted { $0.dateKey > $1.dateKey }
+        for log in sortedLogs {
+            let values: [String] = [
+                log.dateKey,
+                log.caloriesLogged.map(String.init) ?? "",
+                log.proteinGrams.map(String.init) ?? "",
+                log.waterOunces.map(String.init) ?? "",
+                log.fiberGrams.map(String.init) ?? "",
+                log.cronometerCompleted ? "true" : "false",
+                log.proteinTargetHit ? "true" : "false",
+                log.waterTargetHit ? "true" : "false",
+                log.notes
+            ]
+            rows.append(values.map(csvEscape).joined(separator: ","))
+        }
+        return rows.joined(separator: "\n")
+    }
+
+    private func bodyMetricsCSV() -> String {
+        var rows = ["date,source,weight,body_fat,muscle_mass,visceral_fat,waist,notes"]
+        let sortedEntries = bodyMetricsEntries.sorted { $0.dateKey > $1.dateKey }
+        for entry in sortedEntries {
+            let values: [String] = [
+                entry.dateKey,
+                entry.source.rawValue,
+                entry.weightPounds.map { String(format: "%.1f", $0) } ?? "",
+                entry.bodyFatPercent.map { String(format: "%.1f", $0) } ?? "",
+                entry.muscleMassPounds.map { String(format: "%.1f", $0) } ?? "",
+                entry.visceralFatLevel.map { String(format: "%.1f", $0) } ?? "",
+                entry.waistInches.map { String(format: "%.1f", $0) } ?? "",
+                entry.notes
+            ]
+            rows.append(values.map(csvEscape).joined(separator: ","))
+        }
+        return rows.joined(separator: "\n")
+    }
+
+    private func weeklyReportText(_ review: WeeklyReview) -> String {
+        """
+        Health Command Center Weekly Coach Report
+        Generated: \(Date().formatted(date: .abbreviated, time: .shortened))
+
+        Summary
+        \(review.coachSummary)
+
+        Key Numbers
+        Check-ins: \(review.checkInCount)
+        Workout days: \(review.workoutDays)
+        Sets logged: \(review.totalSets)
+        Ritual days: \(review.ritualDays)
+        Nutrition logged days: \(review.nutritionLoggedDays)
+        Average sleep: \(review.averageSleep.map { String(format: "%.1f hr", $0) } ?? "No data")
+        Low-sleep days: \(review.lowSleepDays)
+        Body trend: \(review.bodyWeightTrendText)
+
+        Wins
+        \(review.wins.map { "- \($0)" }.joined(separator: "\n"))
+
+        Watchouts
+        \(review.watchouts.map { "- \($0)" }.joined(separator: "\n"))
+
+        Next Week Focus
+        \(review.nextWeekFocus.map { "- \($0)" }.joined(separator: "\n"))
+
+        Note
+        This report is local coaching context, not medical advice or diagnosis.
+        """
+    }
+
+    private func csvDate(_ date: Date) -> String {
+        ISO8601DateFormatter().string(from: date)
+    }
+
+    private func csvEscape(_ value: String) -> String {
+        let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
+        if escaped.contains(",") || escaped.contains("\n") || escaped.contains("\"") {
+            return "\"\(escaped)\""
+        }
+        return escaped
     }
 
     private func weeklyWatchouts(

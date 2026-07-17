@@ -58,6 +58,7 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Adaptive Program Scheduler shows a local weekly structure with three full-body strength sessions and optional recovery/conditioning days. Readiness and recovery can downgrade today's session, and manual reschedules are stored locally without marking skipped days as failure.
 - Goals & Targets add editable local guardrails for recomposition, strength, workout frequency, protein, hydration, sleep, meditation, mobility, and consistency. These targets shape Today, DailyPlan nutrition guidance, Insights, and Weekly Coach Report copy without aggressive weight-loss prescriptions.
 - Progress Photos are optional and local-only. The app copies selected front/side/back photos into its sandbox for simple recent comparison; photos are not uploaded and can be deleted from Insights.
+- Local exports are user-initiated from You/Profile. The app can create a JSON backup, workout CSV, nutrition CSV, body metrics CSV, and a plain-text weekly coach report in a temporary local export folder for sharing through iOS.
 - Built-in library workouts use the same local ExerciseLog flow as starter workouts, so Progress session detail and exercise summaries continue to work.
 - Custom Workouts are local templates in `custom_workouts.json`; editing a template does not rewrite past workout logs.
 

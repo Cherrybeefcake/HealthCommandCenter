@@ -534,12 +534,44 @@ struct ProfileView: View {
 
     private var dataStorageSection: some View {
         settingsSection("Data & Storage", icon: "externaldrive") {
-            Text("Data is stored locally on this device in the app sandbox. There is no account login, cloud sync, or export in this MVP.")
+            Text("Data is stored locally on this device in the app sandbox. There is no account login or cloud sync. Exports are user-initiated local files.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineSpacing(3)
 
             persistenceStatusSection
+
+            CommandDivider()
+
+            Text("Create a local export for backup, trainer review, or a simple doctor-friendly summary. Nothing uploads automatically.")
+                .font(.caption)
+                .foregroundStyle(CommandDesign.secondaryText)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            SecondaryActionButton(title: "Create Local Report Export", icon: "square.and.arrow.up", accent: appModel.activeCategory.accent) {
+                appModel.generateLocalHealthReportExport()
+                showProfileFeedback(appModel.exportedReportFiles.isEmpty ? "Export failed" : "Export files ready")
+            }
+
+            if !appModel.exportedReportFiles.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Export files")
+                        .font(.caption.weight(.semibold))
+                        .textCase(.uppercase)
+                        .foregroundStyle(CommandDesign.secondaryText)
+                    ForEach(appModel.exportedReportFiles) { file in
+                        ShareLink(item: file.url) {
+                            Label(file.title, systemImage: "square.and.arrow.up")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(appModel.activeCategory.accent)
+                                .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
+                                .padding(.horizontal, 12)
+                                .background(CommandDesign.elevatedSurface, in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
+                        }
+                    }
+                }
+            }
 
             DisclosureGroup {
                 VStack(alignment: .leading, spacing: 12) {
