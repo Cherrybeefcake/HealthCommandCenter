@@ -46,6 +46,7 @@
 		01A000000000000000000125 /* ProgressPhotos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000028 /* ProgressPhotos.swift */; };
 		01A000000000000000000126 /* HealthReportExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000029 /* HealthReportExport.swift */; };
 		01A000000000000000000127 /* ShortcutIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002A /* ShortcutIntents.swift */; };
+		01A000000000000000000128 /* DataRepositories.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002B /* DataRepositories.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -90,6 +91,7 @@
 		01A000000000000000000028 /* ProgressPhotos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressPhotos.swift; sourceTree = "<group>"; };
 		01A000000000000000000029 /* HealthReportExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthReportExport.swift; sourceTree = "<group>"; };
 		01A00000000000000000002A /* ShortcutIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutIntents.swift; sourceTree = "<group>"; };
+		01A00000000000000000002B /* DataRepositories.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataRepositories.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -170,6 +172,7 @@
 				01A000000000000000000009 /* OuraService.swift */,
 				01A00000000000000000000A /* ReadinessClassifier.swift */,
 				01A00000000000000000001E /* LocalNotificationService.swift */,
+				01A00000000000000000002B /* DataRepositories.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -334,6 +337,7 @@
 				01A000000000000000000125 /* ProgressPhotos.swift in Sources */,
 				01A000000000000000000126 /* HealthReportExport.swift in Sources */,
 				01A000000000000000000127 /* ShortcutIntents.swift in Sources */,
+				01A000000000000000000128 /* DataRepositories.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
