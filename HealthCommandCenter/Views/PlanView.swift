@@ -1023,6 +1023,9 @@ private struct ExercisePlanCard: View {
                 .foregroundStyle(CommandDesign.secondaryText)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
+            Text("\(definition.sourceName) · \(definition.sourceLicense)")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(CommandDesign.tertiaryText)
             ForEach(definition.substitutions.prefix(2)) { substitution in
                 Label("\(substitution.name): \(substitution.reason)", systemImage: "arrow.triangle.branch")
                     .font(.caption)
@@ -1432,6 +1435,7 @@ private struct ExerciseDetailView: View {
                         CommandCard {
                             VStack(alignment: .leading, spacing: 14) {
                                 SectionHeader(title: "Targets", icon: "scope", accent: accent)
+                                detailLine("Movement", definition.movementPattern.rawValue)
                                 detailLine("Primary", definition.primaryMuscles.map(\.rawValue).joined(separator: ", "))
                                 detailLine("Secondary", definition.secondaryMuscles.map(\.rawValue).joined(separator: ", "))
                                 HStack(spacing: 8) {
@@ -1463,6 +1467,33 @@ private struct ExerciseDetailView: View {
                                     detailLine(substitution.name, substitution.reason)
                                 }
                             }
+                        }
+
+                        DisclosureGroup {
+                            VStack(alignment: .leading, spacing: 8) {
+                                detailLine("Source", definition.sourceName)
+                                detailLine("License", definition.sourceLicense)
+                                if let sourceURL = definition.sourceURL {
+                                    detailLine("Source URL", sourceURL)
+                                }
+                                if let importedAt = definition.importedAt {
+                                    detailLine("Imported", importedAt)
+                                }
+                                if !definition.aliases.isEmpty {
+                                    detailLine("Aliases", definition.aliases.prefix(8).joined(separator: ", "))
+                                }
+                            }
+                            .padding(.top, 8)
+                        } label: {
+                            Label("About this exercise", systemImage: "info.circle")
+                                .font(.headline)
+                        }
+                        .tint(accent)
+                        .padding(18)
+                        .background(CommandDesign.surface, in: RoundedRectangle(cornerRadius: CommandDesign.cardRadius, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: CommandDesign.cardRadius, style: .continuous)
+                                .stroke(CommandDesign.hairline, lineWidth: 1)
                         }
                     }
                     .padding(CommandDesign.pagePadding)

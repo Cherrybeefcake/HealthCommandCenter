@@ -211,6 +211,33 @@ final class ReleaseQualityTests: XCTestCase {
 
         XCTAssertEqual(apple.sourceLabel, "Apple Health latest sleep")
     }
+
+    func testImportedExerciseLibraryDecodesAndKeepsCuratedRecordsPreferred() {
+        XCTAssertGreaterThanOrEqual(ExerciseLibrary.importedDefinitions.count, 1_000)
+        XCTAssertGreaterThanOrEqual(ExerciseLibrary.definitions.count, 1_000)
+
+        let bandRow = ExerciseLibrary.definition(for: "band-row")
+        XCTAssertEqual(bandRow?.sourceName, "Health Command Center")
+        XCTAssertEqual(bandRow?.id, "band-row")
+    }
+
+    func testExerciseLibraryBandAndMobilityFilters() {
+        let bandMatches = ExerciseLibrary.search(query: "", category: nil, equipment: nil, muscle: nil, location: nil, bandsOnly: true)
+        let mobilityMatches = ExerciseLibrary.search(query: "", category: nil, equipment: nil, muscle: nil, location: nil, mobilityOnly: true)
+
+        XCTAssertGreaterThanOrEqual(bandMatches.filter { $0.sourceName.contains("curated") }.count, 100)
+        XCTAssertGreaterThanOrEqual(mobilityMatches.filter { $0.sourceName.contains("curated") }.count, 100)
+        XCTAssertTrue(bandMatches.allSatisfy { $0.equipment.contains(.resistanceBands) || $0.category == .bands })
+        XCTAssertTrue(mobilityMatches.allSatisfy { $0.category == .mobility || $0.category == .recovery || $0.movementPattern == .mobility || $0.movementPattern == .recovery })
+    }
+
+    func testExerciseLibraryAliasAndNormalizationSearch() {
+        let aliasMatches = ExerciseLibrary.search(query: "Alternate_Incline_Dumbbell_Curl", category: nil, equipment: nil, muscle: nil, location: nil)
+        XCTAssertEqual(aliasMatches.first?.name, "Alternate Incline Dumbbell Curl")
+
+        let dumbbellMatches = ExerciseLibrary.search(query: "bench press", category: nil, equipment: .dumbbells, muscle: .chest, location: nil)
+        XCTAssertTrue(dumbbellMatches.contains { $0.name.localizedCaseInsensitiveContains("Dumbbell") })
+    }
 }
 
 private extension ReleaseQualityTests {

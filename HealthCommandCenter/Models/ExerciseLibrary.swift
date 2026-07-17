@@ -14,6 +14,7 @@ enum ExerciseCategory: String, Codable, CaseIterable, Identifiable, Hashable {
     case stairs = "Stairs"
     case mobility = "Mobility"
     case recovery = "Recovery"
+    case other = "Other"
 
     var id: String { rawValue }
 }
@@ -38,14 +39,23 @@ enum MuscleGroup: String, Codable, CaseIterable, Identifiable, Hashable {
 
 enum EquipmentType: String, Codable, CaseIterable, Identifiable, Hashable {
     case bodyweight = "Bodyweight"
+    case barbell = "Barbell"
+    case cable = "Cable"
     case dumbbells = "Dumbbells"
     case resistanceBands = "Resistance Bands"
     case inclineBench = "Incline Bench"
     case mat = "Mat"
     case bike = "Bike"
     case stairs = "Stairs"
+    case ezCurlBar = "EZ Curl Bar"
+    case exerciseBall = "Exercise Ball"
+    case foamRoll = "Foam Roll"
+    case kettlebells = "Kettlebells"
+    case machine = "Machine"
+    case medicineBall = "Medicine Ball"
     case workGym = "Work Gym"
     case outside = "Outside"
+    case other = "Other"
 
     var id: String { rawValue }
 }
@@ -54,6 +64,24 @@ enum ExerciseDifficulty: String, Codable, CaseIterable, Identifiable, Hashable {
     case starter = "Starter"
     case beginner = "Beginner"
     case moderate = "Moderate"
+    case advanced = "Advanced"
+
+    var id: String { rawValue }
+}
+
+enum ExerciseMovementPattern: String, Codable, CaseIterable, Identifiable, Hashable {
+    case squat = "Squat"
+    case hinge = "Hinge"
+    case lunge = "Lunge"
+    case push = "Push"
+    case pull = "Pull"
+    case carry = "Carry"
+    case core = "Core"
+    case conditioning = "Conditioning"
+    case mobility = "Mobility"
+    case recovery = "Recovery"
+    case arms = "Arms"
+    case other = "Other"
 
     var id: String { rawValue }
 }
@@ -74,10 +102,14 @@ struct ExerciseDefinition: Codable, Identifiable, Hashable {
     let id: String
     let name: String
     let category: ExerciseCategory
+    let aliases: [String]
+    let movementPattern: ExerciseMovementPattern
     let primaryMuscles: [MuscleGroup]
     let secondaryMuscles: [MuscleGroup]
     let equipment: [EquipmentType]
     let difficulty: ExerciseDifficulty
+    let force: String?
+    let mechanic: String?
     let setup: String
     let executionSteps: [String]
     let breathingCue: String
@@ -89,10 +121,134 @@ struct ExerciseDefinition: Codable, Identifiable, Hashable {
     let locationCompatibility: [TrainingLocation]
     let isShoulderFriendly: Bool
     let isLowBackFriendly: Bool
+    let sourceName: String
+    let sourceLicense: String
+    let sourceURL: String?
+    let importedAt: String?
+
+    init(
+        id: String,
+        name: String,
+        category: ExerciseCategory,
+        aliases: [String] = [],
+        movementPattern: ExerciseMovementPattern? = nil,
+        primaryMuscles: [MuscleGroup],
+        secondaryMuscles: [MuscleGroup],
+        equipment: [EquipmentType],
+        difficulty: ExerciseDifficulty,
+        force: String? = nil,
+        mechanic: String? = nil,
+        setup: String,
+        executionSteps: [String],
+        breathingCue: String,
+        commonMistakes: [String],
+        howItShouldFeel: String,
+        painCautionGuidance: String,
+        variations: [ExerciseVariation],
+        substitutions: [ExerciseSubstitution],
+        locationCompatibility: [TrainingLocation],
+        isShoulderFriendly: Bool,
+        isLowBackFriendly: Bool,
+        sourceName: String = "Health Command Center",
+        sourceLicense: String = "HCC curated",
+        sourceURL: String? = nil,
+        importedAt: String? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.category = category
+        self.aliases = aliases
+        self.movementPattern = movementPattern ?? ExerciseDefinition.defaultMovementPattern(for: category)
+        self.primaryMuscles = primaryMuscles
+        self.secondaryMuscles = secondaryMuscles
+        self.equipment = equipment
+        self.difficulty = difficulty
+        self.force = force
+        self.mechanic = mechanic
+        self.setup = setup
+        self.executionSteps = executionSteps
+        self.breathingCue = breathingCue
+        self.commonMistakes = commonMistakes
+        self.howItShouldFeel = howItShouldFeel
+        self.painCautionGuidance = painCautionGuidance
+        self.variations = variations
+        self.substitutions = substitutions
+        self.locationCompatibility = locationCompatibility
+        self.isShoulderFriendly = isShoulderFriendly
+        self.isLowBackFriendly = isLowBackFriendly
+        self.sourceName = sourceName
+        self.sourceLicense = sourceLicense
+        self.sourceURL = sourceURL
+        self.importedAt = importedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, category, aliases, movementPattern, primaryMuscles, secondaryMuscles, equipment, difficulty, force, mechanic, setup, executionSteps, breathingCue, commonMistakes, howItShouldFeel, painCautionGuidance, variations, substitutions, locationCompatibility, isShoulderFriendly, isLowBackFriendly, sourceName, sourceLicense, sourceURL, importedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let category = try container.decodeIfPresent(ExerciseCategory.self, forKey: .category) ?? .other
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        self.category = category
+        aliases = try container.decodeIfPresent([String].self, forKey: .aliases) ?? []
+        movementPattern = try container.decodeIfPresent(ExerciseMovementPattern.self, forKey: .movementPattern) ?? ExerciseDefinition.defaultMovementPattern(for: category)
+        primaryMuscles = try container.decodeIfPresent([MuscleGroup].self, forKey: .primaryMuscles) ?? [.fullBody]
+        secondaryMuscles = try container.decodeIfPresent([MuscleGroup].self, forKey: .secondaryMuscles) ?? []
+        equipment = try container.decodeIfPresent([EquipmentType].self, forKey: .equipment) ?? [.other]
+        difficulty = try container.decodeIfPresent(ExerciseDifficulty.self, forKey: .difficulty) ?? .beginner
+        force = try container.decodeIfPresent(String.self, forKey: .force)
+        mechanic = try container.decodeIfPresent(String.self, forKey: .mechanic)
+        setup = try container.decodeIfPresent(String.self, forKey: .setup) ?? "Set up with control and choose a range that fits today."
+        executionSteps = try container.decodeIfPresent([String].self, forKey: .executionSteps) ?? []
+        breathingCue = try container.decodeIfPresent(String.self, forKey: .breathingCue) ?? "Keep breathing steady and avoid bracing so hard that form gets noisy."
+        commonMistakes = try container.decodeIfPresent([String].self, forKey: .commonMistakes) ?? ["Rushing the setup.", "Chasing load or range before control."]
+        howItShouldFeel = try container.decodeIfPresent(String.self, forKey: .howItShouldFeel) ?? "Controlled, repeatable, and appropriate for today's readiness."
+        painCautionGuidance = try container.decodeIfPresent(String.self, forKey: .painCautionGuidance) ?? "Stop or substitute if pain sharpens, radiates, or changes your movement."
+        variations = try container.decodeIfPresent([ExerciseVariation].self, forKey: .variations) ?? []
+        substitutions = try container.decodeIfPresent([ExerciseSubstitution].self, forKey: .substitutions) ?? []
+        locationCompatibility = try container.decodeIfPresent([TrainingLocation].self, forKey: .locationCompatibility) ?? [.gym, .mixed]
+        isShoulderFriendly = try container.decodeIfPresent(Bool.self, forKey: .isShoulderFriendly) ?? false
+        isLowBackFriendly = try container.decodeIfPresent(Bool.self, forKey: .isLowBackFriendly) ?? false
+        sourceName = try container.decodeIfPresent(String.self, forKey: .sourceName) ?? "Unknown"
+        sourceLicense = try container.decodeIfPresent(String.self, forKey: .sourceLicense) ?? "Unknown"
+        sourceURL = try container.decodeIfPresent(String.self, forKey: .sourceURL)
+        importedAt = try container.decodeIfPresent(String.self, forKey: .importedAt)
+    }
+
+    static func defaultMovementPattern(for category: ExerciseCategory) -> ExerciseMovementPattern {
+        switch category {
+        case .squat: return .squat
+        case .hinge: return .hinge
+        case .push: return .push
+        case .pull: return .pull
+        case .carry: return .carry
+        case .core: return .core
+        case .bike, .stairs: return .conditioning
+        case .mobility: return .mobility
+        case .recovery: return .recovery
+        case .bands, .dumbbells, .bodyweight, .other: return .other
+        }
+    }
 }
 
 enum ExerciseLibrary {
-    static let definitions: [ExerciseDefinition] = [
+    static let definitions: [ExerciseDefinition] = {
+        var seen = Set<String>()
+        var combined: [ExerciseDefinition] = []
+        for definition in curatedDefinitions + importedDefinitions {
+            let key = definition.id.lowercased()
+            let nameKey = definition.name.lowercased()
+            guard !seen.contains(key), !seen.contains(nameKey) else { continue }
+            combined.append(definition)
+            seen.insert(key)
+            seen.insert(nameKey)
+        }
+        return combined
+    }()
+
+    static let curatedDefinitions: [ExerciseDefinition] = [
         ExerciseDefinition(
             id: "goblet-squat",
             name: "Goblet Squat",
@@ -325,23 +481,70 @@ enum ExerciseLibrary {
             ?? definitions.first { $0.name.localizedCaseInsensitiveCompare(exercise.name) == .orderedSame }
     }
 
+    static var importedDefinitions: [ExerciseDefinition] {
+        guard let url = Bundle.main.url(forResource: "ImportedExerciseLibrary", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let decoded = try? JSONDecoder().decode([ExerciseDefinition].self, from: data) else {
+            return []
+        }
+        return decoded
+    }
+
     static func search(
         query: String,
         category: ExerciseCategory?,
         equipment: EquipmentType?,
         muscle: MuscleGroup?,
-        location: TrainingLocation?
+        location: TrainingLocation?,
+        movementPattern: ExerciseMovementPattern? = nil,
+        difficulty: ExerciseDifficulty? = nil,
+        shoulderFriendly: Bool? = nil,
+        lowBackFriendly: Bool? = nil,
+        bandsOnly: Bool = false,
+        mobilityOnly: Bool = false
     ) -> [ExerciseDefinition] {
         let cleanQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        return definitions.filter { definition in
-            let matchesQuery = cleanQuery.isEmpty
-                || definition.name.localizedCaseInsensitiveContains(cleanQuery)
-                || definition.setup.localizedCaseInsensitiveContains(cleanQuery)
+        let ranked: [(definition: ExerciseDefinition, score: Int)] = definitions.compactMap { definition in
+            let score = searchScore(for: definition, query: cleanQuery)
+            let matchesQuery = cleanQuery.isEmpty || score > 0
             let matchesCategory = category.map { definition.category == $0 } ?? true
             let matchesEquipment = equipment.map { definition.equipment.contains($0) } ?? true
             let matchesMuscle = muscle.map { definition.primaryMuscles.contains($0) || definition.secondaryMuscles.contains($0) } ?? true
             let matchesLocation = location.map { definition.locationCompatibility.contains($0) } ?? true
-            return matchesQuery && matchesCategory && matchesEquipment && matchesMuscle && matchesLocation
+            let matchesMovement = movementPattern.map { definition.movementPattern == $0 } ?? true
+            let matchesDifficulty = difficulty.map { definition.difficulty == $0 } ?? true
+            let matchesShoulder = shoulderFriendly.map { definition.isShoulderFriendly == $0 } ?? true
+            let matchesLowBack = lowBackFriendly.map { definition.isLowBackFriendly == $0 } ?? true
+            let matchesBands = !bandsOnly || definition.equipment.contains(.resistanceBands) || definition.category == .bands
+            let matchesMobility = !mobilityOnly || definition.category == .mobility || definition.category == .recovery || definition.movementPattern == .mobility || definition.movementPattern == .recovery
+            guard matchesQuery && matchesCategory && matchesEquipment && matchesMuscle && matchesLocation && matchesMovement && matchesDifficulty && matchesShoulder && matchesLowBack && matchesBands && matchesMobility else {
+                return nil
+            }
+            return (definition: definition, score: score)
         }
+        return ranked.sorted {
+            if $0.score == $1.score { return $0.definition.name < $1.definition.name }
+            return $0.score > $1.score
+        }
+        .map(\.definition)
+    }
+
+    private static func searchScore(for definition: ExerciseDefinition, query: String) -> Int {
+        guard !query.isEmpty else { return 1 }
+        let q = query.lowercased()
+        let name = definition.name.lowercased()
+        if name == q { return 100 }
+        if definition.aliases.map({ $0.lowercased() }).contains(q) { return 92 }
+        if name.contains(q) { return 82 }
+        if definition.aliases.contains(where: { $0.lowercased().contains(q) }) { return 72 }
+        let fields = [
+            definition.category.rawValue,
+            definition.movementPattern.rawValue,
+            definition.equipment.map(\.rawValue).joined(separator: " "),
+            definition.primaryMuscles.map(\.rawValue).joined(separator: " "),
+            definition.secondaryMuscles.map(\.rawValue).joined(separator: " "),
+            definition.setup
+        ].joined(separator: " ").lowercased()
+        return fields.contains(q) ? 42 : 0
     }
 }

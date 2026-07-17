@@ -54,6 +54,7 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Starter Program remains the backbone: Full Body A, Full Body B, and Full Body C.
 - Workout Library adds deterministic, local-only options for short work-shift sessions, bands/bodyweight, dumbbell strength, recovery mobility, bike/stairs conditioning, and bare-minimum movement.
 - Exercise Library adds local movement definitions with setup, execution steps, cues, caution guidance, equipment filters, and substitutions. Custom workouts can prefill exercises from the library while still allowing manual entries.
+- Exercise Library now bundles a normalized offline import from `yuhonas/free-exercise-db` plus HCC-curated band and mobility extensions. Attribution and license details are documented in `Docs/EXERCISE_LIBRARY_IMPORT.md`.
 - Dynamic Workout Generator creates a local, rule-based workout option from readiness, recovery, sleep/stress/soreness context, available time, program phase, location, equipment, recent logs, and the DailyPlan. Generated workouts are selectable in Train and can be copied into Custom Workouts before logging.
 - Adaptive Program Scheduler shows a local weekly structure with three full-body strength sessions and optional recovery/conditioning days. Readiness and recovery can downgrade today's session, and manual reschedules are stored locally without marking skipped days as failure.
 - Goals & Targets add editable local guardrails for recomposition, strength, workout frequency, protein, hydration, sleep, meditation, mobility, and consistency. These targets shape Today, DailyPlan nutrition guidance, Insights, and Weekly Coach Report copy without aggressive weight-loss prescriptions.
@@ -68,6 +69,7 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Accessibility and localization readiness is documented in `Docs/ACCESSIBILITY_LOCALIZATION_READINESS.md`. The app now has Reduce Motion guards for common micro-interactions, clearer icon-button labels, and a lightweight `AppStrings` namespace for repeated user-facing strings.
 - Built-in library workouts use the same local ExerciseLog flow as starter workouts, so Progress session detail and exercise summaries continue to work.
 - Custom Workouts are local templates in `custom_workouts.json`; editing a template does not rewrite past workout logs.
+- Imported exercise metadata is bundled locally in `ImportedExerciseLibrary.json`; the app does not need the internet for exercise search. Images from the source dataset are deferred pending a separate image-license/app-size audit.
 
 ## Weekly Review Notes
 
