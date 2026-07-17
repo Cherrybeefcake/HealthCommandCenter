@@ -454,7 +454,7 @@ private struct TodayMission {
 
     var primaryMissionTitle: String {
         if !appModel.hasCheckedInToday { return "Classify the day before choosing intensity." }
-        return dailyPlan.primaryFocus
+        return appModel.coachRecommendation(.primaryMission)?.message ?? dailyPlan.primaryFocus
     }
 
     var todaysCallText: String {
@@ -477,6 +477,9 @@ private struct TodayMission {
     var mainWatchout: String {
         if !appModel.hasCheckedInToday {
             return "Do not treat the day as a training day until Brian classifies readiness."
+        }
+        if let coachWatchout = appModel.coachRecommendation(.watchout)?.message {
+            return coachWatchout
         }
         if let subjectiveOverride = recoveryStatus.subjectiveOverrideText {
             return subjectiveOverride
@@ -510,7 +513,7 @@ private struct TodayMission {
         if !appModel.hasCheckedInToday {
             return "Start with the check-in. The dashboard gets sharper once the day is classified."
         }
-        return dailyPlan.recommendedAction
+        return appModel.coachRecommendation(.todayBriefing)?.message ?? dailyPlan.recommendedAction
     }
 
     var focus: String {
@@ -520,7 +523,7 @@ private struct TodayMission {
         if isRecoveryBiased {
             return category == .recoveryDay ? "Recovery, mobility, and sleep protection" : "Minimum viable day"
         }
-        return dailyPlan.workoutRecommendation
+        return appModel.coachRecommendation(.workout)?.message ?? dailyPlan.workoutRecommendation
     }
 
     var workoutRecommendation: String {
@@ -626,7 +629,7 @@ private struct TodayMission {
     }
 
     var nutritionStatusDetail: String {
-        "\(nutritionDisplay.source): \(nutritionDisplay.detail)"
+        appModel.coachRecommendation(.nutrition)?.message ?? "\(nutritionDisplay.source): \(nutritionDisplay.detail)"
     }
 
     var nutritionStatusValue: String {

@@ -49,6 +49,7 @@
 		01A000000000000000000128 /* DataRepositories.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002B /* DataRepositories.swift */; };
 		01A000000000000000000129 /* OuraIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002C /* OuraIntegration.swift */; };
 		01A00000000000000000012A /* NutritionProviders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002D /* NutritionProviders.swift */; };
+		01A00000000000000000012B /* CoachEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A00000000000000000002E /* CoachEngine.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -96,6 +97,7 @@
 		01A00000000000000000002B /* DataRepositories.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataRepositories.swift; sourceTree = "<group>"; };
 		01A00000000000000000002C /* OuraIntegration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OuraIntegration.swift; sourceTree = "<group>"; };
 		01A00000000000000000002D /* NutritionProviders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionProviders.swift; sourceTree = "<group>"; };
+		01A00000000000000000002E /* CoachEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachEngine.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -163,6 +165,7 @@
 				01A000000000000000000027 /* Goals.swift */,
 				01A000000000000000000028 /* ProgressPhotos.swift */,
 				01A000000000000000000029 /* HealthReportExport.swift */,
+				01A00000000000000000002E /* CoachEngine.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -346,6 +349,7 @@
 				01A000000000000000000128 /* DataRepositories.swift in Sources */,
 				01A000000000000000000129 /* OuraIntegration.swift in Sources */,
 				01A00000000000000000012A /* NutritionProviders.swift in Sources */,
+				01A00000000000000000012B /* CoachEngine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

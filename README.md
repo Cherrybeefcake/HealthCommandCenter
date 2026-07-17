@@ -63,6 +63,7 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Shortcuts foundation adds App Intents for opening Today, starting Check In, opening Train, logging Daily Win, and opening Health refresh. A widget target is deferred because adding an extension target safely requires Xcode-managed signing/App Group review on Brian's machine.
 - Apple Watch foundation is documented in `Docs/APPLE_WATCH_FOUNDATION.md`. The watch target is deferred until it can be added through Xcode with Brian's signing context active.
 - Cloud-ready architecture is documented in `Docs/CLOUD_READY_ARCHITECTURE.md`. Repository protocols now wrap the current local JSON/UserDefaults storage without enabling sync, accounts, or cloud upload.
+- Coach engine architecture is documented in `Docs/COACH_ENGINE.md`. The current engine is deterministic and local-only, unifying Today, recovery, nutrition, workout, and weekly review wording behind conservative safety rules.
 - Built-in library workouts use the same local ExerciseLog flow as starter workouts, so Progress session detail and exercise summaries continue to work.
 - Custom Workouts are local templates in `custom_workouts.json`; editing a template does not rewrite past workout logs.
 

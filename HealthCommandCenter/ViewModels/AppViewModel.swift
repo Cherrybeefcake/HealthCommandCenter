@@ -173,6 +173,48 @@ final class AppViewModel: ObservableObject {
         )
     }
 
+    func coachContext() -> CoachContext {
+        let checkIn = hasCheckedInToday ? latestCheckIn : nil
+        let nutrition = todayNutritionDisplay()
+        let recovery = todayRecoveryStatus()
+        let sleepSummary = currentSleepSummary(checkIn: checkIn)
+        let bodySummary = latestBodyMetricsSummary()
+        let ouraSnapshot = selectedOuraSnapshotForRecovery()
+
+        return CoachContext(
+            readinessCategory: hasCheckedInToday ? activeCategory : nil,
+            dailyPlan: todayDailyPlan,
+            recoveryStatus: recovery,
+            recoverySourceText: recovery.sleepSourceText,
+            sleepHours: sleepSummary.durationHours,
+            energy: checkIn?.energy,
+            stress: checkIn?.stress,
+            soreness: checkIn?.soreness,
+            painNote: checkIn?.painNote ?? "",
+            mood: checkIn?.mood,
+            availableWorkoutMinutes: checkIn?.availableWorkoutMinutes,
+            programPhase: programPhase,
+            trainingLocation: trainingLocation,
+            workoutTimePreference: workoutTimePreference,
+            recentWorkouts: recentExerciseLogsForWorkoutGeneration(),
+            programWeek: currentProgramWeek(),
+            goals: currentGoalProgress(),
+            ritualCompleted: todayRitualCompletedCount(),
+            ritualTotal: todayRitualItems().count,
+            nutritionLog: nutrition.log,
+            nutritionSource: nutrition.source,
+            nutritionDetail: nutrition.detail,
+            bodyMetricTrendText: bodySummary.trendText,
+            ouraReadinessScore: ouraSnapshot?.readinessScore ?? checkIn?.ouraSummary?.readinessScore,
+            ouraSleepScore: ouraSnapshot?.sleepScore ?? checkIn?.ouraSummary?.sleepScore,
+            ouraTemperatureTrend: ouraSnapshot?.bodyTemperatureTrend ?? checkIn?.ouraSummary?.bodyTemperatureTrend
+        )
+    }
+
+    func coachRecommendation(_ type: CoachRecommendationType) -> CoachRecommendation? {
+        DeterministicCoachEngine().recommendation(type, for: coachContext())
+    }
+
     var nutritionTargets: NutritionTargets {
         let profileTargets = NutritionTargets.from(personalizationSettings)
         return NutritionTargets(
@@ -1279,6 +1321,28 @@ final class AppViewModel: ObservableObject {
             hasBodyMetrics: bodySummary.latestEntry != nil || bodySummary.appleHealthWeightPounds != nil,
             consistencyDays: consistencyDays
         )
+        let draftReview = WeeklyReview(
+            weekStartDate: weekStart,
+            weekEndDate: weekEnd,
+            checkInCount: weekCheckIns.count,
+            workoutDays: workoutDays,
+            totalSets: totalSets,
+            ritualDays: ritualDays,
+            ritualCompletionPercent: ritualPercent,
+            nutritionLoggedDays: nutritionDays,
+            averageProtein: averageProtein,
+            averageWater: averageWater,
+            averageSleep: averageSleep,
+            lowSleepDays: lowSleepDays,
+            bodyWeightTrendText: bodyTrend,
+            mostCommonReadiness: readiness,
+            consistencyScoreText: consistencyScore,
+            wins: wins,
+            watchouts: watchouts,
+            nextWeekFocus: focus,
+            coachSummary: weeklyCoachSummary(consistencyDays: consistencyDays, checkIns: weekCheckIns.count, workoutDays: workoutDays, ritualDays: ritualDays, lowSleepDays: lowSleepDays)
+        )
+        let coachSummary = DeterministicCoachEngine().weeklyReviewSummary(for: draftReview, context: coachContext())
 
         return WeeklyReview(
             weekStartDate: weekStart,
@@ -1299,7 +1363,7 @@ final class AppViewModel: ObservableObject {
             wins: wins,
             watchouts: watchouts,
             nextWeekFocus: focus,
-            coachSummary: weeklyCoachSummary(consistencyDays: consistencyDays, checkIns: weekCheckIns.count, workoutDays: workoutDays, ritualDays: ritualDays, lowSleepDays: lowSleepDays)
+            coachSummary: coachSummary
         )
     }
 
