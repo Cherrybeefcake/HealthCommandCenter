@@ -640,6 +640,10 @@ final class AppViewModel: ObservableObject {
         let cronometer = log.cronometerCompleted ? "Cronometer done" : "Cronometer not logged"
         let protein = log.proteinGrams.map { "\($0)g protein" } ?? "protein missing"
         let water = log.waterOunces.map { "\($0) oz water" } ?? "water missing"
+        if let summary = todaySnapshot.nutrition, summary.availableMetricCount > 0, log.notes == summary.sourceLabel {
+            let latest = summary.latestSampleDate.map { "latest \($0.formatted(date: .omitted, time: .shortened))" } ?? "latest time unavailable"
+            return "\(summary.sourceLabel) | \(protein) | \(water) | \(latest)"
+        }
         return "\(cronometer) | \(protein) | \(water)"
     }
 
@@ -1511,11 +1515,15 @@ final class AppViewModel: ObservableObject {
             return diagnostics.map { diagnostic in
                 let sampleText = diagnostic.sampleDate.map { "Sample: \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "Sample: none"
                 let errorText = diagnostic.errorText.map { "\nError: \($0)" } ?? ""
+                let sourceText = diagnostic.id.hasPrefix("nutrition-")
+                    ? "\nSource: \(diagnostic.sourceLabel)"
+                    : ""
+                let countText = diagnostic.sampleCount.map { "\nSamples: \($0)" } ?? ""
                 return DeviceStatusItem(
                     id: diagnostic.id,
                     title: diagnostic.title,
                     value: diagnostic.valueText,
-                    detail: "\(diagnostic.statusText) | \(diagnostic.queryWindow)\n\(sampleText)\n\(diagnostic.detail)\(errorText)"
+                    detail: "\(diagnostic.statusText) | \(diagnostic.queryWindow)\n\(sampleText)\(countText)\(sourceText)\n\(diagnostic.detail)\(errorText)"
                 )
             }
         }

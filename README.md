@@ -313,6 +313,20 @@ Ritual completions are stored locally in the app sandbox as `daily_ritual_logs.j
 
 Nutrition tracking is manual plus Apple Health read-only summaries. Cronometer remains the source of detailed food logging; if Cronometer or another app writes nutrition samples to Apple Health, HealthCommandCenter can surface those daily totals. HCC stores only manual daily summary values locally: calories, protein, water, fiber, Cronometer completion, target flags, and notes.
 
+### Cronometer via Apple Health
+
+Health Command Center does not use or scrape a Cronometer API. Automatic Cronometer nutrition works only when Cronometer writes supported nutrition samples into Apple Health and Brian grants HCC read permission for those Health fields.
+
+Setup path on iPhone:
+
+1. Open Cronometer.
+2. Go to `More -> Connect Apps & Devices -> Apple Health`.
+3. Enable available nutrition write permissions in Apple Health.
+4. Open HCC -> You -> HealthKit -> Refresh Health Data.
+5. Check `Nutrition Source Diagnostics` in You/Profile.
+
+When HealthKit source metadata identifies Cronometer, HCC labels the source as `Cronometer via Apple Health`. If source metadata is unavailable or mixed, HCC labels it `Apple Health nutrition`. If no samples exist, HCC shows `No Apple Health nutrition samples found` and manual nutrition remains the fallback. HCC does not double count manual HCC entries with Apple Health totals; one daily nutrition source is chosen for coaching/display.
+
 ## Body Metrics MVP
 
 Apple Health body weight may be shown when available, but it is used as read-only context unless Brian explicitly saves a local entry. Manual and smart-scale body metrics are stored locally in `body_metrics_entries.json`. Body fat, muscle mass, visceral fat, and waist values are treated as trend data for body recomposition, not exact medical measurements.
@@ -407,6 +421,7 @@ Repo-local git identity is configured for Brian Cady.
   - Lean body mass
   - Waist circumference
   - Dietary energy, protein, carbohydrates, fat, fiber, sugar, sodium, water, and caffeine
+  - Calcium, iron, magnesium, potassium, zinc, vitamin D, and cholesterol when available
 
 ## TestFlight Readiness Checklist
 

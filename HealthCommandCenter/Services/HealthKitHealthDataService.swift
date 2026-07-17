@@ -38,7 +38,14 @@ final class HealthKitHealthDataService: HealthDataProviding {
             HKObjectType.quantityType(forIdentifier: .dietarySugar),
             HKObjectType.quantityType(forIdentifier: .dietarySodium),
             HKObjectType.quantityType(forIdentifier: .dietaryWater),
-            HKObjectType.quantityType(forIdentifier: .dietaryCaffeine)
+            HKObjectType.quantityType(forIdentifier: .dietaryCaffeine),
+            HKObjectType.quantityType(forIdentifier: .dietaryCalcium),
+            HKObjectType.quantityType(forIdentifier: .dietaryIron),
+            HKObjectType.quantityType(forIdentifier: .dietaryMagnesium),
+            HKObjectType.quantityType(forIdentifier: .dietaryPotassium),
+            HKObjectType.quantityType(forIdentifier: .dietaryZinc),
+            HKObjectType.quantityType(forIdentifier: .dietaryVitaminD),
+            HKObjectType.quantityType(forIdentifier: .dietaryCholesterol)
         ].compactMap { $0 })
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -117,7 +124,19 @@ final class HealthKitHealthDataService: HealthDataProviding {
             sugarGrams: nutritionResults.sugar.value,
             sodiumMilligrams: nutritionResults.sodium.value,
             waterOunces: nutritionResults.water.value,
-            caffeineMilligrams: nutritionResults.caffeine.value
+            caffeineMilligrams: nutritionResults.caffeine.value,
+            calciumMilligrams: nutritionResults.calcium.value,
+            ironMilligrams: nutritionResults.iron.value,
+            magnesiumMilligrams: nutritionResults.magnesium.value,
+            potassiumMilligrams: nutritionResults.potassium.value,
+            zincMilligrams: nutritionResults.zinc.value,
+            vitaminDMicrograms: nutritionResults.vitaminD.value,
+            cholesterolMilligrams: nutritionResults.cholesterol.value,
+            sourceNames: nutritionResults.sourceNames,
+            sourceBundleIdentifiers: nutritionResults.sourceBundleIdentifiers,
+            latestSampleDate: nutritionResults.latestSampleDate,
+            sampleCount: nutritionResults.sampleCount,
+            appearsFromCronometer: nutritionResults.appearsFromCronometer
         )
 
         return HealthSnapshot(
@@ -169,7 +188,14 @@ final class HealthKitHealthDataService: HealthDataProviding {
                 nutritionResults.sugar.diagnostic,
                 nutritionResults.sodium.diagnostic,
                 nutritionResults.water.diagnostic,
-                nutritionResults.caffeine.diagnostic
+                nutritionResults.caffeine.diagnostic,
+                nutritionResults.calcium.diagnostic,
+                nutritionResults.iron.diagnostic,
+                nutritionResults.magnesium.diagnostic,
+                nutritionResults.potassium.diagnostic,
+                nutritionResults.zinc.diagnostic,
+                nutritionResults.vitaminD.diagnostic,
+                nutritionResults.cholesterol.diagnostic
             ]
         )
     }
@@ -233,19 +259,64 @@ final class HealthKitHealthDataService: HealthDataProviding {
         let sodium: QuantityResult
         let water: QuantityResult
         let caffeine: QuantityResult
+        let calcium: QuantityResult
+        let iron: QuantityResult
+        let magnesium: QuantityResult
+        let potassium: QuantityResult
+        let zinc: QuantityResult
+        let vitaminD: QuantityResult
+        let cholesterol: QuantityResult
+
+        var allResults: [QuantityResult] {
+            [calories, protein, carbs, fat, fiber, sugar, sodium, water, caffeine, calcium, iron, magnesium, potassium, zinc, vitaminD, cholesterol]
+        }
+
+        var sourceNames: [String]? {
+            uniqueSources(\.sourceNames)
+        }
+
+        var sourceBundleIdentifiers: [String]? {
+            uniqueSources(\.sourceBundleIdentifiers)
+        }
+
+        var latestSampleDate: Date? {
+            allResults.compactMap(\.diagnostic.sampleDate).max()
+        }
+
+        var sampleCount: Int? {
+            let count = allResults.compactMap(\.diagnostic.sampleCount).reduce(0, +)
+            return count > 0 ? count : nil
+        }
+
+        var appearsFromCronometer: Bool {
+            allResults.contains { $0.diagnostic.appearsFromCronometer == true }
+        }
+
+        private func uniqueSources(_ keyPath: KeyPath<HealthMetricDiagnostic, [String]?>) -> [String]? {
+            let values = allResults.flatMap { $0.diagnostic[keyPath: keyPath] ?? [] }
+            let unique = Array(Set(values)).sorted()
+            return unique.isEmpty ? nil : unique
+        }
     }
 
     private func nutritionResults() async -> NutritionResults {
         NutritionResults(
-            calories: await quantitySumResult(id: "nutrition-calories", title: "Dietary Calories", identifier: .dietaryEnergyConsumed, unit: .kilocalorie(), unitText: "kcal", window: .today),
-            protein: await quantitySumResult(id: "nutrition-protein", title: "Protein", identifier: .dietaryProtein, unit: .gram(), unitText: "g", window: .today),
-            carbs: await quantitySumResult(id: "nutrition-carbs", title: "Carbohydrates", identifier: .dietaryCarbohydrates, unit: .gram(), unitText: "g", window: .today),
-            fat: await quantitySumResult(id: "nutrition-fat", title: "Fat", identifier: .dietaryFatTotal, unit: .gram(), unitText: "g", window: .today),
-            fiber: await quantitySumResult(id: "nutrition-fiber", title: "Fiber", identifier: .dietaryFiber, unit: .gram(), unitText: "g", window: .today),
-            sugar: await quantitySumResult(id: "nutrition-sugar", title: "Sugar", identifier: .dietarySugar, unit: .gram(), unitText: "g", window: .today),
-            sodium: await quantitySumResult(id: "nutrition-sodium", title: "Sodium", identifier: .dietarySodium, unit: .gramUnit(with: .milli), unitText: "mg", window: .today),
-            water: await quantitySumResult(id: "nutrition-water", title: "Water", identifier: .dietaryWater, unit: .fluidOunceUS(), unitText: "oz", window: .today),
-            caffeine: await quantitySumResult(id: "nutrition-caffeine", title: "Caffeine", identifier: .dietaryCaffeine, unit: .gramUnit(with: .milli), unitText: "mg", window: .today)
+            calories: await quantitySumResult(id: "nutrition-calories", title: "Dietary Calories", identifier: .dietaryEnergyConsumed, unit: .kilocalorie(), unitText: "kcal", window: .today, includeSourceMetadata: true),
+            protein: await quantitySumResult(id: "nutrition-protein", title: "Protein", identifier: .dietaryProtein, unit: .gram(), unitText: "g", window: .today, includeSourceMetadata: true),
+            carbs: await quantitySumResult(id: "nutrition-carbs", title: "Carbohydrates", identifier: .dietaryCarbohydrates, unit: .gram(), unitText: "g", window: .today, includeSourceMetadata: true),
+            fat: await quantitySumResult(id: "nutrition-fat", title: "Fat", identifier: .dietaryFatTotal, unit: .gram(), unitText: "g", window: .today, includeSourceMetadata: true),
+            fiber: await quantitySumResult(id: "nutrition-fiber", title: "Fiber", identifier: .dietaryFiber, unit: .gram(), unitText: "g", window: .today, includeSourceMetadata: true),
+            sugar: await quantitySumResult(id: "nutrition-sugar", title: "Sugar", identifier: .dietarySugar, unit: .gram(), unitText: "g", window: .today, includeSourceMetadata: true),
+            sodium: await quantitySumResult(id: "nutrition-sodium", title: "Sodium", identifier: .dietarySodium, unit: .gramUnit(with: .milli), unitText: "mg", window: .today, includeSourceMetadata: true),
+            water: await quantitySumResult(id: "nutrition-water", title: "Water", identifier: .dietaryWater, unit: .fluidOunceUS(), unitText: "oz", window: .today, includeSourceMetadata: true),
+            caffeine: await quantitySumResult(id: "nutrition-caffeine", title: "Caffeine", identifier: .dietaryCaffeine, unit: .gramUnit(with: .milli), unitText: "mg", window: .today, includeSourceMetadata: true),
+            calcium: await quantitySumResult(id: "nutrition-calcium", title: "Calcium", identifier: .dietaryCalcium, unit: .gramUnit(with: .milli), unitText: "mg", window: .today, includeSourceMetadata: true),
+            iron: await quantitySumResult(id: "nutrition-iron", title: "Iron", identifier: .dietaryIron, unit: .gramUnit(with: .milli), unitText: "mg", window: .today, includeSourceMetadata: true),
+            magnesium: await quantitySumResult(id: "nutrition-magnesium", title: "Magnesium", identifier: .dietaryMagnesium, unit: .gramUnit(with: .milli), unitText: "mg", window: .today, includeSourceMetadata: true),
+            potassium: await quantitySumResult(id: "nutrition-potassium", title: "Potassium", identifier: .dietaryPotassium, unit: .gramUnit(with: .milli), unitText: "mg", window: .today, includeSourceMetadata: true),
+            zinc: await quantitySumResult(id: "nutrition-zinc", title: "Zinc", identifier: .dietaryZinc, unit: .gramUnit(with: .milli), unitText: "mg", window: .today, includeSourceMetadata: true),
+            vitaminD: await quantitySumResult(id: "nutrition-vitamin-d", title: "Vitamin D", identifier: .dietaryVitaminD, unit: .gramUnit(with: .micro), unitText: "mcg", window: .today, includeSourceMetadata: true),
+            cholesterol: await quantitySumResult(id: "nutrition-cholesterol", title: "Cholesterol", identifier: .dietaryCholesterol, unit: .gramUnit(with: .milli), unitText: "mg", window: .today, includeSourceMetadata: true)
         )
     }
 
@@ -255,7 +326,8 @@ final class HealthKitHealthDataService: HealthDataProviding {
         identifier: HKQuantityTypeIdentifier,
         unit: HKUnit,
         unitText: String,
-        window: QueryWindow
+        window: QueryWindow,
+        includeSourceMetadata: Bool = false
     ) async -> QuantityResult {
         guard let type = HKQuantityType.quantityType(forIdentifier: identifier) else {
             return QuantityResult(value: nil, diagnostic: diagnostic(id: id, title: title, value: "Unavailable", status: "Unavailable", window: window.text, detail: "HealthKit type is unavailable on this device."))
@@ -265,17 +337,21 @@ final class HealthKitHealthDataService: HealthDataProviding {
             let samples = try await quantitySamples(type: type, predicate: window.predicate)
             let sum = try await quantitySum(type: type, unit: unit, predicate: window.predicate)
             let latest = samples.first?.endDate
+            let sourceNames = includeSourceMetadata ? nutritionSourceNames(from: samples) : nil
+            let sourceBundles = includeSourceMetadata ? nutritionSourceBundleIDs(from: samples) : nil
+            let fromCronometer = includeSourceMetadata && appearsFromCronometer(sourceNames: sourceNames, bundleIDs: sourceBundles)
+            let sourceDetail = includeSourceMetadata ? nutritionSourceDetail(sourceNames: sourceNames, fromCronometer: fromCronometer) : nil
 
             if samples.isEmpty {
-                return QuantityResult(value: nil, diagnostic: diagnostic(id: id, title: title, value: "No sample", status: "No sample in window", window: window.text, detail: "\(title) query succeeded, but Apple Health returned no samples in this window. Testing just after midnight can do this.", sampleDate: nil))
+                return QuantityResult(value: nil, diagnostic: diagnostic(id: id, title: title, value: "No sample", status: "No sample in window", window: window.text, detail: "\(title) query succeeded, but Apple Health returned no samples in this window. Testing just after midnight can do this.", sampleDate: nil, sourceNames: sourceNames, sourceBundleIdentifiers: sourceBundles, sampleCount: 0, appearsFromCronometer: fromCronometer))
             }
 
             let value = sum ?? 0
             if value == 0 {
-                return QuantityResult(value: 0, diagnostic: diagnostic(id: id, title: title, value: "0 \(unitText)", status: "Zero in window", window: window.text, detail: "\(title) is authorized/readable, and the returned total is zero for this window.", sampleDate: latest))
+                return QuantityResult(value: 0, diagnostic: diagnostic(id: id, title: title, value: "0 \(unitText)", status: "Zero in window", window: window.text, detail: ["\(title) is authorized/readable, and the returned total is zero for this window.", sourceDetail].compactMap { $0 }.joined(separator: " "), sampleDate: latest, sourceNames: sourceNames, sourceBundleIdentifiers: sourceBundles, sampleCount: samples.count, appearsFromCronometer: fromCronometer))
             }
 
-            return QuantityResult(value: value, diagnostic: diagnostic(id: id, title: title, value: formatted(value, unitText: unitText), status: "Value returned", window: window.text, detail: "\(samples.count) sample\(samples.count == 1 ? "" : "s") contributed to this total.", sampleDate: latest))
+            return QuantityResult(value: value, diagnostic: diagnostic(id: id, title: title, value: formatted(value, unitText: unitText), status: fromCronometer ? "Cronometer via Apple Health" : "Value returned", window: window.text, detail: ["\(samples.count) sample\(samples.count == 1 ? "" : "s") contributed to this total.", sourceDetail].compactMap { $0 }.joined(separator: " "), sampleDate: latest, sourceNames: sourceNames, sourceBundleIdentifiers: sourceBundles, sampleCount: samples.count, appearsFromCronometer: fromCronometer))
         } catch {
             return QuantityResult(value: nil, diagnostic: diagnostic(id: id, title: title, value: "Query error", status: "Query error", window: window.text, detail: "The HealthKit query failed. This can mean unavailable data or denied access.", error: error))
         }
@@ -466,6 +542,39 @@ final class HealthKitHealthDataService: HealthDataProviding {
         }
     }
 
+    private func nutritionSourceNames(from samples: [HKQuantitySample]) -> [String]? {
+        let names = samples
+            .map { $0.sourceRevision.source.name.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let unique = Array(Set(names)).sorted()
+        return unique.isEmpty ? nil : unique
+    }
+
+    private func nutritionSourceBundleIDs(from samples: [HKQuantitySample]) -> [String]? {
+        let bundleIDs = samples
+            .map { $0.sourceRevision.source.bundleIdentifier.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let unique = Array(Set(bundleIDs)).sorted()
+        return unique.isEmpty ? nil : unique
+    }
+
+    private func appearsFromCronometer(sourceNames: [String]?, bundleIDs: [String]?) -> Bool {
+        let searchable = ((sourceNames ?? []) + (bundleIDs ?? []))
+            .map { $0.lowercased() }
+            .joined(separator: " ")
+        return searchable.contains("cronometer")
+    }
+
+    private func nutritionSourceDetail(sourceNames: [String]?, fromCronometer: Bool) -> String {
+        if fromCronometer {
+            return "Source appears to be Cronometer via Apple Health."
+        }
+        if let sourceNames, !sourceNames.isEmpty {
+            return "Apple Health source\(sourceNames.count == 1 ? "" : "s"): \(sourceNames.joined(separator: ", "))."
+        }
+        return "Apple Health did not expose source attribution for these samples."
+    }
+
     /// Approximation for Apple's displayed latest sleep day:
     /// fetch a recent window for overnight/naps, then group samples by a sleep day
     /// that rolls over in the evening instead of at midnight. This avoids treating
@@ -501,7 +610,11 @@ final class HealthKitHealthDataService: HealthDataProviding {
         window: String,
         detail: String,
         sampleDate: Date? = nil,
-        error: Error? = nil
+        error: Error? = nil,
+        sourceNames: [String]? = nil,
+        sourceBundleIdentifiers: [String]? = nil,
+        sampleCount: Int? = nil,
+        appearsFromCronometer: Bool? = nil
     ) -> HealthMetricDiagnostic {
         HealthMetricDiagnostic(
             id: id,
@@ -511,7 +624,11 @@ final class HealthKitHealthDataService: HealthDataProviding {
             queryWindow: window,
             detail: detail,
             sampleDate: sampleDate,
-            errorText: error?.localizedDescription
+            errorText: error?.localizedDescription,
+            sourceNames: sourceNames,
+            sourceBundleIdentifiers: sourceBundleIdentifiers,
+            sampleCount: sampleCount,
+            appearsFromCronometer: appearsFromCronometer
         )
     }
 

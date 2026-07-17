@@ -65,6 +65,18 @@ struct HealthNutritionSummary: Codable, Equatable, Hashable {
     var sodiumMilligrams: Double?
     var waterOunces: Double?
     var caffeineMilligrams: Double?
+    var calciumMilligrams: Double?
+    var ironMilligrams: Double?
+    var magnesiumMilligrams: Double?
+    var potassiumMilligrams: Double?
+    var zincMilligrams: Double?
+    var vitaminDMicrograms: Double?
+    var cholesterolMilligrams: Double?
+    var sourceNames: [String]?
+    var sourceBundleIdentifiers: [String]?
+    var latestSampleDate: Date?
+    var sampleCount: Int?
+    var appearsFromCronometer: Bool?
 
     var availableMetricCount: Int {
         [
@@ -76,8 +88,25 @@ struct HealthNutritionSummary: Codable, Equatable, Hashable {
             sugarGrams,
             sodiumMilligrams,
             waterOunces,
-            caffeineMilligrams
+            caffeineMilligrams,
+            calciumMilligrams,
+            ironMilligrams,
+            magnesiumMilligrams,
+            potassiumMilligrams,
+            zincMilligrams,
+            vitaminDMicrograms,
+            cholesterolMilligrams
         ].compactMap { $0 }.count
+    }
+
+    var sourceLabel: String {
+        if appearsFromCronometer == true {
+            return "Cronometer via Apple Health"
+        }
+        if availableMetricCount > 0 {
+            return "Apple Health nutrition"
+        }
+        return "No Apple Health nutrition samples found"
     }
 }
 
@@ -141,6 +170,20 @@ struct HealthMetricDiagnostic: Codable, Equatable, Identifiable {
     var detail: String
     var sampleDate: Date?
     var errorText: String?
+    var sourceNames: [String]?
+    var sourceBundleIdentifiers: [String]?
+    var sampleCount: Int?
+    var appearsFromCronometer: Bool?
+
+    var sourceLabel: String {
+        if appearsFromCronometer == true {
+            return "Cronometer via Apple Health"
+        }
+        if let sourceNames, !sourceNames.isEmpty {
+            return sourceNames.joined(separator: ", ")
+        }
+        return "Source unavailable"
+    }
 }
 
 struct OuraDailySummary: Codable, Equatable {

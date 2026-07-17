@@ -90,6 +90,31 @@ final class ReleaseQualityTests: XCTestCase {
         XCTAssertEqual(decision.log.proteinGrams, 120)
     }
 
+    func testCronometerAppleHealthNutritionSourceLabel() {
+        let dateKey = "2026-07-16"
+        let summary = HealthNutritionSummary(
+            calories: 2200,
+            proteinGrams: 165,
+            waterOunces: 96,
+            sourceNames: ["Cronometer"],
+            sourceBundleIdentifiers: ["com.cronometer.Cronometer"],
+            latestSampleDate: Date(),
+            sampleCount: 12,
+            appearsFromCronometer: true
+        )
+        let decision = NutritionSourceResolver.resolve(
+            manual: ManualNutritionProvider(logs: []),
+            appleHealth: AppleHealthNutritionProvider(summary: summary),
+            dateKey: dateKey,
+            targets: .brianDefault,
+            detailBuilder: { $0.notes }
+        )
+
+        XCTAssertEqual(summary.sourceLabel, "Cronometer via Apple Health")
+        XCTAssertEqual(decision.source, .cronometerAppleHealth)
+        XCTAssertEqual(decision.log.notes, "Cronometer via Apple Health")
+    }
+
     func testDynamicWorkoutGeneratorDowngradesRecoveryAndPain() {
         let checkIn = CheckIn(
             energy: 3,

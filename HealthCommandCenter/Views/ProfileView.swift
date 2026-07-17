@@ -176,6 +176,8 @@ struct ProfileView: View {
 
             DisclosureGroup {
                 VStack(alignment: .leading, spacing: 14) {
+                    nutritionSourceDiagnostics
+
                     ForEach(Array(healthMetricGroups.enumerated()), id: \.offset) { _, group in
                         VStack(alignment: .leading, spacing: 8) {
                             SectionHeader(title: group.title, icon: group.icon, accent: appModel.activeCategory.accent)
@@ -238,6 +240,43 @@ struct ProfileView: View {
             ("Body", "scalemass", items.filter { bodyIDs.contains($0.id) }),
             ("Nutrition", "fork.knife", items.filter { nutritionIDs.contains($0.id) })
         ].filter { !$0.items.isEmpty }
+    }
+
+    private var nutritionSourceDiagnostics: some View {
+        let nutrition = appModel.todaySnapshot.nutrition
+        let diagnostics = appModel.healthMetricStatusItems()
+            .filter { $0.id.hasPrefix("nutrition-") }
+        return VStack(alignment: .leading, spacing: 8) {
+            SectionHeader(
+                title: "Nutrition Source Diagnostics",
+                subtitle: "Automatic Cronometer sync only works when Cronometer writes supported nutrition samples to Apple Health and HCC has read permission.",
+                icon: "fork.knife.circle",
+                accent: appModel.activeCategory.accent
+            )
+
+            preferenceRow("Detected source", nutrition?.sourceLabel ?? "No Apple Health nutrition samples found")
+            preferenceRow("Samples today", nutrition?.sampleCount.map(String.init) ?? "0")
+            preferenceRow("Latest sample", nutrition?.latestSampleDate?.formatted(date: .abbreviated, time: .shortened) ?? "None")
+            if let names = nutrition?.sourceNames, !names.isEmpty {
+                preferenceRow("Apple Health sources", names.joined(separator: ", "))
+            } else {
+                preferenceRow("Apple Health sources", "Unavailable or no samples")
+            }
+            if nutrition?.appearsFromCronometer == true {
+                CommandFeedbackPill(message: "Cronometer samples detected through Apple Health", icon: "checkmark.circle.fill", accent: appModel.activeCategory.accent)
+            } else {
+                Text("If Cronometer is connected but this still says no samples, check that Cronometer is writing nutrition fields to Apple Health and that Health permissions are enabled.")
+                    .font(.caption)
+                    .foregroundStyle(CommandDesign.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            ForEach(diagnostics) { item in
+                statusRow(item)
+            }
+        }
+        .padding(10)
+        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: CommandDesign.innerRadius, style: .continuous))
     }
 
     private var ouraFoundationSection: some View {
@@ -489,6 +528,7 @@ struct ProfileView: View {
     private var nutritionPreferencesSection: some View {
         settingsSection("Nutrition Preferences", icon: "fork.knife") {
             let targets = appModel.nutritionTargets
+            let nutrition = appModel.todaySnapshot.nutrition
             preferenceRow("Goal", targets.goal)
             preferenceRow("Protein target", "\(targets.proteinGrams)g/day")
             preferenceRow("Water target", "\(targets.waterOunces) oz/day")
@@ -496,11 +536,17 @@ struct ProfileView: View {
             preferenceRow("Avoids", targets.avoids)
             preferenceRow("Protein powder", targets.proteinPowder)
             preferenceRow("Creatine", targets.creatine)
+            preferenceRow("Automatic source", nutrition?.sourceLabel ?? "No Apple Health nutrition samples found")
             Text("Nutrition stays simple for the MVP: Cronometer visibility, protein floor, water, and sleep-protective caffeine timing.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineSpacing(3)
-            Text("Source logic: manual HCC entry wins when Brian saves it today; otherwise HCC reads Apple Health nutrition if another app writes samples there. Direct Cronometer API access is not implemented.")
+            Text("Source logic: manual HCC entry wins when Brian saves it today; otherwise HCC reads Apple Health nutrition if another app writes samples there. If HealthKit source metadata points to Cronometer, HCC labels it Cronometer via Apple Health. Direct Cronometer API access is not implemented.")
+                .font(.caption)
+                .foregroundStyle(CommandDesign.secondaryText)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Cronometer setup: Cronometer -> More -> Connect Apps & Devices -> Apple Health. Then enable available nutrition write permissions in Apple Health.")
                 .font(.caption)
                 .foregroundStyle(CommandDesign.secondaryText)
                 .lineSpacing(3)

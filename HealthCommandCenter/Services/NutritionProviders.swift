@@ -3,6 +3,7 @@ import Foundation
 enum NutritionDataSource: String, Codable, CaseIterable, Identifiable, Hashable {
     case manualHCC = "HCC manual"
     case appleHealth = "Apple Health"
+    case cronometerAppleHealth = "Cronometer via Apple Health"
     case external = "External provider"
     case none = "No nutrition source"
 
@@ -42,7 +43,9 @@ struct ManualNutritionProvider: NutritionDataProvider {
 
 struct AppleHealthNutritionProvider: NutritionDataProvider {
     let summary: HealthNutritionSummary?
-    var source: NutritionDataSource { .appleHealth }
+    var source: NutritionDataSource {
+        summary?.appearsFromCronometer == true ? .cronometerAppleHealth : .appleHealth
+    }
 
     func todayLog(dateKey: String, targets: NutritionTargets) -> DailyNutritionLog? {
         guard let nutrition = summary, nutrition.availableMetricCount > 0 else { return nil }
@@ -55,7 +58,7 @@ struct AppleHealthNutritionProvider: NutritionDataProvider {
             cronometerCompleted: false,
             proteinTargetHit: (nutrition.proteinGrams ?? 0) >= Double(targets.proteinGrams),
             waterTargetHit: (nutrition.waterOunces ?? 0) >= Double(targets.waterOunces),
-            notes: "Apple Health nutrition summary"
+            notes: nutrition.sourceLabel
         )
     }
 }
