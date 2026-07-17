@@ -60,6 +60,33 @@ struct CustomExercise: Codable, Identifiable, Hashable {
 }
 
 extension CustomWorkout {
+    init(fromGeneratedWorkout workout: WorkoutPlan) {
+        let generatedExercises = workout
+            .version(.full)
+            .sections
+            .flatMap(\.exercises)
+            .filter(\.isLoggable)
+            .map { exercise in
+                CustomExercise(
+                    id: UUID().uuidString,
+                    name: exercise.name,
+                    category: exercise.musclesTargeted.first ?? "Strength",
+                    equipment: exercise.equipment,
+                    targetSets: Self.targetSets(from: exercise.prescription),
+                    targetReps: Self.targetReps(from: exercise.prescription),
+                    notes: "Generated from today's plan. Adjust before logging if needed.",
+                    isLoggable: exercise.isLoggable,
+                    libraryExerciseID: ExerciseLibrary.definition(matching: exercise)?.id
+                )
+            }
+
+        self.init(
+            name: "\(workout.title) Copy",
+            notes: workout.coachingNote,
+            exercises: generatedExercises
+        )
+    }
+
     var asWorkoutPlan: WorkoutPlan {
         let customExercises = exercises.map { exercise in
             let definition = ExerciseLibrary.definition(for: exercise.libraryExerciseID)
@@ -100,5 +127,32 @@ extension CustomWorkout {
             focus: notes.isEmpty ? "Flexible session" : notes,
             versions: [version]
         )
+    }
+
+    private static func targetSets(from prescription: String) -> Int {
+        let lower = prescription.lowercased()
+        if let range = lower.range(of: #"\d+\s*-\s*\d+\s*sets"#, options: .regularExpression) {
+            let values = lower[range]
+                .components(separatedBy: CharacterSet.decimalDigits.inverted)
+                .compactMap(Int.init)
+            return values.last ?? values.first ?? 2
+        }
+        if let range = lower.range(of: #"\d+\s*sets"#, options: .regularExpression),
+           let value = Int(lower[range].components(separatedBy: CharacterSet.decimalDigits.inverted).joined()) {
+            return value
+        }
+        return 2
+    }
+
+    private static func targetReps(from prescription: String) -> String {
+        let lower = prescription.lowercased()
+        if let range = lower.range(of: #"\d+\s*-\s*\d+"#, options: .regularExpression) {
+            return lower[range].replacingOccurrences(of: " ", with: "")
+        }
+        if let range = lower.range(of: #"\d+\s*reps"#, options: .regularExpression) {
+            let value = lower[range].components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+            return value.isEmpty ? "8-10" : value
+        }
+        return "8-10"
     }
 }

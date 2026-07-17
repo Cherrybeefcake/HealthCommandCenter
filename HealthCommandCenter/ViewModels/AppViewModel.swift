@@ -165,6 +165,19 @@ final class AppViewModel: ObservableObject {
         NutritionTargets.from(personalizationSettings)
     }
 
+    func generatedWorkoutRecommendation() -> GeneratedWorkoutRecommendation {
+        DynamicWorkoutGenerator.generate(
+            readiness: activeCategory,
+            checkIn: hasCheckedInToday ? latestCheckIn : nil,
+            recoveryStatus: todayRecoveryStatus(),
+            programPhase: programPhase,
+            trainingLocation: trainingLocation,
+            availableEquipment: availableWorkoutEquipment(),
+            recentLogs: recentExerciseLogsForWorkoutGeneration(),
+            dailyPlan: todayDailyPlan
+        )
+    }
+
     var healthAvailabilityText: String {
         healthService.isHealthDataAvailable ? "Available on this device" : "Unavailable on this device"
     }
@@ -1756,6 +1769,26 @@ final class AppViewModel: ObservableObject {
     private var hasShoulderContext: Bool {
         guard hasCheckedInToday, let note = latestCheckIn?.painNote.lowercased() else { return false }
         return ["shoulder", "neck", "trap", "rotator", "overhead"].contains { note.contains($0) }
+    }
+
+    private func recentExerciseLogsForWorkoutGeneration() -> [ExerciseLog] {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+        return exerciseLogs.filter { $0.date >= cutoff }
+    }
+
+    private func availableWorkoutEquipment() -> [EquipmentType] {
+        switch trainingLocation {
+        case .home:
+            return [.bodyweight, .dumbbells, .resistanceBands, .inclineBench, .mat]
+        case .work:
+            return [.bodyweight, .dumbbells, .resistanceBands, .inclineBench, .mat, .bike, .stairs, .workGym]
+        case .gym:
+            return [.bodyweight, .dumbbells, .resistanceBands, .inclineBench, .mat, .bike, .stairs, .workGym]
+        case .outside:
+            return [.bodyweight, .outside, .stairs]
+        case .mixed:
+            return EquipmentType.allCases
+        }
     }
 
     private func appendDebug(_ message: String) {

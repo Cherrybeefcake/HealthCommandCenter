@@ -40,6 +40,7 @@
 		01A00000000000000000011F /* WeeklyReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000022 /* WeeklyReview.swift */; };
 		01A000000000000000000120 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000023 /* Assets.xcassets */; };
 		01A000000000000000000121 /* ExerciseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000024 /* ExerciseLibrary.swift */; };
+		01A000000000000000000122 /* DynamicWorkoutGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A000000000000000000025 /* DynamicWorkoutGenerator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -78,6 +79,7 @@
 		01A000000000000000000022 /* WeeklyReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyReview.swift; sourceTree = "<group>"; };
 		01A000000000000000000023 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		01A000000000000000000024 /* ExerciseLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibrary.swift; sourceTree = "<group>"; };
+		01A000000000000000000025 /* DynamicWorkoutGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicWorkoutGenerator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -139,6 +141,7 @@
 				01A000000000000000000021 /* CustomWorkout.swift */,
 				01A000000000000000000022 /* WeeklyReview.swift */,
 				01A000000000000000000024 /* ExerciseLibrary.swift */,
+				01A000000000000000000025 /* DynamicWorkoutGenerator.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -310,6 +313,7 @@
 				01A00000000000000000011E /* CustomWorkout.swift in Sources */,
 				01A00000000000000000011F /* WeeklyReview.swift in Sources */,
 				01A000000000000000000121 /* ExerciseLibrary.swift in Sources */,
+				01A000000000000000000122 /* DynamicWorkoutGenerator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

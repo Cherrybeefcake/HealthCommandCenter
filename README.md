@@ -54,6 +54,7 @@ First vertical-slice MVP for Brian's Health Command Center, built as a dark-mode
 - Starter Program remains the backbone: Full Body A, Full Body B, and Full Body C.
 - Workout Library adds deterministic, local-only options for short work-shift sessions, bands/bodyweight, dumbbell strength, recovery mobility, bike/stairs conditioning, and bare-minimum movement.
 - Exercise Library adds local movement definitions with setup, execution steps, cues, caution guidance, equipment filters, and substitutions. Custom workouts can prefill exercises from the library while still allowing manual entries.
+- Dynamic Workout Generator creates a local, rule-based workout option from readiness, recovery, sleep/stress/soreness context, available time, program phase, location, equipment, recent logs, and the DailyPlan. Generated workouts are selectable in Train and can be copied into Custom Workouts before logging.
 - Built-in library workouts use the same local ExerciseLog flow as starter workouts, so Progress session detail and exercise summaries continue to work.
 - Custom Workouts are local templates in `custom_workouts.json`; editing a template does not rewrite past workout logs.
 
